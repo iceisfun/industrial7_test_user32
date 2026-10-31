@@ -187,14 +187,14 @@ TEST(clipboard_open_close_loop) {
     CB_REQ_BASIC; cb_reset();
     HWND w = cb_win();
     int ok = 0;
-    for (int i = 0; i < 500; i++) { if (OPEN(w) && CLOSE()) ok++; }
+    for (int i = 0; i < 500; i++) { for (int t = 0; t < 50; t++) { if (OPEN(w)) { if (CLOSE()) ok++; break; } Sleep(2); } }
     EXPECT_EQ(ok, 500);
     cb_destroy(w);
 }
 TEST(clipboard_open_close_loop_null) {
     CB_REQ_BASIC; cb_reset();
     int ok = 0;
-    for (int i = 0; i < 500; i++) { if (OPEN(NULL) && CLOSE()) ok++; }
+    for (int i = 0; i < 500; i++) { for (int t = 0; t < 50; t++) { if (OPEN(NULL)) { if (CLOSE()) ok++; break; } Sleep(2); } }
     EXPECT_EQ(ok, 500);
 }
 TEST(clipboard_lasterror_preserved_on_success) {

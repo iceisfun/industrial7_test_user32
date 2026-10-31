@@ -38,7 +38,7 @@ void cb_reset(void) {
     int n = 0;
     while (n++ < 8 && CLOSE()) ;
     cb_render_data = NULL;
-    if (OPEN(NULL)) { EMPTY(); CLOSE(); }
+    for (int t = 0; t < 100; t++) { if (OPEN(NULL)) { EMPTY(); CLOSE(); break; } Sleep(10); }
 }
 HGLOBAL cb_mem(const void *p, size_t n) {
     HGLOBAL g = GlobalAlloc(GMEM_MOVEABLE, n ? n : 1);
