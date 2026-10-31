@@ -1,0 +1,1018 @@
+# user32 export coverage
+
+Named exports: 1005; functionally exercised: 961; presence/stub-only or unreferenced: 44.
+Ordinal-only exports (~160) are not tracked here.
+
+## Not functionally covered (export-presence / stub checks only, or unreferenced)
+
+The weak files only verify the export exists / is callable safely. Reasons: unsafe on a live desktop (input injection, session/desktop switching, shutdown, lock), undocumented/
+internal with no stable contract, or thin kernel forwarders awaiting tests.
+
+- DwmGetDxRgn
+- DwmGetRemoteSessionOcclusionEvent
+- DwmGetRemoteSessionOcclusionState
+- DwmKernelShutdown
+- DwmKernelStartup
+- DwmLockScreenUpdates
+- DwmValidateWindow
+- EditWndProc
+- EnableOneCoreTransformMode
+- EnableSessionForMMCSS
+- FrostCrashedWindow
+- GetClipboardAccessToken
+- GetInputLocaleInfo
+- GetMagnificationLensCtxInformation
+- LoadLocalFonts
+- LoadRemoteFonts
+- LockWorkStation
+- MITGetCursorUpdateHandle
+- MITSetForegroundRoutingInfo
+- MITSetInputDelegationMode
+- MITSetLastInputRecipient
+- MITSynthesizeTouchInput
+- MapPointsByVisualIdentifier
+- MapVisualRelativePoints
+- MenuWindowProcA
+- MenuWindowProcW
+- PaintMenuBar
+- PaintMonitor
+- QueryBSDRWindow
+- RIMAddInputObserver
+- RIMAreSiblingDevices
+- RIMDeviceIoControl
+- RIMEnableMonitorMappingForDevice
+- RIMFreeInputBuffer
+- RIMGetDevicePreparsedData
+- RIMGetDevicePreparsedDataLockfree
+- RIMGetDeviceProperties
+- RIMGetDevicePropertiesLockfree
+- RIMGetPhysicalDeviceRect
+- RIMGetSourceProcessId
+- RIMObserveNextInput
+- RIMOnPnpNotification
+- RIMOnTimerNotification
+- RIMQueryDevicePath
+
+## Covered (export: areas)
+
+- ActivateKeyboardLayout: input_kbd, strings_misc
+- AddClipboardFormatListener: clipboard, gap_07, strings_misc
+- AddVisualIdentifier: gap_00, strings_misc
+- AdjustWindowRect: misc_ui, strings_misc, window_mgmt
+- AdjustWindowRectEx: misc_ui, paint_gdi, strings_misc, window_mgmt
+- AdjustWindowRectExForDpi: paint_gdi, strings_misc, window_mgmt
+- AlignRects: gap_00, strings_misc
+- AllowForegroundActivation: gap_00, strings_misc
+- AllowSetForegroundWindow: strings_misc, window_mgmt
+- AnimateWindow: strings_misc, window_mgmt
+- AnyPopup: gap_00, strings_misc
+- AppendMenuA: controls, dde_hooks_accel, gap_05, menus, misc_ui, strings_misc
+- AppendMenuW: gap_00, menus, strings_misc
+- AreDpiAwarenessContextsEqual: dialogs, misc_ui, paint_gdi, strings_misc, sysparams, window_mgmt
+- ArrangeIconicWindows: strings_misc, window_mgmt
+- AttachThreadInput: gap_02, strings_misc, winsta_process
+- BeginDeferWindowPos: gap_00, gap_01, strings_misc, window_mgmt
+- BeginPaint: gap_06, paint_gdi, strings_misc
+- BlockInput: gap_00, strings_misc
+- BringWindowToTop: misc_ui, strings_misc, window_mgmt
+- BroadcastSystemMessage: gap_07, messages, strings_misc
+- BroadcastSystemMessageA: gap_00, gap_07, messages, strings_misc
+- BroadcastSystemMessageExA: gap_00, gap_07, messages, strings_misc
+- BroadcastSystemMessageExW: gap_00, gap_07, messages, strings_misc
+- BroadcastSystemMessageW: gap_00, gap_07, strings_misc
+- BuildReasonArray: gap_00, strings_misc
+- CalcMenuBar: gap_00, strings_misc
+- CalculatePopupWindowPosition: gap_00, strings_misc
+- CallMsgFilter: dde_hooks_accel, gap_07, strings_misc, winsta_process
+- CallMsgFilterA: dde_hooks_accel, gap_07, strings_misc, winsta_process
+- CallMsgFilterW: dde_hooks_accel, gap_07, strings_misc, winsta_process
+- CallNextHookEx: dde_hooks_accel, dialogs, gap_05, gap_07, messages, strings_misc, winsta_process
+- CallWindowProcA: dialogs, messages, misc_ui, strings_misc, window_class, window_mgmt
+- CallWindowProcW: messages, strings_misc, window_class
+- CancelShutdown: gap_00, strings_misc
+- CascadeChildWindows: gap_00, strings_misc
+- CascadeWindows: controls, gap_00, strings_misc, window_mgmt
+- ChangeClipboardChain: clipboard, strings_misc
+- ChangeDisplaySettingsA: gap_07, paint_gdi, strings_misc
+- ChangeDisplaySettingsExA: gap_07, paint_gdi, strings_misc
+- ChangeDisplaySettingsExW: gap_07, paint_gdi, strings_misc
+- ChangeDisplaySettingsW: gap_07, paint_gdi, strings_misc
+- ChangeMenuA: misc_ui, strings_misc
+- ChangeMenuW: misc_ui, strings_misc
+- ChangeWindowMessageFilter: messages, strings_misc, window_mgmt
+- ChangeWindowMessageFilterEx: messages, strings_misc, window_mgmt
+- CharLowerA: dialogs, strings_misc
+- CharLowerBuffA: strings_misc
+- CharLowerBuffW: strings_misc
+- CharLowerW: strings_misc
+- CharNextA: strings_misc
+- CharNextExA: strings_misc
+- CharNextW: strings_misc
+- CharPrevA: strings_misc
+- CharPrevExA: strings_misc
+- CharPrevW: strings_misc
+- CharToOemA: strings_misc
+- CharToOemBuffA: strings_misc
+- CharToOemBuffW: strings_misc
+- CharToOemW: strings_misc
+- CharUpperA: strings_misc
+- CharUpperBuffA: strings_misc
+- CharUpperBuffW: strings_misc
+- CharUpperW: strings_misc
+- CheckBannedOneCoreTransformApi: gap_00, gap_04, strings_misc
+- CheckDBCSEnabledExt: gap_00, strings_misc
+- CheckDlgButton: controls, dialogs, strings_misc
+- CheckMenuItem: menus, strings_misc
+- CheckMenuRadioItem: menus, strings_misc
+- CheckProcessForClipboardAccess: gap_00, strings_misc
+- CheckProcessSession: gap_00, strings_misc
+- CheckRadioButton: controls, dialogs, strings_misc
+- CheckWindowThreadDesktop: strings_misc, winsta_process
+- ChildWindowFromPoint: strings_misc, window_mgmt
+- ChildWindowFromPointEx: strings_misc, window_mgmt
+- CliImmSetHotKey: gap_00, strings_misc
+- ClientThreadSetup: gap_00, strings_misc
+- ClientToScreen: dialogs, input_mouse, messages, misc_ui, paint_gdi, strings_misc, window_mgmt
+- ClipCursor: input_mouse, strings_misc
+- CloseClipboard: clipboard, controls, gap_07, strings_misc
+- CloseDesktop: gap_07, strings_misc, sysparams, winsta_process
+- CloseGestureInfoHandle: input_mouse, strings_misc
+- CloseTouchInputHandle: input_mouse, strings_misc
+- CloseWindow: misc_ui, strings_misc, window_mgmt
+- CloseWindowStation: strings_misc, sysparams, winsta_process
+- ConsoleControl: gap_00, strings_misc
+- ControlMagnification: gap_00, strings_misc
+- CopyAcceleratorTableA: dde_hooks_accel, input_kbd, strings_misc
+- CopyAcceleratorTableW: dde_hooks_accel, input_kbd, strings_misc
+- CopyIcon: resources_icons, strings_misc
+- CopyImage: resources_icons, strings_misc
+- CopyRect: paint_gdi, strings_misc
+- CountClipboardFormats: clipboard, gap_07, strings_misc
+- CreateAcceleratorTableA: dde_hooks_accel, input_kbd, strings_misc
+- CreateAcceleratorTableW: dde_hooks_accel, input_kbd, strings_misc
+- CreateCaret: paint_gdi, strings_misc, window_mgmt, winsta_process
+- CreateCursor: resources_icons, strings_misc
+- CreateDCompositionHwndTarget: gap_00, strings_misc
+- CreateDesktopA: strings_misc, winsta_process
+- CreateDesktopExA: strings_misc, winsta_process
+- CreateDesktopExW: strings_misc, winsta_process
+- CreateDesktopW: gap_07, strings_misc, winsta_process
+- CreateDialogIndirectParamA: dialogs, gap_00, gap_01, strings_misc
+- CreateDialogIndirectParamAorW: gap_00, strings_misc
+- CreateDialogIndirectParamW: dialogs, gap_00, gap_04, strings_misc
+- CreateDialogParamA: dialogs, strings_misc
+- CreateDialogParamW: dialogs, strings_misc
+- CreateIcon: gap_02, paint_gdi, resources_icons, strings_misc
+- CreateIconFromResource: resources_icons, strings_misc
+- CreateIconFromResourceEx: resources_icons, strings_misc
+- CreateIconIndirect: resources_icons, strings_misc
+- CreateMDIWindowA: controls, gap_07, strings_misc
+- CreateMDIWindowW: controls, gap_07, strings_misc
+- CreateMenu: controls, gap_00, gap_06, menus, misc_ui, resources_icons, strings_misc, window_class, window_mgmt, winsta_process
+- CreatePopupMenu: controls, dde_hooks_accel, gap_05, menus, misc_ui, strings_misc
+- CreateSyntheticPointerDevice: input_mouse, strings_misc
+- CreateSystemThreads: gap_00, strings_misc
+- CreateWindowExA: clipboard, controls, dde_hooks_accel, dialogs, gap_06, gap_07, input_kbd, input_mouse, messages, misc_ui, paint_gdi, strings_misc, sysparams, window_class, window_mgmt, winsta_process
+- CreateWindowExW: controls, dde_hooks_accel, dialogs, gap_00, gap_07, messages, misc_ui, strings_misc, window_class, window_mgmt
+- CreateWindowInBand: gap_00, strings_misc
+- CreateWindowInBandEx: gap_00, strings_misc
+- CreateWindowIndirect: gap_00, strings_misc
+- CreateWindowStationA: strings_misc, winsta_process
+- CreateWindowStationW: strings_misc, winsta_process
+- CsrBroadcastSystemMessageExW: gap_00, strings_misc
+- CtxInitUser32: gap_00, strings_misc
+- DdeAbandonTransaction: dde_hooks_accel, misc_ui, strings_misc
+- DdeAccessData: dde_hooks_accel, misc_ui, strings_misc
+- DdeAddData: dde_hooks_accel, misc_ui, strings_misc
+- DdeClientTransaction: dde_hooks_accel, misc_ui, strings_misc
+- DdeCmpStringHandles: dde_hooks_accel, misc_ui, strings_misc
+- DdeConnect: dde_hooks_accel, misc_ui, strings_misc
+- DdeConnectList: dde_hooks_accel, misc_ui, strings_misc
+- DdeCreateDataHandle: dde_hooks_accel, misc_ui, strings_misc
+- DdeCreateStringHandleA: dde_hooks_accel, misc_ui, strings_misc
+- DdeCreateStringHandleW: dde_hooks_accel, misc_ui, strings_misc
+- DdeDisconnect: dde_hooks_accel, misc_ui, strings_misc
+- DdeDisconnectList: dde_hooks_accel, misc_ui, strings_misc
+- DdeEnableCallback: dde_hooks_accel, misc_ui, strings_misc
+- DdeFreeDataHandle: dde_hooks_accel, misc_ui, strings_misc
+- DdeFreeStringHandle: dde_hooks_accel, misc_ui, strings_misc
+- DdeGetData: dde_hooks_accel, misc_ui, strings_misc
+- DdeGetLastError: dde_hooks_accel, misc_ui, strings_misc
+- DdeGetQualityOfService: dde_hooks_accel, gap_05, strings_misc
+- DdeImpersonateClient: dde_hooks_accel, misc_ui, strings_misc
+- DdeInitializeA: dde_hooks_accel, misc_ui, strings_misc
+- DdeInitializeW: dde_hooks_accel, misc_ui, strings_misc
+- DdeKeepStringHandle: dde_hooks_accel, misc_ui, strings_misc
+- DdeNameService: dde_hooks_accel, misc_ui, strings_misc
+- DdePostAdvise: dde_hooks_accel, misc_ui, strings_misc
+- DdeQueryConvInfo: dde_hooks_accel, misc_ui, strings_misc
+- DdeQueryNextServer: dde_hooks_accel, misc_ui, strings_misc
+- DdeQueryStringA: dde_hooks_accel, misc_ui, strings_misc
+- DdeQueryStringW: dde_hooks_accel, misc_ui, strings_misc
+- DdeReconnect: dde_hooks_accel, misc_ui, strings_misc
+- DdeSetQualityOfService: dde_hooks_accel, gap_05, misc_ui, strings_misc
+- DdeSetUserHandle: dde_hooks_accel, misc_ui, strings_misc
+- DdeUnaccessData: dde_hooks_accel, misc_ui, strings_misc
+- DdeUninitialize: dde_hooks_accel, misc_ui, strings_misc
+- DefDlgProcA: dialogs, strings_misc
+- DefDlgProcW: dialogs, strings_misc
+- DefFrameProcA: controls, gap_07, strings_misc
+- DefFrameProcW: controls, gap_07, strings_misc
+- DefMDIChildProcA: controls, gap_07, strings_misc
+- DefMDIChildProcW: controls, gap_07, strings_misc
+- DefRawInputProc: input_mouse, strings_misc
+- DefWindowProcA: clipboard, controls, dde_hooks_accel, dialogs, gap_01, gap_02, gap_03, gap_06, gap_07, input_kbd, input_mouse, menus, messages, misc_ui, paint_gdi, resources_icons, strings_misc, sysparams, window_class, window_mgmt, winsta_process
+- DefWindowProcW: dialogs, gap_00, gap_07, messages, misc_ui, strings_misc, window_class, window_mgmt
+- DeferWindowPos: gap_00, gap_01, strings_misc, window_mgmt
+- DeferWindowPosAndBand: gap_00, strings_misc
+- DelegateInput: gap_00, strings_misc
+- DeleteMenu: menus, strings_misc
+- DeregisterShellHookWindow: strings_misc, winsta_process
+- DestroyAcceleratorTable: dde_hooks_accel, input_kbd, strings_misc
+- DestroyCaret: paint_gdi, strings_misc, window_mgmt, winsta_process
+- DestroyCursor: gap_01, resources_icons, strings_misc
+- DestroyDCompositionHwndTarget: gap_00, strings_misc
+- DestroyIcon: gap_02, misc_ui, paint_gdi, resources_icons, strings_misc
+- DestroyMenu: controls, dde_hooks_accel, gap_00, gap_05, gap_06, gap_07, menus, misc_ui, resources_icons, strings_misc, window_class, window_mgmt, winsta_process
+- DestroyReasons: gap_00, strings_misc
+- DestroySyntheticPointerDevice: gap_04, input_mouse, strings_misc
+- DestroyWindow: clipboard, controls, dde_hooks_accel, dialogs, gap_00, gap_01, gap_02, gap_03, gap_04, gap_05, gap_06, gap_07, input_kbd, input_mouse, menus, messages, misc_ui, paint_gdi, resources_icons, strings_misc, sysparams, window_class, window_mgmt, winsta_process
+- DialogBoxIndirectParamA: dde_hooks_accel, dialogs, gap_00, strings_misc
+- DialogBoxIndirectParamAorW: gap_00, strings_misc
+- DialogBoxIndirectParamW: dialogs, gap_00, strings_misc
+- DialogBoxParamA: dialogs, strings_misc
+- DialogBoxParamW: dialogs, strings_misc
+- DisableProcessWindowsGhosting: strings_misc, winsta_process
+- DispatchMessageA: dde_hooks_accel, dialogs, gap_03, input_kbd, input_mouse, messages, misc_ui, paint_gdi, strings_misc, window_mgmt, winsta_process
+- DispatchMessageW: dialogs, gap_07, messages, strings_misc
+- DisplayConfigGetDeviceInfo: paint_gdi, strings_misc
+- DisplayConfigSetDeviceInfo: paint_gdi, strings_misc
+- DisplayExitWindowsWarnings: gap_00, strings_misc
+- DlgDirListA: dialogs, strings_misc
+- DlgDirListComboBoxA: dialogs, strings_misc
+- DlgDirListComboBoxW: dialogs, strings_misc
+- DlgDirListW: dialogs, strings_misc
+- DlgDirSelectComboBoxExA: controls, dialogs, strings_misc
+- DlgDirSelectComboBoxExW: dialogs, strings_misc
+- DlgDirSelectExA: controls, dialogs, strings_misc
+- DlgDirSelectExW: dialogs, strings_misc
+- DoSoundConnect: gap_00, strings_misc
+- DoSoundDisconnect: gap_00, strings_misc
+- DragDetect: input_mouse, strings_misc
+- DragObject: gap_00, strings_misc
+- DrawAnimatedRects: paint_gdi, strings_misc
+- DrawCaption: paint_gdi, strings_misc
+- DrawCaptionTempA: gap_00, strings_misc
+- DrawCaptionTempW: gap_00, strings_misc
+- DrawEdge: paint_gdi, strings_misc
+- DrawFocusRect: paint_gdi, strings_misc
+- DrawFrame: gap_00, strings_misc
+- DrawFrameControl: paint_gdi, strings_misc
+- DrawIcon: paint_gdi, resources_icons, strings_misc
+- DrawIconEx: paint_gdi, resources_icons, strings_misc
+- DrawMenuBar: menus, strings_misc
+- DrawMenuBarTemp: gap_00, strings_misc
+- DrawStateA: paint_gdi, strings_misc
+- DrawStateW: gap_07, paint_gdi, strings_misc
+- DrawTextA: gap_02, paint_gdi, strings_misc
+- DrawTextExA: paint_gdi, strings_misc
+- DrawTextExW: paint_gdi, strings_misc
+- DrawTextW: paint_gdi, strings_misc
+- DwmGetDxSharedSurface: gap_01, strings_misc
+- EmptyClipboard: clipboard, controls, gap_07, strings_misc
+- EnableMenuItem: menus, strings_misc
+- EnableMouseInPointer: input_mouse, strings_misc
+- EnableNonClientDpiScaling: paint_gdi, strings_misc
+- EnableScrollBar: controls, strings_misc
+- EnableWindow: controls, dde_hooks_accel, dialogs, input_mouse, messages, misc_ui, strings_misc, window_mgmt
+- EndDeferWindowPos: gap_00, gap_01, strings_misc, window_mgmt
+- EndDeferWindowPosEx: gap_01, strings_misc
+- EndDialog: dde_hooks_accel, dialogs, gap_00, strings_misc
+- EndMenu: dde_hooks_accel, menus, strings_misc
+- EndPaint: gap_06, paint_gdi, strings_misc
+- EndTask: misc_ui, strings_misc
+- EnterReaderModeHelper: gap_01, strings_misc
+- EnumChildWindows: dialogs, misc_ui, strings_misc, window_mgmt
+- EnumClipboardFormats: clipboard, controls, gap_07, strings_misc
+- EnumDesktopWindows: strings_misc, window_mgmt, winsta_process
+- EnumDesktopsA: strings_misc, winsta_process
+- EnumDesktopsW: strings_misc, winsta_process
+- EnumDisplayDevicesA: gap_07, paint_gdi, strings_misc
+- EnumDisplayDevicesW: paint_gdi, strings_misc
+- EnumDisplayMonitors: gap_01, paint_gdi, strings_misc, sysparams
+- EnumDisplaySettingsA: paint_gdi, strings_misc
+- EnumDisplaySettingsExA: gap_07, paint_gdi, strings_misc
+- EnumDisplaySettingsExW: gap_07, paint_gdi, strings_misc
+- EnumDisplaySettingsW: paint_gdi, strings_misc
+- EnumPropsA: strings_misc, window_class
+- EnumPropsExA: strings_misc, window_class
+- EnumPropsExW: strings_misc, window_class
+- EnumPropsW: strings_misc, window_class
+- EnumThreadWindows: dialogs, misc_ui, strings_misc, window_mgmt
+- EnumWindowStationsA: strings_misc, winsta_process
+- EnumWindowStationsW: strings_misc, winsta_process
+- EnumWindows: messages, misc_ui, strings_misc, window_mgmt, winsta_process
+- EqualRect: controls, gap_01, misc_ui, paint_gdi, strings_misc, sysparams
+- EvaluateProximityToPolygon: input_mouse, strings_misc
+- EvaluateProximityToRect: input_mouse, strings_misc
+- ExcludeUpdateRgn: gap_01, strings_misc
+- ExitWindowsEx: gap_01, strings_misc
+- FillRect: paint_gdi, strings_misc
+- FindWindowA: dde_hooks_accel, dialogs, gap_01, gap_02, messages, misc_ui, strings_misc, window_mgmt, winsta_process
+- FindWindowExA: messages, misc_ui, strings_misc, window_mgmt
+- FindWindowExW: misc_ui, strings_misc, window_mgmt
+- FindWindowW: misc_ui, strings_misc, window_mgmt
+- FlashWindow: strings_misc, window_mgmt
+- FlashWindowEx: strings_misc, window_mgmt
+- FrameRect: paint_gdi, strings_misc
+- FreeDDElParam: dde_hooks_accel, misc_ui, strings_misc
+- GetActiveWindow: dde_hooks_accel, dialogs, messages, strings_misc, window_mgmt, winsta_process
+- GetAltTabInfo: gap_07, misc_ui, strings_misc
+- GetAltTabInfoA: gap_07, misc_ui, strings_misc
+- GetAltTabInfoW: gap_07, misc_ui, strings_misc
+- GetAncestor: gap_01, messages, misc_ui, strings_misc, window_mgmt, winsta_process
+- GetAppCompatFlags: strings_misc, winsta_process
+- GetAppCompatFlags2: strings_misc, winsta_process
+- GetAsyncKeyState: controls, input_kbd, input_mouse, strings_misc
+- GetAutoRotationState: paint_gdi, strings_misc
+- GetAwarenessFromDpiAwarenessContext: gap_01, misc_ui, paint_gdi, strings_misc, sysparams, window_mgmt
+- GetCIMSSM: input_mouse, strings_misc
+- GetCapture: dialogs, gap_01, input_mouse, strings_misc, window_mgmt, winsta_process
+- GetCaretBlinkTime: paint_gdi, strings_misc, sysparams
+- GetCaretPos: paint_gdi, strings_misc, window_mgmt
+- GetClassInfoA: controls, dialogs, strings_misc, window_class
+- GetClassInfoExA: controls, dialogs, resources_icons, strings_misc, window_class
+- GetClassInfoExW: controls, dialogs, gap_07, strings_misc, window_class
+- GetClassInfoW: controls, dialogs, strings_misc, window_class
+- GetClassLongA: gap_07, strings_misc, window_class, window_mgmt
+- GetClassLongPtrA: misc_ui, resources_icons, strings_misc, window_class
+- GetClassLongPtrW: strings_misc, window_class
+- GetClassLongW: gap_07, strings_misc, window_class
+- GetClassNameA: controls, dialogs, messages, misc_ui, strings_misc, window_class, window_mgmt, winsta_process
+- GetClassNameW: controls, dialogs, gap_00, gap_07, misc_ui, strings_misc, window_class, window_mgmt
+- GetClassWord: strings_misc, window_class
+- GetClientRect: controls, dialogs, gap_00, gap_05, menus, messages, misc_ui, paint_gdi, strings_misc, window_mgmt
+- GetClipCursor: input_mouse, strings_misc
+- GetClipboardData: clipboard, controls, gap_07, strings_misc
+- GetClipboardFormatNameA: clipboard, gap_07, messages, strings_misc
+- GetClipboardFormatNameW: clipboard, gap_07, strings_misc
+- GetClipboardOwner: clipboard, strings_misc
+- GetClipboardSequenceNumber: clipboard, gap_07, strings_misc
+- GetClipboardViewer: clipboard, strings_misc
+- GetComboBoxInfo: controls, misc_ui, strings_misc
+- GetCurrentInputMessageSource: input_kbd, input_mouse, strings_misc
+- GetCursor: input_mouse, misc_ui, resources_icons, strings_misc
+- GetCursorFrameInfo: gap_01, strings_misc
+- GetCursorInfo: input_mouse, resources_icons, strings_misc
+- GetCursorPos: dialogs, gap_01, gap_07, input_mouse, messages, resources_icons, strings_misc
+- GetDC: clipboard, dialogs, gap_01, gap_02, gap_06, gap_07, menus, misc_ui, paint_gdi, strings_misc, window_class
+- GetDCEx: gap_06, paint_gdi, strings_misc
+- GetDesktopID: strings_misc, winsta_process
+- GetDesktopWindow: dialogs, gap_01, gap_02, gap_04, gap_06, gap_07, input_mouse, menus, messages, misc_ui, paint_gdi, strings_misc, sysparams, window_class, window_mgmt, winsta_process
+- GetDialogBaseUnits: dialogs, strings_misc
+- GetDialogControlDpiChangeBehavior: gap_01, gap_04, strings_misc
+- GetDialogDpiChangeBehavior: gap_01, gap_04, strings_misc
+- GetDisplayAutoRotationPreferences: gap_04, paint_gdi, strings_misc
+- GetDisplayConfigBufferSizes: paint_gdi, strings_misc
+- GetDlgCtrlID: dialogs, gap_00, messages, misc_ui, strings_misc, window_class, window_mgmt
+- GetDlgItem: dialogs, gap_00, misc_ui, strings_misc
+- GetDlgItemInt: dialogs, strings_misc
+- GetDlgItemTextA: dialogs, strings_misc
+- GetDlgItemTextW: dialogs, strings_misc
+- GetDoubleClickTime: input_mouse, strings_misc, sysparams
+- GetDpiAwarenessContextForProcess: gap_01, paint_gdi, strings_misc, sysparams
+- GetDpiForMonitorInternal: gap_01, strings_misc
+- GetDpiForSystem: dialogs, gap_01, misc_ui, paint_gdi, resources_icons, strings_misc, sysparams, window_mgmt
+- GetDpiForWindow: misc_ui, paint_gdi, strings_misc, sysparams, window_mgmt
+- GetDpiFromDpiAwarenessContext: paint_gdi, strings_misc, sysparams, window_mgmt
+- GetExtendedPointerDeviceProperty: gap_01, strings_misc
+- GetFocus: dde_hooks_accel, dialogs, input_kbd, messages, strings_misc, window_mgmt, winsta_process
+- GetForegroundWindow: dialogs, input_kbd, strings_misc, window_mgmt
+- GetGUIThreadInfo: paint_gdi, strings_misc, window_mgmt, winsta_process
+- GetGestureConfig: input_mouse, strings_misc
+- GetGestureExtraArgs: input_mouse, strings_misc
+- GetGestureInfo: input_mouse, strings_misc
+- GetGuiResources: gap_02, misc_ui, resources_icons, strings_misc, winsta_process
+- GetIconInfo: gap_02, misc_ui, resources_icons, strings_misc
+- GetIconInfoExA: resources_icons, strings_misc
+- GetIconInfoExW: resources_icons, strings_misc
+- GetInputDesktop: gap_07, strings_misc, winsta_process
+- GetInputState: input_kbd, messages, strings_misc
+- GetInternalWindowPos: gap_01, strings_misc
+- GetKBCodePage: input_kbd, strings_misc
+- GetKeyNameTextA: input_kbd, strings_misc
+- GetKeyNameTextW: input_kbd, strings_misc
+- GetKeyState: dde_hooks_accel, input_kbd, input_mouse, strings_misc
+- GetKeyboardLayout: input_kbd, strings_misc
+- GetKeyboardLayoutList: input_kbd, strings_misc
+- GetKeyboardLayoutNameA: input_kbd, strings_misc
+- GetKeyboardLayoutNameW: input_kbd, strings_misc
+- GetKeyboardState: input_kbd, strings_misc
+- GetKeyboardType: input_kbd, strings_misc
+- GetLastActivePopup: dialogs, strings_misc, window_mgmt
+- GetLastInputInfo: input_kbd, strings_misc
+- GetLayeredWindowAttributes: misc_ui, strings_misc, window_mgmt
+- GetListBoxInfo: controls, misc_ui, strings_misc
+- GetMagnificationDesktopColorEffect: gap_01, strings_misc
+- GetMagnificationDesktopMagnification: gap_01, strings_misc
+- GetMagnificationDesktopSamplingMode: gap_01, strings_misc
+- GetMenu: controls, dialogs, menus, misc_ui, strings_misc, window_class
+- GetMenuBarInfo: menus, strings_misc
+- GetMenuCheckMarkDimensions: menus, strings_misc
+- GetMenuContextHelpId: menus, misc_ui, strings_misc
+- GetMenuDefaultItem: menus, strings_misc
+- GetMenuInfo: menus, strings_misc
+- GetMenuItemCount: controls, gap_05, gap_07, menus, misc_ui, strings_misc
+- GetMenuItemID: controls, gap_07, menus, misc_ui, strings_misc
+- GetMenuItemInfoA: menus, strings_misc
+- GetMenuItemInfoW: menus, strings_misc
+- GetMenuItemRect: menus, strings_misc
+- GetMenuState: controls, gap_07, menus, misc_ui, strings_misc, window_class
+- GetMenuStringA: controls, gap_07, menus, misc_ui, strings_misc
+- GetMenuStringW: gap_07, menus, misc_ui, strings_misc
+- GetMessageA: dialogs, messages, strings_misc
+- GetMessageExtraInfo: input_kbd, input_mouse, messages, strings_misc
+- GetMessagePos: gap_01, gap_07, messages, strings_misc
+- GetMessageTime: gap_07, messages, strings_misc
+- GetMessageW: gap_07, messages, strings_misc
+- GetMonitorInfoA: paint_gdi, strings_misc
+- GetMonitorInfoW: dialogs, paint_gdi, strings_misc, sysparams
+- GetMouseMovePointsEx: input_mouse, strings_misc
+- GetNextDlgGroupItem: dialogs, strings_misc
+- GetNextDlgTabItem: dialogs, strings_misc
+- GetOpenClipboardWindow: clipboard, strings_misc
+- GetParent: controls, dialogs, gap_00, gap_07, messages, misc_ui, strings_misc, window_class, window_mgmt, winsta_process
+- GetPhysicalCursorPos: input_mouse, strings_misc
+- GetPointerCursorId: input_mouse, strings_misc
+- GetPointerDevice: input_mouse, strings_misc
+- GetPointerDeviceCursors: input_mouse, strings_misc
+- GetPointerDeviceInputSpace: gap_01, strings_misc
+- GetPointerDeviceOrientation: gap_01, strings_misc
+- GetPointerDeviceProperties: input_mouse, strings_misc
+- GetPointerDeviceRects: input_mouse, strings_misc
+- GetPointerDevices: gap_01, input_mouse, strings_misc
+- GetPointerFrameArrivalTimes: gap_01, gap_04, gap_05, strings_misc
+- GetPointerFrameInfo: input_mouse, strings_misc
+- GetPointerFrameInfoHistory: input_mouse, strings_misc
+- GetPointerFramePenInfo: input_mouse, strings_misc
+- GetPointerFramePenInfoHistory: input_mouse, strings_misc
+- GetPointerFrameTimes: gap_01, strings_misc
+- GetPointerFrameTouchInfo: input_mouse, strings_misc
+- GetPointerFrameTouchInfoHistory: input_mouse, strings_misc
+- GetPointerInfo: input_mouse, strings_misc
+- GetPointerInfoHistory: input_mouse, strings_misc
+- GetPointerInputTransform: input_mouse, strings_misc
+- GetPointerPenInfo: input_mouse, strings_misc
+- GetPointerPenInfoHistory: input_mouse, strings_misc
+- GetPointerTouchInfo: input_mouse, strings_misc
+- GetPointerTouchInfoHistory: input_mouse, strings_misc
+- GetPointerType: input_mouse, strings_misc
+- GetPriorityClipboardFormat: clipboard, strings_misc
+- GetProcessDefaultLayout: resources_icons, strings_misc, winsta_process
+- GetProcessDpiAwarenessInternal: gap_01, strings_misc
+- GetProcessUIContextInformation: gap_01, strings_misc
+- GetProcessWindowStation: strings_misc, sysparams, winsta_process
+- GetProgmanWindow: misc_ui, strings_misc, winsta_process
+- GetPropA: gap_06, strings_misc, window_class
+- GetPropW: strings_misc, window_class
+- GetQueueStatus: input_kbd, messages, paint_gdi, strings_misc
+- GetRawInputBuffer: input_mouse, strings_misc
+- GetRawInputData: input_mouse, strings_misc
+- GetRawInputDeviceInfoA: input_mouse, strings_misc
+- GetRawInputDeviceInfoW: input_mouse, strings_misc
+- GetRawInputDeviceList: input_mouse, strings_misc
+- GetRawPointerDeviceData: input_mouse, strings_misc
+- GetReasonTitleFromReasonCode: gap_01, strings_misc
+- GetRegisteredRawInputDevices: input_mouse, strings_misc
+- GetScrollBarInfo: controls, strings_misc
+- GetScrollInfo: controls, gap_04, strings_misc
+- GetScrollPos: controls, strings_misc
+- GetScrollRange: controls, strings_misc
+- GetSendMessageReceiver: gap_01, strings_misc
+- GetShellChangeNotifyWindow: strings_misc, winsta_process
+- GetShellWindow: gap_02, gap_04, misc_ui, strings_misc, window_mgmt, winsta_process
+- GetSubMenu: gap_07, menus, misc_ui, strings_misc
+- GetSysColor: dialogs, gap_00, gap_05, gap_07, misc_ui, paint_gdi, strings_misc, sysparams
+- GetSysColorBrush: dialogs, gap_00, misc_ui, paint_gdi, strings_misc, sysparams
+- GetSystemDpiForProcess: gap_01, strings_misc
+- GetSystemMenu: gap_05, menus, strings_misc, window_class
+- GetSystemMetrics: controls, core_smoke, dialogs, gap_00, gap_01, gap_07, input_mouse, menus, misc_ui, paint_gdi, resources_icons, strings_misc, sysparams, window_mgmt, winsta_process
+- GetSystemMetricsForDpi: paint_gdi, resources_icons, strings_misc, sysparams, window_mgmt
+- GetTabbedTextExtentA: paint_gdi, strings_misc
+- GetTabbedTextExtentW: gap_05, gap_07, paint_gdi, strings_misc
+- GetTaskmanWindow: misc_ui, strings_misc, winsta_process
+- GetThreadDesktop: gap_07, strings_misc, sysparams, winsta_process
+- GetThreadDpiAwarenessContext: dialogs, gap_05, misc_ui, paint_gdi, strings_misc, sysparams, window_mgmt
+- GetThreadDpiHostingBehavior: gap_01, gap_02, gap_05, strings_misc
+- GetTitleBarInfo: strings_misc, window_mgmt
+- GetTopLevelWindow: gap_01, strings_misc
+- GetTopWindow: controls, misc_ui, strings_misc, window_mgmt
+- GetTouchInputInfo: input_mouse, strings_misc
+- GetUnpredictedMessagePos: gap_01, strings_misc
+- GetUpdateRect: gap_01, paint_gdi, strings_misc
+- GetUpdateRgn: paint_gdi, strings_misc
+- GetUpdatedClipboardFormats: clipboard, strings_misc
+- GetUserObjectInformationA: strings_misc, sysparams, winsta_process
+- GetUserObjectInformationW: strings_misc, sysparams, winsta_process
+- GetUserObjectSecurity: strings_misc, sysparams, winsta_process
+- GetWinStationInfo: gap_07, strings_misc, winsta_process
+- GetWindow: controls, dialogs, gap_00, misc_ui, strings_misc, window_class, window_mgmt
+- GetWindowBand: gap_02, gap_05, strings_misc
+- GetWindowCompositionAttribute: gap_02, gap_05, strings_misc
+- GetWindowCompositionInfo: gap_02, strings_misc
+- GetWindowContextHelpId: dialogs, misc_ui, strings_misc
+- GetWindowDC: gap_06, paint_gdi, strings_misc
+- GetWindowDisplayAffinity: strings_misc, window_mgmt
+- GetWindowDpiAwarenessContext: misc_ui, paint_gdi, strings_misc, sysparams, window_mgmt
+- GetWindowDpiHostingBehavior: gap_01, gap_02, strings_misc
+- GetWindowFeedbackSetting: input_mouse, strings_misc
+- GetWindowInfo: dialogs, strings_misc, window_mgmt
+- GetWindowLongA: controls, gap_06, messages, misc_ui, strings_misc, window_class, window_mgmt, winsta_process
+- GetWindowLongPtrA: dialogs, messages, misc_ui, strings_misc, window_class, window_mgmt
+- GetWindowLongPtrW: dialogs, gap_00, gap_07, messages, misc_ui, strings_misc, window_class, window_mgmt
+- GetWindowLongW: controls, dialogs, gap_00, gap_07, resources_icons, strings_misc, window_class, window_mgmt
+- GetWindowMinimizeRect: gap_02, strings_misc
+- GetWindowModuleFileName: strings_misc
+- GetWindowModuleFileNameA: misc_ui, strings_misc
+- GetWindowModuleFileNameW: misc_ui, strings_misc
+- GetWindowPlacement: gap_05, paint_gdi, strings_misc, window_mgmt
+- GetWindowProcessHandle: gap_02, strings_misc
+- GetWindowRect: controls, dde_hooks_accel, dialogs, gap_00, gap_01, gap_02, gap_04, gap_05, gap_07, input_mouse, menus, messages, misc_ui, paint_gdi, strings_misc, window_mgmt
+- GetWindowRgn: dialogs, gap_02, gap_05, misc_ui, strings_misc, window_mgmt
+- GetWindowRgnBox: misc_ui, strings_misc, window_mgmt
+- GetWindowRgnEx: gap_02, strings_misc
+- GetWindowTextA: controls, dialogs, gap_00, messages, misc_ui, strings_misc, window_class, window_mgmt
+- GetWindowTextLengthA: dialogs, messages, misc_ui, strings_misc, window_class, window_mgmt
+- GetWindowTextLengthW: dialogs, gap_00, messages, misc_ui, strings_misc, window_class, window_mgmt
+- GetWindowTextW: controls, dialogs, gap_00, gap_07, messages, misc_ui, strings_misc, window_class, window_mgmt
+- GetWindowThreadProcessId: dialogs, gap_01, gap_04, messages, misc_ui, strings_misc, window_mgmt, winsta_process
+- GetWindowWord: misc_ui, strings_misc, window_class
+- GhostWindowFromHungWindow: gap_02, strings_misc
+- GrayStringA: paint_gdi, strings_misc
+- GrayStringW: gap_07, paint_gdi, strings_misc
+- HandleDelegatedInput: gap_02, strings_misc
+- HideCaret: paint_gdi, strings_misc
+- HiliteMenuItem: menus, strings_misc
+- HungWindowFromGhostWindow: gap_02, strings_misc
+- IMPGetIMEA: gap_02, strings_misc
+- IMPGetIMEW: gap_02, strings_misc
+- IMPQueryIMEA: gap_02, strings_misc
+- IMPQueryIMEW: gap_02, strings_misc
+- IMPSetIMEA: gap_02, strings_misc
+- IMPSetIMEW: gap_02, strings_misc
+- ImpersonateDdeClientWindow: dde_hooks_accel, strings_misc
+- InSendMessage: gap_03, messages, strings_misc
+- InSendMessageEx: messages, strings_misc
+- InflateRect: paint_gdi, strings_misc
+- InheritWindowMonitor: gap_02, strings_misc
+- InitDManipHook: gap_02, strings_misc
+- InitializeGenericHidInjection: gap_02, strings_misc
+- InitializeInputDeviceInjection: gap_02, strings_misc
+- InitializeLpkHooks: gap_02, strings_misc
+- InitializePointerDeviceInjection: gap_02, strings_misc
+- InitializePointerDeviceInjectionEx: gap_02, strings_misc
+- InitializeTouchInjection: gap_02, input_mouse, strings_misc
+- InjectDeviceInput: gap_02, strings_misc
+- InjectGenericHidInput: gap_02, strings_misc
+- InjectKeyboardInput: gap_02, strings_misc
+- InjectMouseInput: gap_02, strings_misc
+- InjectPointerInput: gap_02, strings_misc
+- InjectSyntheticPointerInput: gap_02, strings_misc
+- InjectTouchInput: gap_02, strings_misc
+- InputSpaceRegionFromPoint: gap_02, strings_misc
+- InsertMenuA: menus, strings_misc
+- InsertMenuItemA: menus, strings_misc
+- InsertMenuItemW: menus, strings_misc
+- InsertMenuW: menus, strings_misc
+- InternalGetWindowIcon: gap_02, strings_misc
+- InternalGetWindowText: misc_ui, strings_misc, window_mgmt
+- IntersectRect: gap_00, paint_gdi, strings_misc
+- InvalidateRect: gap_01, gap_06, messages, paint_gdi, strings_misc, window_mgmt
+- InvalidateRgn: paint_gdi, strings_misc
+- InvertRect: paint_gdi, strings_misc
+- IsCharAlphaA: strings_misc
+- IsCharAlphaNumericA: strings_misc
+- IsCharAlphaNumericW: strings_misc
+- IsCharAlphaW: strings_misc
+- IsCharLowerA: strings_misc
+- IsCharLowerW: strings_misc
+- IsCharUpperA: strings_misc
+- IsCharUpperW: strings_misc
+- IsChild: dialogs, misc_ui, strings_misc, window_mgmt
+- IsClipboardFormatAvailable: clipboard, gap_07, strings_misc
+- IsDialogMessage: dialogs, gap_07, strings_misc
+- IsDialogMessageA: dialogs, gap_07, strings_misc
+- IsDialogMessageW: dialogs, gap_07, strings_misc
+- IsDlgButtonChecked: controls, dialogs, strings_misc
+- IsGUIThread: gap_05, strings_misc, window_mgmt, winsta_process
+- IsHungAppWindow: strings_misc, window_mgmt, winsta_process
+- IsIconic: controls, dde_hooks_accel, dialogs, menus, misc_ui, strings_misc, window_mgmt
+- IsImmersiveProcess: strings_misc, winsta_process
+- IsInDesktopWindowBand: strings_misc, winsta_process
+- IsMenu: gap_05, gap_07, menus, misc_ui, strings_misc, window_class
+- IsMouseInPointerEnabled: input_mouse, strings_misc
+- IsOneCoreTransformMode: gap_02, strings_misc
+- IsProcessDPIAware: gap_01, paint_gdi, strings_misc, sysparams
+- IsQueueAttached: gap_02, strings_misc
+- IsRectEmpty: paint_gdi, strings_misc
+- IsSETEnabled: gap_02, strings_misc
+- IsServerSideWindow: gap_02, strings_misc
+- IsThreadDesktopComposited: strings_misc, winsta_process
+- IsThreadMessageQueueAttached: gap_02, strings_misc
+- IsThreadTSFEventAware: gap_02, strings_misc
+- IsTopLevelWindow: strings_misc, window_mgmt
+- IsTouchWindow: input_mouse, strings_misc
+- IsValidDpiAwarenessContext: misc_ui, paint_gdi, strings_misc, sysparams, window_mgmt
+- IsWinEventHookInstalled: strings_misc, winsta_process
+- IsWindow: clipboard, controls, dde_hooks_accel, dialogs, gap_00, gap_01, gap_03, gap_05, gap_06, gap_07, menus, messages, misc_ui, strings_misc, window_class, window_mgmt, winsta_process
+- IsWindowArranged: strings_misc, window_mgmt
+- IsWindowEnabled: controls, dialogs, gap_00, messages, misc_ui, strings_misc, window_class, window_mgmt
+- IsWindowInDestroy: gap_02, strings_misc
+- IsWindowRedirectedForPrint: gap_02, strings_misc
+- IsWindowUnicode: controls, dialogs, gap_00, gap_07, messages, misc_ui, strings_misc, window_class, window_mgmt
+- IsWindowVisible: controls, dialogs, gap_00, gap_05, messages, misc_ui, strings_misc, window_class, window_mgmt, winsta_process
+- IsWow64Message: gap_03, strings_misc
+- IsZoomed: controls, dde_hooks_accel, gap_05, menus, misc_ui, strings_misc, window_mgmt
+- KillTimer: dde_hooks_accel, dialogs, menus, messages, strings_misc
+- LoadAcceleratorsA: dde_hooks_accel, input_kbd, strings_misc
+- LoadAcceleratorsW: dde_hooks_accel, input_kbd, strings_misc
+- LoadBitmapA: resources_icons, strings_misc
+- LoadBitmapW: resources_icons, strings_misc
+- LoadCursorA: gap_06, input_mouse, resources_icons, strings_misc, window_class
+- LoadCursorFromFileA: resources_icons, strings_misc
+- LoadCursorFromFileW: resources_icons, strings_misc
+- LoadCursorW: dialogs, gap_01, gap_07, input_mouse, resources_icons, strings_misc
+- LoadIconA: controls, input_mouse, misc_ui, resources_icons, strings_misc, window_class
+- LoadIconW: dialogs, gap_07, messages, paint_gdi, resources_icons, strings_misc
+- LoadImageA: resources_icons, strings_misc
+- LoadImageW: resources_icons, strings_misc
+- LoadKeyboardLayoutA: input_kbd, strings_misc
+- LoadKeyboardLayoutEx: gap_03, strings_misc
+- LoadKeyboardLayoutW: input_kbd, strings_misc
+- LoadMenuA: menus, strings_misc
+- LoadMenuIndirectA: gap_07, menus, strings_misc
+- LoadMenuIndirectW: gap_07, menus, strings_misc
+- LoadMenuW: menus, strings_misc
+- LoadStringA: resources_icons, strings_misc
+- LoadStringW: resources_icons, strings_misc
+- LockSetForegroundWindow: strings_misc, window_mgmt
+- LockWindowStation: gap_07, strings_misc, winsta_process
+- LockWindowUpdate: paint_gdi, strings_misc
+- LogicalToPhysicalPoint: input_mouse, strings_misc
+- LogicalToPhysicalPointForPerMonitorDPI: input_mouse, paint_gdi, strings_misc
+- LookupIconIdFromDirectory: gap_07, resources_icons, strings_misc
+- LookupIconIdFromDirectoryEx: gap_07, resources_icons, strings_misc
+- MBToWCSEx: gap_03, strings_misc
+- MBToWCSExt: gap_03, strings_misc
+- MB_GetString: gap_03, strings_misc
+- MakeThreadTSFEventAware: gap_03, strings_misc
+- MapDialogRect: dialogs, strings_misc
+- MapVirtualKeyA: input_kbd, strings_misc
+- MapVirtualKeyExA: input_kbd, strings_misc
+- MapVirtualKeyExW: input_kbd, strings_misc
+- MapVirtualKeyW: input_kbd, strings_misc
+- MapWindowPoints: dialogs, strings_misc, window_mgmt
+- MenuItemFromPoint: menus, strings_misc
+- MessageBeep: gap_03, strings_misc
+- MessageBoxA: dde_hooks_accel, dialogs, strings_misc
+- MessageBoxExA: dialogs, strings_misc
+- MessageBoxExW: dialogs, strings_misc
+- MessageBoxIndirectA: dialogs, strings_misc
+- MessageBoxIndirectW: dialogs, strings_misc
+- MessageBoxTimeoutA: dialogs, strings_misc
+- MessageBoxTimeoutW: dialogs, strings_misc
+- MessageBoxW: dialogs, strings_misc
+- ModifyMenuA: menus, strings_misc
+- ModifyMenuW: menus, strings_misc
+- MonitorFromPoint: gap_01, paint_gdi, strings_misc, sysparams
+- MonitorFromRect: paint_gdi, strings_misc
+- MonitorFromWindow: dialogs, gap_02, paint_gdi, strings_misc
+- MoveWindow: controls, dde_hooks_accel, dialogs, messages, strings_misc, window_mgmt
+- MsgWaitForMultipleObjects: dde_hooks_accel, dialogs, gap_02, input_kbd, messages, misc_ui, strings_misc, window_mgmt
+- MsgWaitForMultipleObjectsEx: messages, strings_misc
+- NotifyOverlayWindow: gap_03, strings_misc
+- NotifyWinEvent: strings_misc, winsta_process
+- OemKeyScan: input_kbd, strings_misc
+- OemToCharA: strings_misc
+- OemToCharBuffA: strings_misc
+- OemToCharBuffW: strings_misc
+- OemToCharW: strings_misc
+- OffsetRect: misc_ui, paint_gdi, strings_misc
+- OpenClipboard: clipboard, controls, gap_07, strings_misc
+- OpenDesktopA: strings_misc, winsta_process
+- OpenDesktopW: strings_misc, sysparams, winsta_process
+- OpenIcon: misc_ui, strings_misc, window_mgmt
+- OpenInputDesktop: strings_misc, winsta_process
+- OpenThreadDesktop: gap_07, strings_misc, winsta_process
+- OpenWindowStationA: strings_misc, winsta_process
+- OpenWindowStationW: strings_misc, sysparams, winsta_process
+- PackDDElParam: dde_hooks_accel, misc_ui, strings_misc
+- PackTouchHitTestingProximityEvaluation: input_mouse, strings_misc
+- PaintDesktop: paint_gdi, strings_misc
+- PeekMessageA: dde_hooks_accel, dialogs, gap_03, gap_05, input_kbd, input_mouse, messages, misc_ui, paint_gdi, strings_misc, window_mgmt, winsta_process
+- PeekMessageW: dde_hooks_accel, dialogs, gap_07, messages, strings_misc
+- PhysicalToLogicalPoint: input_mouse, strings_misc
+- PhysicalToLogicalPointForPerMonitorDPI: input_mouse, paint_gdi, strings_misc
+- PostMessageA: dde_hooks_accel, dialogs, gap_01, input_kbd, menus, messages, paint_gdi, strings_misc, window_mgmt, winsta_process
+- PostMessageW: dde_hooks_accel, dialogs, gap_07, messages, strings_misc
+- PostQuitMessage: dde_hooks_accel, dialogs, gap_07, messages, strings_misc
+- PostThreadMessageA: dde_hooks_accel, dialogs, gap_05, messages, misc_ui, strings_misc, winsta_process
+- PostThreadMessageW: gap_07, messages, strings_misc, winsta_process
+- PrintWindow: gap_02, misc_ui, strings_misc
+- PrivateExtractIconExA: misc_ui, strings_misc
+- PrivateExtractIconExW: misc_ui, strings_misc
+- PrivateExtractIconsA: misc_ui, strings_misc
+- PrivateExtractIconsW: misc_ui, strings_misc
+- PrivateRegisterICSProc: gap_03, strings_misc
+- PtInRect: paint_gdi, strings_misc
+- QueryDisplayConfig: paint_gdi, strings_misc
+- QuerySendMessage: gap_03, strings_misc
+- RIMReadInput: gap_04, strings_misc
+- RIMRegisterForInput: gap_04, strings_misc
+- RIMRemoveInputObserver: gap_04, strings_misc
+- RIMSetExtendedDeviceProperty: gap_04, strings_misc
+- RIMSetTestModeStatus: gap_04, strings_misc
+- RIMUnregisterForInput: gap_04, strings_misc
+- RIMUpdateInputObserverRegistration: gap_04, strings_misc
+- RealChildWindowFromPoint: strings_misc, window_mgmt
+- RealGetWindowClass: gap_07, strings_misc, window_class
+- RealGetWindowClassA: gap_07, strings_misc, window_class, window_mgmt
+- RealGetWindowClassW: gap_07, strings_misc, window_class, window_mgmt
+- ReasonCodeNeedsBugID: gap_04, strings_misc
+- ReasonCodeNeedsComment: gap_04, strings_misc
+- RecordShutdownReason: gap_04, strings_misc
+- RedrawWindow: dialogs, paint_gdi, strings_misc
+- RegisterBSDRWindow: gap_04, strings_misc
+- RegisterClassA: clipboard, controls, dde_hooks_accel, dialogs, gap_01, gap_03, gap_06, gap_07, input_kbd, input_mouse, menus, paint_gdi, strings_misc, sysparams, window_class, winsta_process
+- RegisterClassExA: gap_02, messages, misc_ui, resources_icons, strings_misc, window_class, window_mgmt
+- RegisterClassExW: gap_07, messages, misc_ui, strings_misc, window_class, window_mgmt
+- RegisterClassW: controls, dde_hooks_accel, dialogs, gap_00, gap_07, strings_misc, window_class
+- RegisterClipboardFormatA: clipboard, gap_07, messages, strings_misc
+- RegisterClipboardFormatW: clipboard, gap_07, messages, strings_misc
+- RegisterDManipHook: gap_04, strings_misc
+- RegisterDeviceNotificationA: strings_misc, winsta_process
+- RegisterDeviceNotificationW: strings_misc, winsta_process
+- RegisterErrorReportingDialog: gap_04, strings_misc
+- RegisterFrostWindow: gap_04, strings_misc
+- RegisterGhostWindow: gap_04, strings_misc
+- RegisterHotKey: dde_hooks_accel, input_kbd, strings_misc
+- RegisterLogonProcess: gap_04, strings_misc
+- RegisterMessagePumpHook: strings_misc, winsta_process
+- RegisterPointerDeviceNotifications: input_mouse, strings_misc
+- RegisterPointerInputTarget: gap_04, strings_misc
+- RegisterPointerInputTargetEx: gap_01, gap_04, gap_05, strings_misc
+- RegisterPowerSettingNotification: strings_misc, winsta_process
+- RegisterRawInputDevices: input_mouse, strings_misc
+- RegisterServicesProcess: gap_04, strings_misc
+- RegisterSessionPort: gap_04, strings_misc
+- RegisterShellHookWindow: strings_misc, winsta_process
+- RegisterSuspendResumeNotification: strings_misc, winsta_process
+- RegisterSystemThread: gap_04, strings_misc
+- RegisterTasklist: gap_04, strings_misc
+- RegisterTouchHitTestingWindow: input_mouse, strings_misc
+- RegisterTouchWindow: input_mouse, strings_misc
+- RegisterUserApiHook: strings_misc, winsta_process
+- RegisterWindowMessageA: clipboard, messages, strings_misc
+- RegisterWindowMessageW: gap_00, gap_07, messages, strings_misc
+- ReleaseCapture: input_mouse, strings_misc, window_mgmt, winsta_process
+- ReleaseDC: clipboard, dialogs, gap_01, gap_06, gap_07, menus, misc_ui, paint_gdi, strings_misc, window_class
+- ReleaseDwmHitTestWaiters: gap_04, strings_misc
+- RemoveClipboardFormatListener: clipboard, gap_07, strings_misc
+- RemoveInjectionDevice: gap_04, strings_misc
+- RemoveMenu: menus, strings_misc
+- RemovePropA: gap_06, strings_misc, window_class
+- RemovePropW: strings_misc, window_class
+- RemoveThreadTSFEventAwareness: gap_04, strings_misc
+- RemoveVisualIdentifier: gap_04, strings_misc
+- ReplyMessage: messages, strings_misc
+- ReportInertia: gap_04, strings_misc
+- ResolveDesktopForWOW: gap_04, strings_misc
+- ReuseDDElParam: dde_hooks_accel, misc_ui, strings_misc
+- ScreenToClient: controls, dialogs, gap_00, gap_05, gap_07, paint_gdi, strings_misc, window_mgmt
+- ScrollChildren: gap_04, strings_misc
+- ScrollDC: paint_gdi, strings_misc
+- ScrollWindow: paint_gdi, strings_misc
+- ScrollWindowEx: paint_gdi, strings_misc
+- SendDlgItemMessageA: dialogs, strings_misc
+- SendDlgItemMessageW: dialogs, strings_misc
+- SendIMEMessageExA: gap_04, strings_misc
+- SendIMEMessageExW: gap_04, strings_misc
+- SendInput: input_kbd, input_mouse, strings_misc
+- SendMessageA: controls, dde_hooks_accel, dialogs, gap_01, gap_02, gap_03, gap_06, gap_07, input_kbd, input_mouse, menus, messages, misc_ui, paint_gdi, strings_misc, window_class, window_mgmt, winsta_process
+- SendMessageCallbackA: gap_07, messages, strings_misc
+- SendMessageCallbackW: gap_07, messages, strings_misc
+- SendMessageTimeoutA: clipboard, dde_hooks_accel, messages, strings_misc
+- SendMessageTimeoutW: messages, strings_misc
+- SendMessageW: controls, dde_hooks_accel, dialogs, gap_07, input_mouse, messages, misc_ui, resources_icons, strings_misc, window_class, window_mgmt
+- SendNotifyMessageA: messages, strings_misc
+- SendNotifyMessageW: messages, strings_misc
+- SetActiveWindow: dde_hooks_accel, dialogs, messages, strings_misc, window_mgmt, winsta_process
+- SetCapture: input_mouse, strings_misc, window_mgmt, winsta_process
+- SetCaretBlinkTime: paint_gdi, strings_misc
+- SetCaretPos: paint_gdi, strings_misc, window_mgmt, winsta_process
+- SetClassLongA: gap_07, strings_misc, window_class
+- SetClassLongPtrA: resources_icons, strings_misc, window_class
+- SetClassLongPtrW: strings_misc, window_class
+- SetClassLongW: gap_07, strings_misc, window_class
+- SetClassWord: strings_misc, window_class
+- SetClipboardData: clipboard, controls, gap_07, strings_misc
+- SetClipboardViewer: clipboard, strings_misc
+- SetCoalescableTimer: dde_hooks_accel, messages, strings_misc
+- SetCoreWindow: gap_04, strings_misc
+- SetCursor: input_mouse, misc_ui, resources_icons, strings_misc
+- SetCursorContents: gap_04, strings_misc
+- SetCursorPos: input_mouse, strings_misc
+- SetDebugErrorLevel: gap_04, strings_misc
+- SetDeskWallpaper: gap_04, strings_misc
+- SetDesktopColorTransform: gap_04, strings_misc
+- SetDialogControlDpiChangeBehavior: gap_01, gap_04, strings_misc
+- SetDialogDpiChangeBehavior: gap_01, gap_04, strings_misc
+- SetDisplayAutoRotationPreferences: gap_04, strings_misc
+- SetDisplayConfig: gap_04, strings_misc
+- SetDlgItemInt: dialogs, strings_misc
+- SetDlgItemTextA: dialogs, strings_misc
+- SetDlgItemTextW: dialogs, strings_misc
+- SetDoubleClickTime: input_mouse, strings_misc, sysparams
+- SetFeatureReportResponse: gap_05, strings_misc
+- SetFocus: dde_hooks_accel, dialogs, input_kbd, messages, strings_misc, window_mgmt, winsta_process
+- SetForegroundWindow: dde_hooks_accel, dialogs, input_kbd, menus, strings_misc, window_mgmt
+- SetFullscreenMagnifierOffsetsDWMUpdated: gap_05, strings_misc
+- SetGestureConfig: input_mouse, strings_misc
+- SetInternalWindowPos: gap_05, strings_misc
+- SetKeyboardState: input_kbd, strings_misc
+- SetLastErrorEx: gap_05, strings_misc
+- SetLayeredWindowAttributes: misc_ui, strings_misc, window_mgmt
+- SetMagnificationDesktopColorEffect: gap_05, strings_misc
+- SetMagnificationDesktopMagnification: gap_05, strings_misc
+- SetMagnificationDesktopMagnifierOffsetsDWMUpdated: gap_05, strings_misc
+- SetMagnificationDesktopSamplingMode: gap_05, strings_misc
+- SetMagnificationLensCtxInformation: gap_05, strings_misc
+- SetMenu: menus, misc_ui, strings_misc
+- SetMenuContextHelpId: menus, misc_ui, strings_misc
+- SetMenuDefaultItem: menus, strings_misc
+- SetMenuInfo: menus, strings_misc
+- SetMenuItemBitmaps: menus, strings_misc
+- SetMenuItemInfoA: menus, strings_misc
+- SetMenuItemInfoW: menus, strings_misc
+- SetMessageExtraInfo: input_mouse, messages, strings_misc
+- SetMessageQueue: gap_05, strings_misc
+- SetMirrorRendering: gap_05, strings_misc
+- SetParent: messages, misc_ui, strings_misc, window_mgmt
+- SetPhysicalCursorPos: input_mouse, strings_misc
+- SetPointerDeviceInputSpace: gap_05, strings_misc
+- SetProcessDPIAware: strings_misc, sysparams
+- SetProcessDefaultLayout: resources_icons, strings_misc, winsta_process
+- SetProcessDpiAwarenessContext: input_mouse, paint_gdi, strings_misc, sysparams
+- SetProcessDpiAwarenessInternal: gap_05, strings_misc
+- SetProcessRestrictionExemption: strings_misc, winsta_process
+- SetProcessWindowStation: strings_misc, winsta_process
+- SetProgmanWindow: strings_misc, winsta_process
+- SetPropA: gap_06, strings_misc, window_class
+- SetPropW: strings_misc, window_class
+- SetRect: paint_gdi, strings_misc, window_mgmt
+- SetRectEmpty: paint_gdi, strings_misc
+- SetScrollInfo: controls, gap_04, strings_misc
+- SetScrollPos: controls, strings_misc
+- SetScrollRange: controls, strings_misc
+- SetShellChangeNotifyWindow: strings_misc, winsta_process
+- SetShellWindow: strings_misc, winsta_process
+- SetShellWindowEx: strings_misc, winsta_process
+- SetSysColors: paint_gdi, strings_misc, sysparams
+- SetSysColorsTemp: gap_05, strings_misc
+- SetSystemCursor: resources_icons, strings_misc
+- SetSystemMenu: gap_05, strings_misc
+- SetTaskmanWindow: strings_misc, winsta_process
+- SetThreadDesktop: strings_misc, winsta_process
+- SetThreadDpiAwarenessContext: dialogs, gap_01, input_mouse, paint_gdi, resources_icons, strings_misc, sysparams, window_mgmt
+- SetThreadDpiHostingBehavior: gap_01, gap_02, gap_05, strings_misc
+- SetThreadInputBlocked: gap_05, strings_misc
+- SetTimer: dde_hooks_accel, dialogs, menus, messages, strings_misc
+- SetUserObjectInformationA: strings_misc, sysparams, winsta_process
+- SetUserObjectInformationW: strings_misc, sysparams, winsta_process
+- SetUserObjectSecurity: strings_misc, sysparams, winsta_process
+- SetWinEventHook: strings_misc, winsta_process
+- SetWindowBand: gap_05, strings_misc
+- SetWindowCompositionAttribute: gap_05, strings_misc
+- SetWindowCompositionTransition: gap_05, strings_misc
+- SetWindowContextHelpId: dialogs, misc_ui, strings_misc
+- SetWindowDisplayAffinity: strings_misc, window_mgmt
+- SetWindowFeedbackSetting: input_mouse, strings_misc
+- SetWindowLongA: controls, messages, misc_ui, strings_misc, window_class, window_mgmt
+- SetWindowLongPtrA: dialogs, messages, misc_ui, strings_misc, window_class, window_mgmt
+- SetWindowLongPtrW: dialogs, gap_07, messages, misc_ui, strings_misc, window_class, window_mgmt
+- SetWindowLongW: dialogs, strings_misc, window_class, window_mgmt
+- SetWindowPlacement: strings_misc, window_mgmt
+- SetWindowPos: dde_hooks_accel, dialogs, messages, misc_ui, strings_misc, window_mgmt
+- SetWindowRgn: gap_02, gap_05, misc_ui, strings_misc, window_mgmt
+- SetWindowRgnEx: gap_05, strings_misc
+- SetWindowStationUser: gap_07, strings_misc, winsta_process
+- SetWindowTextA: controls, dialogs, messages, misc_ui, paint_gdi, strings_misc, window_class, window_mgmt
+- SetWindowTextW: controls, dialogs, gap_07, messages, misc_ui, strings_misc, window_class, window_mgmt
+- SetWindowWord: strings_misc, window_class
+- SetWindowsHookA: dde_hooks_accel, strings_misc, winsta_process
+- SetWindowsHookExA: dde_hooks_accel, gap_05, messages, strings_misc, winsta_process
+- SetWindowsHookExAW: gap_05, strings_misc
+- SetWindowsHookExW: dde_hooks_accel, dialogs, gap_05, gap_07, strings_misc, winsta_process
+- SetWindowsHookW: gap_07, strings_misc, winsta_process
+- ShowCaret: paint_gdi, strings_misc
+- ShowCursor: input_mouse, resources_icons, strings_misc
+- ShowOwnedPopups: strings_misc, window_mgmt
+- ShowScrollBar: controls, strings_misc
+- ShowStartGlass: gap_05, strings_misc
+- ShowSystemCursor: gap_05, strings_misc
+- ShowWindow: controls, dde_hooks_accel, dialogs, gap_00, gap_01, gap_04, gap_05, gap_06, gap_07, input_kbd, input_mouse, menus, messages, misc_ui, paint_gdi, strings_misc, window_class, window_mgmt, winsta_process
+- ShowWindowAsync: strings_misc, window_mgmt
+- ShutdownBlockReasonCreate: misc_ui, strings_misc, winsta_process
+- ShutdownBlockReasonDestroy: misc_ui, strings_misc, winsta_process
+- ShutdownBlockReasonQuery: misc_ui, strings_misc, winsta_process
+- SignalRedirectionStartComplete: gap_05, strings_misc
+- SkipPointerFrameMessages: input_mouse, strings_misc
+- SoftModalMessageBox: gap_05, strings_misc
+- SoundSentry: misc_ui, strings_misc
+- SubtractRect: paint_gdi, strings_misc
+- SwapMouseButton: input_mouse, strings_misc
+- SwitchDesktop: gap_07, strings_misc, winsta_process
+- SwitchDesktopWithFade: gap_07, strings_misc, winsta_process
+- SwitchToThisWindow: strings_misc, window_mgmt
+- SystemParametersInfoA: gap_04, input_mouse, misc_ui, strings_misc, sysparams
+- SystemParametersInfoForDpi: paint_gdi, strings_misc, sysparams
+- SystemParametersInfoW: dialogs, gap_00, misc_ui, paint_gdi, resources_icons, strings_misc, sysparams
+- TabbedTextOutA: gap_02, gap_07, paint_gdi, strings_misc
+- TabbedTextOutW: gap_07, paint_gdi, strings_misc
+- TileChildWindows: gap_05, strings_misc
+- TileWindows: controls, gap_05, strings_misc, window_mgmt
+- ToAscii: input_kbd, strings_misc
+- ToAsciiEx: input_kbd, strings_misc
+- ToUnicode: input_kbd, strings_misc
+- ToUnicodeEx: input_kbd, strings_misc
+- TrackMouseEvent: input_mouse, strings_misc
+- TrackPopupMenu: dde_hooks_accel, menus, strings_misc
+- TrackPopupMenuEx: menus, strings_misc
+- TranslateAccelerator: dde_hooks_accel, input_kbd, strings_misc
+- TranslateAcceleratorA: dde_hooks_accel, input_kbd, strings_misc
+- TranslateAcceleratorW: dde_hooks_accel, input_kbd, strings_misc
+- TranslateMDISysAccel: controls, strings_misc
+- TranslateMessage: dde_hooks_accel, dialogs, gap_03, gap_05, input_kbd, input_mouse, messages, misc_ui, strings_misc, window_mgmt
+- TranslateMessageEx: gap_05, strings_misc
+- UndelegateInput: gap_05, strings_misc
+- UnhookWinEvent: strings_misc, winsta_process
+- UnhookWindowsHook: dde_hooks_accel, strings_misc, winsta_process
+- UnhookWindowsHookEx: dde_hooks_accel, dialogs, gap_05, gap_07, messages, strings_misc, winsta_process
+- UnionRect: paint_gdi, strings_misc, sysparams
+- UnloadKeyboardLayout: input_kbd, strings_misc
+- UnlockWindowStation: gap_07, strings_misc, winsta_process
+- UnpackDDElParam: dde_hooks_accel, misc_ui, strings_misc
+- UnregisterClassA: dde_hooks_accel, dialogs, gap_01, gap_02, gap_03, gap_06, misc_ui, paint_gdi, resources_icons, strings_misc, sysparams, window_class, window_mgmt
+- UnregisterClassW: dde_hooks_accel, gap_07, misc_ui, strings_misc, window_class
+- UnregisterDeviceNotification: strings_misc, winsta_process
+- UnregisterHotKey: dde_hooks_accel, input_kbd, strings_misc
+- UnregisterMessagePumpHook: strings_misc, winsta_process
+- UnregisterPointerInputTarget: gap_05, strings_misc
+- UnregisterPointerInputTargetEx: gap_01, gap_04, gap_05, strings_misc
+- UnregisterPowerSettingNotification: strings_misc, winsta_process
+- UnregisterSessionPort: gap_05, strings_misc
+- UnregisterSuspendResumeNotification: strings_misc, winsta_process
+- UnregisterTouchWindow: input_mouse, strings_misc
+- UnregisterUserApiHook: strings_misc, winsta_process
+- UpdateDefaultDesktopThumbnail: gap_07, strings_misc, winsta_process
+- UpdateLayeredWindow: strings_misc, window_mgmt
+- UpdateLayeredWindowIndirect: strings_misc, window_mgmt
+- UpdatePerUserSystemParameters: gap_05, strings_misc
+- UpdateWindow: controls, dialogs, gap_06, paint_gdi, strings_misc, window_mgmt
+- UpdateWindowInputSinkHints: gap_05, strings_misc
+- User32InitializeImmEntryTable: gap_05, strings_misc
+- UserClientDllInitialize: gap_05, strings_misc
+- UserHandleGrantAccess: strings_misc, winsta_process
+- UserLpkPSMTextOut: gap_05, strings_misc
+- UserLpkTabbedTextOut: gap_05, strings_misc
+- UserRealizePalette: gap_05, strings_misc
+- UserRegisterWowHandlers: gap_05, strings_misc
+- VRipOutput: gap_06, strings_misc
+- VTagOutput: gap_06, strings_misc
+- ValidateRect: gap_01, paint_gdi, strings_misc
+- ValidateRgn: paint_gdi, strings_misc
+- VkKeyScanA: input_kbd, strings_misc
+- VkKeyScanExA: input_kbd, strings_misc
+- VkKeyScanExW: input_kbd, strings_misc
+- VkKeyScanW: input_kbd, strings_misc
+- WCSToMBEx: gap_06, strings_misc
+- WINNLSEnableIME: gap_06, strings_misc
+- WINNLSGetEnableStatus: gap_06, strings_misc
+- WINNLSGetIMEHotkey: gap_06, strings_misc
+- WaitForInputIdle: gap_06, strings_misc
+- WaitForRedirectionStartComplete: gap_06, strings_misc
+- WaitMessage: messages, strings_misc
+- WinHelpA: gap_07, misc_ui, strings_misc
+- WinHelpW: gap_07, misc_ui, strings_misc
+- WindowFromDC: gap_06, strings_misc
+- WindowFromPhysicalPoint: input_mouse, strings_misc
+- WindowFromPoint: input_mouse, strings_misc, window_mgmt
+- _UserTestTokenForInteractive: gap_06, strings_misc
+- gSharedInfo: gap_06, strings_misc
+- gapfnScSendMessage: gap_06, strings_misc
+- keybd_event: input_kbd, strings_misc
+- mouse_event: input_mouse, strings_misc
+- wsprintfA: controls, dialogs, gap_01, gap_06, input_kbd, menus, strings_misc, window_mgmt
+- wsprintfW: clipboard, dialogs, gap_07, menus, misc_ui, resources_icons, strings_misc, window_class
+- wvsprintfA: strings_misc
+- wvsprintfW: strings_misc

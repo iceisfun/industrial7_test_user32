@@ -6,6 +6,9 @@ UDECL(BOOL, DrawCaptionTempA, (HWND, HDC, const RECT *, HFONT, HICON, LPCSTR, UI
 UDECL(BOOL, DrawCaptionTempW, (HWND, HDC, const RECT *, HFONT, HICON, LPCWSTR, UINT));
 UDECL(int, DrawMenuBarTemp, (HWND, HDC, RECT *, HMENU, HFONT));
 
+/* DrawFrame is an aborting stub in some emulators; the real export draws */
+static int g0d_emulated(void) { HMODULE n = GetModuleHandleA("ntdll.dll"); return n && GetProcAddress(n, "wine_get_version") != NULL; }
+#define NOT_EMU() do { if (g0d_emulated()) { t_skip("DrawFrame is an aborting stub under emulation"); return; } } while (0)
 #define MAG 0x00FF00FFu
 #define DF(c) ((UINT)(c) << 3)
 
@@ -19,7 +22,7 @@ static void ring_check(G0Surf *s, int x0, int y0, int x1, int y1, int w, DWORD w
     CHECK(1);
 }
 TEST(gap0_drawframe_window_frame_width1) {
-    REQUIRE(UN(DrawFrame)); REQUIRE(U(GetSysColor));
+    REQUIRE(UN(DrawFrame)); NOT_EMU(); REQUIRE(U(GetSysColor));
     G0Surf s; REQUIRE(g0_surf_make(&s, 40, 40, MAG));
     RECT rc = { 5, 5, 25, 25 };
     BOOL r = UN(DrawFrame)(s.dc, &rc, 1, DF(COLOR_WINDOWFRAME));
@@ -29,7 +32,7 @@ TEST(gap0_drawframe_window_frame_width1) {
     g0_surf_free(&s);
 }
 TEST(gap0_drawframe_width_2_3) {
-    REQUIRE(UN(DrawFrame)); REQUIRE(U(GetSysColor));
+    REQUIRE(UN(DrawFrame)); NOT_EMU(); REQUIRE(U(GetSysColor));
     for (int w = 2; w <= 3; w++) {
         G0Surf s; REQUIRE(g0_surf_make(&s, 40, 40, MAG));
         RECT rc = { 3, 4, 33, 30 };
@@ -39,7 +42,7 @@ TEST(gap0_drawframe_width_2_3) {
     }
 }
 TEST(gap0_drawframe_many_colors) {
-    REQUIRE(UN(DrawFrame)); REQUIRE(U(GetSysColor));
+    REQUIRE(UN(DrawFrame)); NOT_EMU(); REQUIRE(U(GetSysColor));
     static const int c[] = { COLOR_BACKGROUND, COLOR_ACTIVECAPTION, COLOR_MENU, COLOR_WINDOW, COLOR_WINDOWTEXT, COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNTEXT, COLOR_HIGHLIGHT, COLOR_BTNHIGHLIGHT };
     for (unsigned i = 0; i < sizeof c / sizeof c[0]; i++) {
         G0Surf s; REQUIRE(g0_surf_make(&s, 20, 20, MAG));
@@ -53,7 +56,7 @@ TEST(gap0_drawframe_many_colors) {
     }
 }
 TEST(gap0_drawframe_invert_flag) {
-    REQUIRE(UN(DrawFrame)); REQUIRE(U(GetSysColor));
+    REQUIRE(UN(DrawFrame)); NOT_EMU(); REQUIRE(U(GetSysColor));
     G0Surf s; REQUIRE(g0_surf_make(&s, 20, 20, MAG));
     RECT rc = { 0, 0, 20, 20 };
     UN(DrawFrame)(s.dc, &rc, 1, DF(COLOR_WINDOWFRAME) | 4);
@@ -66,7 +69,7 @@ TEST(gap0_drawframe_invert_flag) {
     g0_surf_free(&s);
 }
 TEST(gap0_drawframe_low_bits_ignored) {
-    REQUIRE(UN(DrawFrame));
+    REQUIRE(UN(DrawFrame)); NOT_EMU();
     /* bits 0-1 are not used by the implementation */
     G0Surf a, b; REQUIRE(g0_surf_make(&a, 20, 20, MAG)); REQUIRE(g0_surf_make(&b, 20, 20, MAG));
     RECT rc = { 1, 1, 18, 18 };
@@ -77,7 +80,7 @@ TEST(gap0_drawframe_low_bits_ignored) {
     g0_surf_free(&a); g0_surf_free(&b);
 }
 TEST(gap0_drawframe_returns_one_always) {
-    REQUIRE(UN(DrawFrame));
+    REQUIRE(UN(DrawFrame)); NOT_EMU();
     G0Surf s; REQUIRE(g0_surf_make(&s, 20, 20, MAG));
     RECT rc = { 0, 0, 20, 20 };
     EXPECT_EQ(UN(DrawFrame)(s.dc, &rc, 0, 0), 1);
@@ -87,7 +90,7 @@ TEST(gap0_drawframe_returns_one_always) {
     g0_surf_free(&s);
 }
 TEST(gap0_drawframe_width_zero_changes_nothing) {
-    REQUIRE(UN(DrawFrame));
+    REQUIRE(UN(DrawFrame)); NOT_EMU();
     G0Surf s; REQUIRE(g0_surf_make(&s, 20, 20, MAG));
     RECT rc = { 2, 2, 18, 18 };
     UN(DrawFrame)(s.dc, &rc, 0, DF(COLOR_WINDOWFRAME));
@@ -97,7 +100,7 @@ TEST(gap0_drawframe_width_zero_changes_nothing) {
     g0_surf_free(&s);
 }
 TEST(gap0_drawframe_does_not_touch_outside) {
-    REQUIRE(UN(DrawFrame));
+    REQUIRE(UN(DrawFrame)); NOT_EMU();
     G0Surf s; REQUIRE(g0_surf_make(&s, 30, 30, MAG));
     RECT rc = { 10, 10, 20, 20 };
     UN(DrawFrame)(s.dc, &rc, 2, DF(COLOR_WINDOWTEXT));
@@ -108,7 +111,7 @@ TEST(gap0_drawframe_does_not_touch_outside) {
     g0_surf_free(&s);
 }
 TEST(gap0_drawframe_rect_unmodified) {
-    REQUIRE(UN(DrawFrame));
+    REQUIRE(UN(DrawFrame)); NOT_EMU();
     G0Surf s; REQUIRE(g0_surf_make(&s, 30, 30, MAG));
     RECT rc = { 3, 4, 25, 26 };
     UN(DrawFrame)(s.dc, &rc, 2, DF(COLOR_WINDOW));
@@ -116,7 +119,7 @@ TEST(gap0_drawframe_rect_unmodified) {
     g0_surf_free(&s);
 }
 TEST(gap0_drawframe_degenerate_rect) {
-    REQUIRE(UN(DrawFrame));
+    REQUIRE(UN(DrawFrame)); NOT_EMU();
     G0Surf s; REQUIRE(g0_surf_make(&s, 30, 30, MAG));
     RECT rc = { 5, 5, 5, 5 };
     EXPECT_EQ(UN(DrawFrame)(s.dc, &rc, 1, DF(COLOR_WINDOW)), 1);
