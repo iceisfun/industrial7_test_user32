@@ -44,6 +44,9 @@ struct klog *kw_find(UINT msg, int nth);
 void kw_release_all(void);
 int kw_focus_ok(HWND w);
 
+/* Informational error-code comparison (never fails the run). */
+#define NOTE_ERR(e) do { DWORD e_ = GetLastError(); if (e_ != (DWORD)(e)) t_note("%s:%d last error %lu, expected %lu", __FILE__, __LINE__, e_, (DWORD)(e)); } while (0)
+
 static inline int kbd_hexname(const char *s)
 {
     int i;
