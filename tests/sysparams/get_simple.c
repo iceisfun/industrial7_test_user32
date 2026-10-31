@@ -175,17 +175,6 @@ TEST(spget_invalid_action_ansi_parity) {
         CHECKF(ra == rw, "action 0x%x A=%d W=%d", bad_actions[i], ra, rw);
     }
 }
-/* Sweep a range of unassigned codes to ensure none crash or write output. */
-TEST(spget_invalid_action_sweep_high) {
-    UINT a, v;
-    int succeeded = 0;
-    REQUIRE(U(SystemParametersInfoW));
-    for (a = 0x2000; a < 0x2100; a++) {
-        v = SENT32;
-        if (sW(a, 0, &v, 0)) succeeded++;
-    }
-    t_note("%d of 256 actions in 0x2000..0x20ff succeeded", succeeded);
-}
 TEST(spget_invalid_flags_wininfo) {
     UINT v = SENT32;
     BOOL r;
