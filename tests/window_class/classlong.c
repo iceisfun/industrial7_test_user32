@@ -256,6 +256,7 @@ TEST(window_class_extra_out_of_range) {
 TEST(window_class_extra_none) {
     REQUIRE(U(GetClassLongA)); REQUIRE(U(SetClassLongA)); REQUIRE(U(GetClassWord));
     struct fx f; CHECK(fx_make(&f, 0, 0, 0, NULL));
+    if (wc_is_wine()) { fx_free(&f); t_skip("wine corrupts server state on class extra access without extra bytes"); return; }
     SetLastError(MAGIC_ERR);
     CHECK(U(GetClassLongA)(f.h, 0) == 0);
     EXPECT_LAST_ERR(ERR_INVALID_INDEX);
