@@ -72,6 +72,11 @@ static HDDEDATA CALLBACK srv_cb(UINT t, UINT f, HCONV c, HSZ h1, HSZ h2, HDDEDAT
     case XTYP_ADVSTART: return (HDDEDATA)(ULONG_PTR)(s_advstart_ok ? 1 : 0);
     case XTYP_ADVREQ: { char b[32]; sprintf(b, "adv%d", ++s_advreq_n); return mkdata(g_srv, b, h2, f); }
     case XTYP_DISCONNECT: return NULL;
+    case XTYP_WILDCONNECT: {
+        HSZPAIR pr[2];
+        pr[0].hszSvc = g_hsvc; pr[0].hszTopic = g_htop; pr[1].hszSvc = NULL; pr[1].hszTopic = NULL;
+        return U(DdeCreateDataHandle)(g_srv, (LPBYTE)pr, sizeof pr, 0, NULL, 0, 0);
+    }
     }
     return NULL;
 }
@@ -932,6 +937,54 @@ TEST(ddeconv_service_name_instance_specific) {
         U(DdeQueryStringA)(g_cli, ci.hszSvcPartner, buf, sizeof buf, CP_WINANSI);
         t_note("hszSvcPartner = \"%s\"", buf);
         U(DdeDisconnect)(c);
+    }
+    teardown();
+}
+
+TEST(ddeconv_wildcard_service) {
+    SETUP(0, 0, 0);
+    HCONV c = U(DdeConnect)(g_cli, NULL, g_htop, NULL);
+    t_note("wildcard-service connect -> %p, XTYP_WILDCONNECT events %d", c, count_ev(0, XTYP_WILDCONNECT));
+    CHECK(count_ev(0, XTYP_WILDCONNECT) >= 1);
+    EV *e = find_ev(0, XTYP_WILDCONNECT, 0);
+    if (e) { EQ(e->s2[0], 0); EXPECT_STR(e->s1, TOP); }
+    CHECK(c != NULL);
+    if (c) {
+        CONVINFO ci; memset(&ci, 0, sizeof ci); ci.cb = sizeof ci;
+        CHECK(U(DdeQueryConvInfo)(c, QID_SYNC, &ci));
+        EQ(ci.hszTopic, g_htop);
+        U(DdeDisconnect)(c);
+    }
+    teardown();
+}
+TEST(ddeconv_wildcard_topic) {
+    SETUP(0, 0, 0);
+    HCONV c = U(DdeConnect)(g_cli, g_hsvc, NULL, NULL);
+    t_note("wildcard-topic connect -> %p, XTYP_WILDCONNECT events %d", c, count_ev(0, XTYP_WILDCONNECT));
+    CHECK(count_ev(0, XTYP_WILDCONNECT) >= 1);
+    if (c) U(DdeDisconnect)(c);
+    teardown();
+}
+TEST(ddeconv_connectlist_two_servers) {
+    SETUP(0, 0, 0);
+    DWORD srv2 = 0;
+    CHECK(U(DdeInitializeA)(&srv2, srv_cb, 0, 0) == 0);
+    if (srv2) {
+        EQ(U(DdeNameService)(srv2, g_hsvc, NULL, DNS_REGISTER), (HDDEDATA)1);
+        dh_sleep_pump(50);
+        HCONVLIST l = U(DdeConnectList)(g_cli, g_hsvc, g_htop, NULL, NULL);
+        CHECK(l != NULL);
+        if (l) {
+            int n = 0;
+            HCONV c = NULL;
+            while ((c = U(DdeQueryNextServer)(l, c)) != NULL && n < 5) n++;
+            t_note("conversations in list: %d", n);
+            EQ(n, 2);
+            EQ(U(DdeDisconnectList)(l), TRUE);
+        }
+        dh_sleep_pump(50);
+        U(DdeNameService)(srv2, NULL, NULL, DNS_UNREGISTER);
+        U(DdeUninitialize)(srv2);
     }
     teardown();
 }
