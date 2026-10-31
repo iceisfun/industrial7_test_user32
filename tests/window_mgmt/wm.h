@@ -30,6 +30,9 @@ void wm_logclear(void);
 int  wm_logcount(UINT msg);
 int  wm_lognth(int n, UINT *msg, WPARAM *w, LPARAM *l);
 int  wm_logtotal(void);
+HWND wm_loghwnd(int n);
+int  wm_logcount_h(UINT msg, HWND h);
+int  wm_logfind_h(UINT msg, HWND h, int from);
 /* index of first occurrence of msg at or after 'from' or -1 */
 int  wm_logfind(UINT msg, int from);
 
