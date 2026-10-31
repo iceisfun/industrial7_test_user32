@@ -234,7 +234,7 @@ TEST(window_class_prop_not_inherited_by_child) {
 /* ---------- atoms ---------- */
 
 TEST(window_class_prop_global_atom_roundtrip) {
-    REQUIRE(U(SetPropA)); REQUIRE(U(GetPropA)); REQUIRE(U(RemovePropA));
+    REQUIRE(U(GetPropW)); REQUIRE(U(SetPropA)); REQUIRE(U(GetPropA)); REQUIRE(U(RemovePropA));
     struct pfx f; CHECK(pfx_make(&f));
     char n[64]; uprop(n, sizeof n, "wcPropAtom");
     ATOM a = GlobalAddAtomA(n);
@@ -246,7 +246,7 @@ TEST(window_class_prop_global_atom_roundtrip) {
     EQ(U(GetPropA)(f.h, MAKEINTATOM(a)), 0xA8);
     WCHAR w[64]; wc_widen(w, n);
     EQ(U(GetPropW)(f.h, w), 0xA8);
-    EQ(U(GetPropW)(f.h, MAKEINTATOM(a)), 0xA8);
+    EQ(U(GetPropW)(f.h, (LPCWSTR)MAKEINTATOM(a)), 0xA8);
     EQ(U(RemovePropA)(f.h, MAKEINTATOM(a)), 0xA8);
     EQ(U(GetPropA)(f.h, n), 0);
     pfx_free(&f);
