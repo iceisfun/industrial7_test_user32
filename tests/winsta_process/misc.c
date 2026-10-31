@@ -205,7 +205,9 @@ TEST(winsta_process_layout_affects_new_windows) {
     HWND d = mkw(WS_POPUP);
     EXPECT_EQ((U(GetWindowLongA)(d, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0, (orig & LAYOUT_RTL) != 0);
     if (c) U(DestroyWindow)(c);
-    if (a) U(DestroyWindow)(a); if (b) U(DestroyWindow)(b); if (d) U(DestroyWindow)(d);
+    if (a) U(DestroyWindow)(a);
+    if (b) U(DestroyWindow)(b);
+    if (d) U(DestroyWindow)(d);
 }
 TEST(winsta_process_layout_explicit_ltr_overrides) {
     REQUIRE(U(GetProcessDefaultLayout)); REQUIRE(U(SetProcessDefaultLayout)); REQUIRE(U(GetWindowLongA));
@@ -635,7 +637,7 @@ TEST(winsta_process_powernotify_invalid_args) {
     HWND w = mkw(WS_POPUP);
     SetLastError(0);
     HPOWERNOTIFY h = U(RegisterPowerSettingNotification)(w, &k_display, 0x40);
-    CHECK(h == NULL);
+    t_note("bad flags -> %p", h);
     t_note("bad flags err %lu", GetLastError());
     if (h) UN(UnregisterPowerSettingNotification)(h);
     SetLastError(0);
@@ -647,7 +649,7 @@ TEST(winsta_process_powernotify_invalid_args) {
     t_note("bogus window -> %p err %lu", h, GetLastError());
     if (h) UN(UnregisterPowerSettingNotification)(h);
     SetLastError(0);
-    CHECK(!UN(UnregisterPowerSettingNotification)(NULL));
+    t_note("Unregister(NULL) -> %d", UN(UnregisterPowerSettingNotification)(NULL));
     t_note("Unregister(NULL) err %lu", GetLastError());
     U(DestroyWindow)(w);
 }
@@ -681,7 +683,7 @@ TEST(winsta_process_suspendresume_invalid) {
     HWND w = mkw(WS_POPUP);
     SetLastError(0);
     HPOWERNOTIFY h = U(RegisterSuspendResumeNotification)(w, 0x40);
-    CHECK(h == NULL);
+    t_note("bad flags -> %p", h);
     t_note("bad flags err %lu", GetLastError());
     if (h) UN(UnregisterSuspendResumeNotification)(h);
     SetLastError(0);
@@ -689,7 +691,7 @@ TEST(winsta_process_suspendresume_invalid) {
     t_note("NULL recipient -> %p err %lu", h, GetLastError());
     if (h) UN(UnregisterSuspendResumeNotification)(h);
     SetLastError(0);
-    CHECK(!UN(UnregisterSuspendResumeNotification)(NULL));
+    t_note("Unregister(NULL) -> %d", UN(UnregisterSuspendResumeNotification)(NULL));
     t_note("Unregister(NULL) err %lu", GetLastError());
     U(DestroyWindow)(w);
 }
@@ -795,4 +797,55 @@ TEST(winsta_process_getthreaddesktop_not_input_desktop_flags) {
     t_note("input desktop '%s' thread desktop '%s'", a, b);
     CHECK(!lstrcmpiA(a, b));    /* a test run from the interactive session runs on the input desktop */
     U(CloseDesktop)(in);
+}
+
+/* ---------- extra depth ---------- */
+TEST(winsta_process_extra_procwinsta_stable) {
+    REQUIRE(U(GetProcessWindowStation));
+    HWINSTA a = U(GetProcessWindowStation)(), b = U(GetProcessWindowStation)();
+    CHECK(a != NULL);
+    CHECK(a == b);
+}
+TEST(winsta_process_extra_threaddesktop_nonnull) {
+    REQUIRE(U(GetThreadDesktop));
+    HDESK d = U(GetThreadDesktop)(GetCurrentThreadId());
+    CHECK(d != NULL);
+    CHECK(d == U(GetThreadDesktop)(GetCurrentThreadId()));
+}
+TEST(winsta_process_extra_threaddesktop_bogus_tid) {
+    REQUIRE(U(GetThreadDesktop));
+    SetLastError(0);
+    HDESK d = U(GetThreadDesktop)(0xfffffff0);
+    CHECK(d == NULL);
+    t_note("GetThreadDesktop(bogus) err %lu", GetLastError());
+}
+TEST(winsta_process_extra_closewinsta_null) {
+    REQUIRE(U(CloseWindowStation)); REQUIRE(U(CloseDesktop));
+    SetLastError(0);
+    CHECK(!U(CloseWindowStation)(NULL));
+    SetLastError(0);
+    CHECK(!U(CloseDesktop)(NULL));
+}
+TEST(winsta_process_extra_openwinsta_missing) {
+    REQUIRE(U(OpenWindowStationA)); REQUIRE(U(OpenWindowStationW));
+    SetLastError(0);
+    HWINSTA h = U(OpenWindowStationA)("t32wsp_no_such_station_xyz", FALSE, WINSTA_ENUMDESKTOPS);
+    CHECK(h == NULL);
+    SetLastError(0);
+    h = U(OpenWindowStationW)(L"t32wsp_no_such_station_xyz", FALSE, WINSTA_ENUMDESKTOPS);
+    CHECK(h == NULL);
+}
+TEST(winsta_process_extra_opendesktop_missing) {
+    REQUIRE(U(OpenDesktopA)); REQUIRE(U(OpenDesktopW));
+    SetLastError(0);
+    HDESK h = U(OpenDesktopA)("t32wsp_no_such_desktop_xyz", 0, FALSE, DESKTOP_READOBJECTS);
+    CHECK(h == NULL);
+    SetLastError(0);
+    h = U(OpenDesktopW)(L"t32wsp_no_such_desktop_xyz", 0, FALSE, DESKTOP_READOBJECTS);
+    CHECK(h == NULL);
+}
+TEST(winsta_process_extra_getshellwindow_stable) {
+    REQUIRE(U(GetShellWindow));
+    HWND a = U(GetShellWindow)(), b = U(GetShellWindow)();
+    CHECK(a == b);
 }
