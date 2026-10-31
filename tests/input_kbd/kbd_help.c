@@ -7,6 +7,7 @@ static unsigned char g_held[256];
 static const char *g_kcls = "T32KbdWnd";
 static int g_cls_done;
 static int g_probe_state; /* 0 unknown, 1 ok, -1 failed */
+static HWND g_guard;
 
 static int is_logged(UINT m)
 {
@@ -23,6 +24,7 @@ static LRESULT CALLBACK kproc(HWND h, UINT m, WPARAM w, LPARAM l)
             if (gs) gs(&s);
             e->msg = m; e->wp = w; e->lp = l; e->dev = s.deviceType; e->org = s.originId;
             e->tick = GetTickCount();
+            e->extra = U(GetMessageExtraInfo) ? (LPARAM)U(GetMessageExtraInfo)() : 0;
         }
         /* Deliberately no DefWindowProc for key traffic: avoids menu-mode and
          * system-key side effects. */
@@ -93,6 +95,7 @@ UINT kw_key(WORD vk, WORD scan, DWORD flags)
 {
     INPUT in;
     UINT r;
+    if (!(flags & KEYEVENTF_KEYUP) && g_guard && !kw_focus_ok(g_guard)) return 0;
     memset(&in, 0, sizeof in);
     in.type = INPUT_KEYBOARD;
     in.ki.wVk = vk; in.ki.wScan = scan; in.ki.dwFlags = flags;
@@ -131,6 +134,19 @@ struct klog *kw_find(UINT msg, int nth)
     return NULL;
 }
 
+/* Drain until the queue has been quiet for a while (late deliveries of earlier injections). */
+static void kw_settle(void)
+{
+    DWORD end = GetTickCount() + 1200;
+    int last = -1;
+    DWORD quiet = GetTickCount();
+    while ((LONG)(GetTickCount() - end) < 0) {
+        kw_pump(30, 100000, 0);
+        if (g_nklog != last) { last = g_nklog; quiet = GetTickCount(); }
+        else if (GetTickCount() - quiet > 150) break;
+    }
+}
+
 HWND kw_begin(void)
 {
     HWND w;
@@ -151,20 +167,24 @@ HWND kw_begin(void)
         U(SetFocus)(w);
     }
     if (!kw_focus_ok(w)) {
+        g_guard = NULL;
         U(DestroyWindow)(w);
         t_skip("window cannot become foreground");
         return NULL;
     }
+    kw_settle();
     kw_clear();
+    g_guard = w;
     if (g_probe_state == 0) {
         /* Probe: VK_F13 must arrive as WM_KEYDOWN/UP in our window. */
         kw_down(VK_F13); kw_up(VK_F13);
         kw_pump(1500, 2, 0);
         g_probe_state = (kw_count(WM_KEYDOWN) == 1 && kw_count(WM_KEYUP) == 1) ? 1 : -1;
         kw_release_all();
-        kw_pump(50, 1000, 0);
+        kw_settle();
         kw_clear();
         if (g_probe_state < 0) {
+            g_guard = NULL;
             U(DestroyWindow)(w);
             t_skip("probe key was not delivered; injection unavailable");
             return NULL;
@@ -176,7 +196,8 @@ HWND kw_begin(void)
 void kw_end(HWND w)
 {
     kw_release_all();
-    kw_pump(60, 1000, 0);
+    g_guard = NULL;
+    kw_settle();
     if (w) U(DestroyWindow)(w);
     kw_pump(10, 1000, 0);
     kw_clear();
@@ -210,4 +231,14 @@ void kbd_us_release(void)
     if (--g_us_refs) return;
     if (g_us_loaded_by_us && ul && g_us_hkl) ul(g_us_hkl);
     g_us_loaded_by_us = 0; g_us_hkl = NULL;
+}
+
+UINT kw_input(const INPUT *in, UINT n)
+{
+    UINT i;
+    if (g_guard && !kw_focus_ok(g_guard)) return 0;
+    for (i = 0; i < n; i++)
+        if (in[i].type == INPUT_KEYBOARD && !(in[i].ki.dwFlags & (KEYEVENTF_UNICODE | KEYEVENTF_SCANCODE)) && in[i].ki.wVk < 256)
+            g_held[in[i].ki.wVk] = (in[i].ki.dwFlags & KEYEVENTF_KEYUP) ? 0 : 1;
+    return U(SendInput)(n, (INPUT *)in, sizeof(INPUT));
 }

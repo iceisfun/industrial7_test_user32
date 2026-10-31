@@ -10,6 +10,7 @@ struct klog {
     UINT msg; WPARAM wp; LPARAM lp;
     DWORD dev, org;   /* GetCurrentInputMessageSource at delivery */
     DWORD tick;
+    LPARAM extra;
 };
 #define KLOG_MAX 512
 extern struct klog g_klog[KLOG_MAX];
@@ -36,6 +37,7 @@ void kw_pump(int ms, int want, int xlat);
 void kw_clear(void);
 /* Send one key event through SendInput. Returns the SendInput result. */
 UINT kw_key(WORD vk, WORD scan, DWORD flags);
+UINT kw_input(const INPUT *in, UINT n);
 UINT kw_down(WORD vk);
 UINT kw_up(WORD vk);
 int kw_count(UINT msg);

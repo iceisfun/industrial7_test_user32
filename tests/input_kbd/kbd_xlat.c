@@ -436,3 +436,123 @@ TEST(input_kbd_toascii_matches_tounicode_ascii) {
         }
     CHECKF(bad == 0, "%d differences", bad);
 }
+
+/* ---- dead keys (US-International layout, explicit HKL, no activation) ---- */
+static int g_intl_loaded_by_us;
+static HKL intl_acquire(void)
+{
+    HKL list[64], h;
+    int n, i, had = 0;
+    n = U(GetKeyboardLayoutList)(64, list);
+    h = U(LoadKeyboardLayoutW)(L"00020409", 0);
+    if (!h) return NULL;
+    for (i = 0; i < n; i++) if (list[i] == h) had = 1;
+    g_intl_loaded_by_us = !had;
+    return h;
+}
+static void intl_release(HKL h)
+{
+    if (g_intl_loaded_by_us && h && U(UnloadKeyboardLayout)) U(UnloadKeyboardLayout)(h);
+    g_intl_loaded_by_us = 0;
+}
+static void flush_dead(HKL h)
+{
+    BYTE st[256] = {0};
+    WCHAR w[4];
+    U(ToUnicodeEx)(VK_SPACE, 0x39, st, w, 4, 0, h);
+}
+#define DKREQ REQUIRE(U(ToUnicodeEx)); REQUIRE(U(LoadKeyboardLayoutW)); REQUIRE(U(GetKeyboardLayoutList)); REQUIRE(U(UnloadKeyboardLayout))
+
+TEST(input_kbd_tounicode_dead_key_returns_negative) {
+    HKL h;
+    DKREQ;
+    h = intl_acquire();
+    if (!h) { t_skip("US-International layout unavailable"); return; }
+    {
+        WCHAR w[4];
+        int r = tu(h, VK_OEM_7, 0, w);
+        CHECKF(r < 0, "dead key returned %d", r);
+        t_note("dead acute spacing char U+%04X", w[0]);
+        flush_dead(h);
+    }
+    intl_release(h);
+}
+TEST(input_kbd_tounicode_dead_key_composes_next_key) {
+    HKL h;
+    DKREQ;
+    h = intl_acquire();
+    if (!h) { t_skip("US-International layout unavailable"); return; }
+    {
+        WCHAR w[4];
+        CHECK(tu(h, VK_OEM_7, 0, w) < 0);
+        CHECK(tu(h, 'A', 0, w) == 1);
+        EXPECT_EQ(w[0], 0xE1);                  /* a-acute */
+        CHECK(tu(h, 'A', 0, w) == 1);           /* state consumed */
+        EXPECT_EQ(w[0], 'a');
+        CHECK(tu(h, VK_OEM_7, 0, w) < 0);
+        CHECK(tu(h, 'E', SH, w) == 1);
+        EXPECT_EQ(w[0], 0xC9);                  /* E-acute */
+        flush_dead(h);
+    }
+    intl_release(h);
+}
+TEST(input_kbd_tounicode_dead_key_non_combining_gives_two_chars) {
+    HKL h;
+    DKREQ;
+    h = intl_acquire();
+    if (!h) { t_skip("US-International layout unavailable"); return; }
+    {
+        WCHAR w[4];
+        CHECK(tu(h, VK_OEM_7, 0, w) < 0);
+        EXPECT_EQ(tu(h, 'B', 0, w), 2);
+        EXPECT_EQ(w[1], 'b');
+        flush_dead(h);
+    }
+    intl_release(h);
+}
+TEST(input_kbd_tounicode_dead_key_flag4_preserves_state) {
+    HKL h;
+    DKREQ;
+    h = intl_acquire();
+    if (!h) { t_skip("US-International layout unavailable"); return; }
+    {
+        BYTE st[256] = {0};
+        WCHAR w[4];
+        int r = U(ToUnicodeEx)(VK_OEM_7, U(MapVirtualKeyExW)(VK_OEM_7, 0, h), st, w, 4, 4, h);
+        CHECK(r < 0);
+        r = U(ToUnicodeEx)('A', 0x1E, st, w, 4, 0, h);
+        CHECKF(r == 1, "ret %d", r);
+        if (r == 1) EXPECT_EQ(w[0], 'a');     /* flags=4 left no pending dead key behind */
+        flush_dead(h);
+    }
+    intl_release(h);
+}
+TEST(input_kbd_toascii_dead_key_negative) {
+    HKL h;
+    DKREQ; REQUIRE(U(ToAsciiEx));
+    h = intl_acquire();
+    if (!h) { t_skip("US-International layout unavailable"); return; }
+    {
+        BYTE st[256] = {0};
+        WORD c = 0;
+        int r = U(ToAsciiEx)(VK_OEM_7, U(MapVirtualKeyExW)(VK_OEM_7, 0, h), st, &c, 0, h);
+        CHECKF(r < 0, "ToAsciiEx dead key returned %d", r);
+        r = U(ToAsciiEx)('A', 0x1E, st, &c, 0, h);
+        CHECK(r == 1);
+        t_note("ToAscii composed to 0x%02x", c & 0xFF);
+        flush_dead(h);
+    }
+    intl_release(h);
+}
+TEST(input_kbd_mapvk_to_char_dead_key_bit31_intl) {
+    HKL h;
+    DKREQ; REQUIRE(U(MapVirtualKeyExW));
+    h = intl_acquire();
+    if (!h) { t_skip("US-International layout unavailable"); return; }
+    {
+        UINT r = U(MapVirtualKeyExW)(VK_OEM_7, MAPVK_VK_TO_CHAR, h);
+        CHECKF(r & 0x80000000, "dead key char 0x%08x lacks bit 31", r);
+        CHECK(U(MapVirtualKeyExW)('A', MAPVK_VK_TO_CHAR, h) == 'A');
+    }
+    intl_release(h);
+}
