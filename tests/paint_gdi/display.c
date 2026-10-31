@@ -758,7 +758,6 @@ TEST(paint_gdi_dcfg_query_topology_param) {
     DISPLAYCONFIG_TOPOLOGY_ID topo = (DISPLAYCONFIG_TOPOLOGY_ID)0x77;
     LONG r = U(QueryDisplayConfig)(QDC_DATABASE_CURRENT, &np, p, &nm, m, &topo);
     t_note("QDC_DATABASE_CURRENT -> %ld topology 0x%x", r, topo);
-    if (r == ERROR_SUCCESS) CHECK(topo >= DISPLAYCONFIG_TOPOLOGY_INTERNAL && topo <= DISPLAYCONFIG_TOPOLOGY_EXTENDED || topo == DISPLAYCONFIG_TOPOLOGY_FORCE_UINT32 || 1);
     np = 64; nm = 128;
     free(p); free(m); p = calloc(64, sizeof *p); m = calloc(128, sizeof *m);
     topo = (DISPLAYCONFIG_TOPOLOGY_ID)0x77;
