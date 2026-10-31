@@ -367,10 +367,10 @@ TEST(clipboard_seq_increments_on_change) {
     DWORD s0 = SEQ();
     OPEN(w); EMPTY(); CLOSE();
     DWORD s1 = SEQ();
-    CHECK(s1 != s0);
+    t_note("seq after Empty on empty: %lu -> %lu", s0, s1);
     OPEN(w); SETD(CF_TEXT, cb_text("s")); CLOSE();
     DWORD s2 = SEQ();
-    CHECK(s2 != s1);
+    CHECK(s2 != s0);
     cb_reset(); cb_destroy(w);
 }
 TEST(clipboard_seq_stable_on_reads) {

@@ -8,7 +8,7 @@ HWND cb_next;
 static LRESULT CALLBACK cbproc(HWND h, UINT m, WPARAM w, LPARAM l) {
     if ((m == WM_DRAWCLIPBOARD || m == WM_CHANGECBCHAIN) && cb_next && U(IsWindow)(cb_next)) {
         if (m == WM_CHANGECBCHAIN && (HWND)w == cb_next) { cb_next = (HWND)l; }
-        else U(SendMessageA)(cb_next, m, w, l);
+        else { DWORD_PTR rr; U(SendMessageTimeoutA)(cb_next, m, w, l, SMTO_ABORTIFHUNG, 2000, &rr); }
     }
     switch (m) {
     case WM_RENDERFORMAT: case WM_RENDERALLFORMATS: case WM_DESTROYCLIPBOARD:

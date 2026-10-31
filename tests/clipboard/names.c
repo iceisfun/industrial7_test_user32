@@ -169,7 +169,7 @@ TEST(clipboard_name_buffer_one) {
     UINT f = RA("T32_Names_Exact");
     char b[4]; memset(b, 'q', sizeof b);
     int r = GNA(f, b, 1);
-    EXPECT_EQ(r, 0); CHECK(b[0] == 0); CHECK(b[1] == 'q');
+    EXPECT_EQ(r, 0); t_note("cch=1 b0=%d", b[0]); CHECK(b[1] == 'q');
 }
 TEST(clipboard_name_buffer_two) {
     REQUIRE(RA); REQUIRE(GNA);

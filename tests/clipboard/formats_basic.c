@@ -241,9 +241,7 @@ TEST(clipboard_empty_frees_data) {
     SETD(CF_PRIVATEFIRST, g);
     EMPTY();
     /* ownership was transferred; the handle should be invalid now */
-    SET_ERR(0);
-    SIZE_T sz = GlobalSize(g);
-    t_note("GlobalSize after Empty = %llu", (unsigned long long)sz);
+    CHECK(COUNT() == 0);
     CLOSE(); cb_reset(); cb_destroy(w);
 }
 TEST(clipboard_data_persists_after_owner_destroyed) {
