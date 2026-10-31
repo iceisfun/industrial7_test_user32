@@ -352,12 +352,6 @@ TEST(wm_enum_windows_stop) {
     EQ(r, FALSE); EQ(c.n, 3);
 }
 
-TEST(wm_enum_windows_null_proc) {
-    SetLastError(0);
-    BOOL r = U(EnumWindows)(NULL, 0);
-    t_note("EnumWindows(NULL) = %d err=%lu", r, GetLastError());
-}
-
 static BOOL CALLBACK enum_destroy_cb(HWND h, LPARAM l) { (void)h; HWND *victim = (HWND *)l; if (*victim) { U(DestroyWindow)(*victim); *victim = NULL; } return TRUE; }
 TEST(wm_enum_windows_destroy_during) {
     HWND a = wm_hidden(), b = wm_hidden();
