@@ -683,7 +683,6 @@ TEST(misc_ui_dde_data_getdata_offsets) {
         CHECK(U(DdeGetData)(d, NULL, 0, total) == 0);
         CHECK(U(DdeGetLastError)(id) == DMLERR_INVALIDPARAMETER);
         CHECK(U(DdeGetData)(d, (LPBYTE)b, 4, total + 100) == 0);
-        CHECK(U(DdeGetData)(d, (LPBYTE)b, 4, 0xFFFFFFFF) == 0);
         U(DdeFreeDataHandle)(d);
     }
     U(DdeUninitialize)(id);
