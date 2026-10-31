@@ -671,7 +671,7 @@ TEST(misc_ui_findwindow_by_class_atom) {
         CHECK(U(FindWindowExA)(NULL, NULL, MAKEINTATOM(at), "atomwin") == h);
         CHECK(U(FindWindowExA)(NULL, NULL, MAKEINTATOM(at), "nope") == NULL);
         CHECK(U(FindWindowA)(MAKEINTATOM(at), NULL) == h);
-        CHECK(U(FindWindowExW)(NULL, NULL, MAKEINTATOM(at), NULL) == h);
+        CHECK(U(FindWindowExW)(NULL, NULL, (LPCWSTR)MAKEINTATOM(at), NULL) == h);
         CHECK(U(FindWindowExA)(NULL, NULL, MAKEINTATOM(at ^ 0x1), NULL) != h);
         U(DestroyWindow)(h);
     }
