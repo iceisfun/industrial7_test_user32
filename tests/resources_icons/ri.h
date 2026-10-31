@@ -7,6 +7,18 @@
 
 #define RI_STR_BASE 1000
 
+/* OBM_* ids are hidden behind OEMRESOURCE in the SDK header */
+#ifndef OBM_CLOSE
+#define OBM_CLOSE 32754
+#define OBM_UPARROW 32753
+#define OBM_DNARROW 32752
+#define OBM_RGARROW 32751
+#define OBM_LFARROW 32750
+#define OBM_COMBO 32738
+#define OBM_CHECK 32760
+#define OBM_CHECKBOXES 32759
+#endif
+
 /* ---- in-memory icon / cursor DIB builders ---------------------------- */
 /* Build the DIB part of an icon image (BITMAPINFOHEADER with doubled height,
  * palette, XOR (colour) bits, AND mask). Solid colour 0xAARRGGBB.
