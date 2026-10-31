@@ -22,6 +22,7 @@ typedef struct {
 extern c_logent c_log[LOG_MAX];
 extern int c_nlogent;
 extern int c_logging;
+extern int c_mi_base, c_mi_step;   /* when c_mi_base > 0, WM_MEASUREITEM answers base + step * itemID */
 
 static void c_logclear(void) { c_nlogent = 0; }
 
@@ -42,6 +43,11 @@ static LRESULT CALLBACK c_parent_proc(HWND h, UINT m, WPARAM w, LPARAM l)
         else if (m == WM_MEASUREITEM) e->mi = *(MEASUREITEMSTRUCT *)l;
         else if (m == WM_DELETEITEM) e->de = *(DELETEITEMSTRUCT *)l;
         else if (m == WM_COMPAREITEM) e->ci = *(COMPAREITEMSTRUCT *)l;
+    }
+    if (m == WM_MEASUREITEM && c_mi_base > 0) {
+        MEASUREITEMSTRUCT *mi = (MEASUREITEMSTRUCT *)l;
+        mi->itemHeight = c_mi_base + c_mi_step * (mi->CtlType == ODT_LISTBOX || mi->CtlType == ODT_COMBOBOX ? mi->itemID : 0);
+        return TRUE;
     }
     if (m == WM_COMPAREITEM) {
         COMPAREITEMSTRUCT *c = (COMPAREITEMSTRUCT *)l;
