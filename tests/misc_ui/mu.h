@@ -10,46 +10,19 @@
 #define MU_CLS_NB "MU_NoBrushCls"
 
 #define MU_MAXLOG 512
-typedef struct { UINT msg; WPARAM w; LPARAM l; } mu_rec;
-static mu_rec mu_log[MU_MAXLOG];
-static int mu_nlog;
-static int mu_logging;
-/* optional hook: return 1 and fill *res to swallow the message */
+typedef struct { HWND h; UINT msg; WPARAM w; LPARAM l; } mu_rec;
+extern mu_rec mu_log[MU_MAXLOG];
+extern int mu_nlog;
+extern int mu_logging;
 typedef int (*mu_hook_fn)(HWND, UINT, WPARAM, LPARAM, LRESULT *);
-static mu_hook_fn mu_hook;
-
+extern mu_hook_fn mu_hook;
+LRESULT CALLBACK mu_proc(HWND h, UINT m, WPARAM w, LPARAM l);
+int mu_register(void);
 static void mu_log_reset(void) { mu_nlog = 0; }
 static int mu_count(UINT msg) { int n = 0; for (int i = 0; i < mu_nlog && i < MU_MAXLOG; i++) if (mu_log[i].msg == msg) n++; return n; }
+static int mu_count_h(HWND h, UINT msg) { int n = 0; for (int i = 0; i < mu_nlog && i < MU_MAXLOG; i++) if (mu_log[i].msg == msg && mu_log[i].h == h) n++; return n; }
+static int mu_find_h(HWND h, UINT msg) { for (int i = 0; i < mu_nlog && i < MU_MAXLOG; i++) if (mu_log[i].msg == msg && mu_log[i].h == h) return i; return -1; }
 static int mu_find(UINT msg) { for (int i = 0; i < mu_nlog && i < MU_MAXLOG; i++) if (mu_log[i].msg == msg) return i; return -1; }
-
-static LRESULT CALLBACK mu_proc(HWND h, UINT m, WPARAM w, LPARAM l)
-{
-    if (mu_logging && mu_nlog < MU_MAXLOG) {
-        mu_log[mu_nlog].msg = m; mu_log[mu_nlog].w = w; mu_log[mu_nlog].l = l; mu_nlog++;
-    }
-    if (mu_hook) { LRESULT r = 0; if (mu_hook(h, m, w, l, &r)) return r; }
-    return DefWindowProcA(h, m, w, l);
-}
-
-static int mu_register(void)
-{
-    static int done;
-    if (done) return done > 0;
-    done = -1;
-    ATOM (WINAPI *rc)(const WNDCLASSEXA *) = U(RegisterClassExA);
-    if (!rc) return 0;
-    WNDCLASSEXA wc; memset(&wc, 0, sizeof wc);
-    wc.cbSize = sizeof wc;
-    wc.lpfnWndProc = mu_proc; wc.hInstance = GetModuleHandleA(NULL);
-    wc.cbWndExtra = 16;
-    wc.hbrBackground = (HBRUSH)(ULONG_PTR)(COLOR_BTNFACE + 1);
-    wc.lpszClassName = MU_CLS;
-    if (!rc(&wc)) return 0;
-    wc.hbrBackground = NULL; wc.lpszClassName = MU_CLS_NB;
-    if (!rc(&wc)) return 0;
-    done = 1;
-    return 1;
-}
 
 static HWND mu_mk_cls(const char *cls, const char *title, DWORD style, DWORD ex, int x, int y, int w, int h, HWND parent)
 {
