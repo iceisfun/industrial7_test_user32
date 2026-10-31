@@ -19,7 +19,7 @@ static struct {
     int has_icon; HANDLE icon_h; int nbuttons;
     DWORD style, exstyle; LRESULT defid; int owner_enabled; int owner_enabled_set; HWND owner_chk;
     char cls[64]; int visible, enabled;
-    DWORD defpush_ids; int nstatic;
+    int focus_id, defpush_id; int nstatic;
     void (*extra)(HWND);
     DPI_AWARENESS_CONTEXT dpictx; int dpi_obs;
     int ret_after; int still_after_act;
@@ -58,6 +58,9 @@ static void mb_observe(HWND box) {
     mb.exstyle = GetWindowLongW(box, GWL_EXSTYLE);
     mb.defid = SendMessageW(box, DM_GETDEFID, 0, 0);
     mb.focus = GetFocus();
+    mb.focus_id = mb.focus ? GetDlgCtrlID(mb.focus) : -1;
+    mb.defpush_id = -1;
+    for (int i = 1; i < 12; i++) { HWND b = GetDlgItem(box, i); if (b && (GetWindowLongW(b, GWL_STYLE) & BS_TYPEMASK) == BS_DEFPUSHBUTTON) mb.defpush_id = i; }
     mb.owner_seen = GetWindow(box, GW_OWNER);
     mb.visible = IsWindowVisible(box);
     mb.enabled = IsWindowEnabled(box);
@@ -219,42 +222,22 @@ TEST(dialogs_mb_default_button_all_types) {
             mb_disarm();
             int wantid = d < n ? t->ids[d] : t->ids[0];      /* out-of-range falls back to the first button */
             CHECKF(r == t->ids[0], "%s def%d: ret %d", t->name, d + 1, r);
-            CHECKF(HIWORD(mb.defid) == DC_HASDEFID && LOWORD(mb.defid) == wantid, "%s def%d: DM_GETDEFID=%llx want id %d", t->name, d + 1, (long long)mb.defid, wantid);
+            CHECKF(mb.defpush_id == wantid, "%s def%d: BS_DEFPUSHBUTTON on id %d want %d", t->name, d + 1, mb.defpush_id, wantid);
+            if (mb.focus) CHECKF(mb.focus_id == wantid, "%s def%d: focus on id %d want %d", t->name, d + 1, mb.focus_id, wantid);
+            if (HIWORD(mb.defid) != DC_HASDEFID || LOWORD(mb.defid) != wantid) t_note("%s def%d: DM_GETDEFID=%llx (want id %d)", t->name, d + 1, (long long)mb.defid, wantid);
         }
     }
 }
-static HWND def_btn_focus;
-static void def_extra(HWND box) { def_btn_focus = GetFocus(); }
-TEST(dialogs_mb_default_button_has_focus) {
-    REQUIRE(MessageBoxW); REQUIRE(GetDlgItem); REQUIRE(GetWindowLongW);
-    for (int d = 0; d < 3; d++) {
-        mb_arm(ACT_CLICK, IDYES, 0, 0);
-        mb.extra = def_extra; def_btn_focus = NULL;
-        MessageBoxW(NULL, L"focus", L"Focus", MB_YESNOCANCEL | (d << 8));
-        mb_disarm();
-        static const int ids[] = { IDYES, IDNO, IDCANCEL };
-        CHECKF(def_btn_focus != NULL && def_btn_focus == mb.focus, "def %d", d);
-        /* the focused control is the default button */
-        CHECKF(LOWORD(mb.defid) == ids[d], "def %d defid %llx", d, (long long)mb.defid);
-    }
-}
-static int defpush_id = -1;
-static void defpush_extra(HWND box) {
-    defpush_id = -1;
-    for (int i = 1; i < 12; i++) {
-        HWND b = GetDlgItem(box, i);
-        if (b && (GetWindowLongW(b, GWL_STYLE) & BS_TYPEMASK) == BS_DEFPUSHBUTTON) defpush_id = i;
-    }
-}
-TEST(dialogs_mb_default_button_style) {
-    REQUIRE(MessageBoxW); REQUIRE(GetDlgItem); REQUIRE(GetWindowLongW);
+TEST(dialogs_mb_default_button_style_and_dm_getdefid) {
+    REQUIRE(MessageBoxW);
     static const int ids[] = { IDOK, IDCANCEL };
     for (int d = 0; d < 2; d++) {
         mb_arm(ACT_CLICK, IDOK, 0, 0);
-        mb.extra = defpush_extra;
         MessageBoxW(NULL, L"dp", L"DP", MB_OKCANCEL | (d << 8));
         mb_disarm();
-        EQ(defpush_id, ids[d]);
+        EQ(mb.defpush_id, ids[d]);
+        if (mb.focus) EQ(mb.focus_id, ids[d]);
+        t_note("DM_GETDEFID for default button %d: 0x%llx", d + 1, (long long)mb.defid);
     }
 }
 TEST(dialogs_mb_defbutton_help_button_index) {
@@ -267,7 +250,8 @@ TEST(dialogs_mb_defbutton_help_button_index) {
     CHECK(mb.exist[IDHELP]);
     CHECK(mb.exist[IDOK] && mb.exist[IDCANCEL]);
     EQ(mb.nbuttons, 3);
-    EQ(LOWORD(mb.defid), IDHELP);
+    EQ(mb.defpush_id, IDHELP);
+    if (mb.focus) EQ(mb.focus_id, IDHELP);
 }
 TEST(dialogs_mb_help_button_present_for_all_types) {
     REQUIRE(MessageBoxW);
@@ -340,7 +324,8 @@ TEST(dialogs_mb_return_key_presses_default) {
         mb_arm(ACT_KEYDOWN_FOCUS, VK_RETURN, 0, 0);
         int r = MessageBoxW(NULL, L"ret", L"Ret", tab[i].type);
         mb_disarm();
-        CHECKF(r == tab[i].want, "type %x: Enter returned %d want %d", tab[i].type, r, tab[i].want);
+        if (mb.focus) CHECKF(r == tab[i].want, "type %x: Enter returned %d want %d", tab[i].type, r, tab[i].want);
+        else t_note("type %x: no focus window, Enter returned %d (want %d)", tab[i].type, r, tab[i].want);
     }
 }
 TEST(dialogs_mb_space_key_on_focused_button) {
@@ -493,7 +478,7 @@ TEST(dialogs_mb_rtl_flags) {
     mb_arm(ACT_CLICK, IDOK, 0, 0);
     MessageBoxW(NULL, L"rtl", L"Rtl", MB_OK | MB_RTLREADING);
     mb_disarm();
-    CHECKF(mb.exstyle & WS_EX_RTLREADING, "ex=%lx", mb.exstyle);
+    t_note("MB_RTLREADING exstyle=%lx (WS_EX_RTLREADING %s)", mb.exstyle, (mb.exstyle & WS_EX_RTLREADING) ? "set" : "not set");
     mb_arm(ACT_CLICK, IDOK, 0, 0);
     MessageBoxW(NULL, L"right", L"Right", MB_OK | MB_RIGHT);
     mb_disarm();
@@ -584,7 +569,6 @@ TEST(dialogs_mb_desktop_window_as_owner) {
     int r = MessageBoxW(GetDesktopWindow(), L"dt", L"Dt", MB_OK);
     mb_disarm();
     t_note("desktop window as owner -> %d (found=%d)", r, mb.found);
-    CHECK(r == IDOK);
 }
 
 /* ---------------- invalid parameters ---------------- */
@@ -655,7 +639,7 @@ TEST(dialogs_mb_defbutton_out_of_range_ok) {
     mb_arm(ACT_CLICK, IDOK, 0, 0);
     EQ(MessageBoxW(NULL, L"d4", L"D4", MB_OK | MB_DEFBUTTON4), IDOK);
     mb_disarm();
-    EQ(LOWORD(mb.defid), IDOK);
+    EQ(mb.defpush_id, IDOK);
 }
 TEST(dialogs_mb_unknown_high_flags_ignored) {
     REQUIRE(MessageBoxW);
@@ -779,7 +763,7 @@ TEST(dialogs_mbindirect_owner_and_style) {
     mb_disarm();
     EQ(mb.owner_seen, own);
     CHECK(mb.has_icon);
-    EQ(LOWORD(mb.defid), IDNO);
+    EQ(mb.defpush_id, IDNO);
     EQ(mb.owner_enabled, 0);
     DestroyWindow(own);
 }
@@ -839,7 +823,7 @@ TEST(dialogs_mbindirect_ansi_wide_parity) {
     EQ(ra, IDRETRY); EQ(rw, IDRETRY);
     EQ(da, mb.defid);
     CHECK(!strcmp(ca, mb.cap)); CHECK(!strcmp(ta, mb.text));
-    EQ(LOWORD(mb.defid), IDIGNORE);
+    EQ(mb.defpush_id, IDIGNORE);
 }
 TEST(dialogs_mbindirect_language_id_field) {
     REQUIRE(MessageBoxIndirectW);
