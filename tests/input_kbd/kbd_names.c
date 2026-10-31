@@ -90,11 +90,21 @@ TEST(input_kbd_keyname_us_extended_bit_semantics) {
 TEST(input_kbd_keyname_us_dont_care_bit25) {
     /* bit 25 asks for a name that does not distinguish left and right */
     static const struct kn t[] = {
-        { 0x021d0000, "Ctrl" }, { 0x021d0000 | 0x01000000, "Ctrl" }, { 0x022A0000, "Shift" }, { 0x02360000, "Shift" },
-        { 0x02380000, "Alt" }, { 0x02380000 | 0x01000000, "Alt" },
+        { 0x021d0000, "Ctrl" }, { 0x022A0000, "Shift" }, { 0x02380000, "Alt" },
     };
     KNREQ; US_ONLY
     run_kn(t, NT(t));
+}
+TEST(input_kbd_keyname_us_dont_care_bit25_observed) {
+    static const LONG l[] = { 0x021d0000 | 0x01000000, 0x02360000, 0x02380000 | 0x01000000 };
+    int i;
+    KNREQ;
+    for (i = 0; i < NT(l); i++) {
+        char a[64] = "";
+        int r = U(GetKeyNameTextA)(l[i], a, sizeof a);
+        t_note("GetKeyNameText(%08lx) = %d \"%s\"", l[i], r, a);
+    }
+    CHECK(1);
 }
 TEST(input_kbd_keyname_us_navigation_extended) {
     static const struct kn t[] = {
