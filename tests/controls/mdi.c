@@ -499,6 +499,7 @@ TEST(mdi_setmenu_refreshmenu)
 
 TEST(mdi_translate_sys_accel)
 {
+    if (GetAsyncKeyState(VK_SHIFT) < 0 || GetAsyncKeyState(VK_CONTROL) < 0 || GetAsyncKeyState(VK_MENU) < 0) { t_skip("modifier key held"); return; }
     REQUIRE(U(CreateMDIWindowA)); REQUIRE(U(TranslateMDISysAccel));
     mdi_t m; CHECK(mdi_make(&m, 0));
     HWND c1 = mkchild(m.client, "a", 1), c2 = mkchild(m.client, "b", 2);

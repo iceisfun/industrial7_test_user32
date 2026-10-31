@@ -177,6 +177,7 @@ TEST(listbox_ownerdraw_sort_hasstrings_no_compareitem)
 /* ---- keyboard driven notifications ---- */
 TEST(listbox_keyboard_navigation_notifies)
 {
+    if (GetAsyncKeyState(VK_SHIFT) < 0 || GetAsyncKeyState(VK_CONTROL) < 0 || GetAsyncKeyState(VK_MENU) < 0) { t_skip("modifier key held"); return; }
     REQUIRE(U(CreateWindowExA));
     HWND p = c_parent(300, 300);
     HWND lb = mklb(p, LB_STD, 41);

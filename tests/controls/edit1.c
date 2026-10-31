@@ -662,6 +662,7 @@ TEST(edit_wm_char_multiline_enter)
 
 TEST(edit_wm_keydown_movement)
 {
+    if (GetAsyncKeyState(VK_SHIFT) < 0 || GetAsyncKeyState(VK_CONTROL) < 0 || GetAsyncKeyState(VK_MENU) < 0) { t_skip("modifier key held"); return; }
     REQUIRE(U(CreateWindowExA));
     HWND p = c_parent(300, 200);
     HWND e = mkedit(p, 0, 1, "abcdef");
