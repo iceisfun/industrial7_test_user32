@@ -63,3 +63,22 @@ static void mh_init_w(MENUITEMINFOW *mi, UINT mask) {
 static void mh_zero_a(MENUITEMINFOA *mi, UINT mask) { memset(mi, 0, sizeof *mi); mi->cbSize = sizeof *mi; mi->fMask = mask; }
 static void mh_zero_w(MENUITEMINFOW *mi, UINT mask) { memset(mi, 0, sizeof *mi); mi->cbSize = sizeof *mi; mi->fMask = mask; }
 #endif
+
+/* Top-level window helpers (shown without activation). */
+#ifndef MH_WIN
+#define MH_WIN
+static HWND mh_win(DWORD style, HMENU m) {
+    HWND w = t_make_window(NULL, style, 0, 80, 80, 520, 300, NULL);
+    if (!w) return NULL;
+    if (m) U(SetMenu)(w, m);
+    U(ShowWindow)(w, SW_SHOWNOACTIVATE);
+    t_pump();
+    return w;
+}
+/* menu bar with n top-level string items "Top0".. (ids 200+i) */
+static HMENU mh_bar(int n) {
+    HMENU h = M_NEW(); char b[32];
+    for (int i = 0; i < n && h; i++) { wsprintfA(b, "Top%d", i); U(AppendMenuA)(h, MF_STRING, 200 + i, b); }
+    return h;
+}
+#endif
