@@ -616,7 +616,6 @@ TEST(misc_ui_dde_data_create_bad_args) {
     DWORD id = dd_init(APPCLASS_STANDARD);
     CHECK(id); if (!id) return;
     CHECK(U(DdeCreateDataHandle)(id, NULL, 0xFFFFFFFF, 0, NULL, CF_TEXT, 0) == NULL);
-    CHECK(U(DdeGetLastError)(id) == DMLERR_NO_ERROR || 1);
     U(DdeGetLastError)(id);
     UINT bad[] = { 2, 3, 4, 0x10, 0x8000, 0xFFFFFFFE, 0xFFFFFFFF };
     for (int i = 0; i < 7; i++) {
