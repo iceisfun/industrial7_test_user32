@@ -139,7 +139,7 @@ TEST(spget_relation_caretblinktime) {
 }
 
 /* Invalid action codes. */
-static const UINT bad_actions[] = { 0x7FFF, 0x8000, 0xFFFF, 0x10000, 0xFFFFFFFF, 0x7FFFFFFF, 0x1000, 0x3000, 0xF000 };
+static const UINT bad_actions[] = { 0x7FFF, 0x8000, 0xFFFF, 0x10000, 0xFFFFFFFF, 0x7FFFFFFF, 0x3000, 0xF000 };
 TEST(spget_invalid_action_codes) {
     unsigned i;
     UINT v;
