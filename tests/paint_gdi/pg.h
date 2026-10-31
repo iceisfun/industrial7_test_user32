@@ -2,6 +2,10 @@
 #ifndef PG_H
 #define PG_H
 #include "t.h"
+#ifndef DCX_USESTYLE
+#define DCX_USESTYLE 0x10000
+#endif
+#define EQ(a, b) do { ULONG_PTR v_ = (ULONG_PTR)(a); EXPECT_EQ(v_, b); } while (0)
 
 #define PG_R(l,t,r,b) ((RECT){(l),(t),(r),(b)})
 #define RECT_STR(r) (r).left,(r).top,(r).right,(r).bottom
@@ -25,4 +29,8 @@ HWND pg_recwindow(DWORD style, DWORD ex, int x, int y, int w, int h, HWND parent
 void pg_reset(void);
 void pg_flush(HWND h);     /* drains paint state so that the update region is empty */
 void pg_pump(void);
+/* visible topmost no-activate popup with recording proc; client == window rect */
+HWND pg_topwin(int x, int y, int w, int h);
+HWND pg_topwin_cls(const char *cls, int x, int y, int w, int h, HWND parent, DWORD style);
+BOOL pg_visible_probe(HDC dc, int x, int y);
 #endif

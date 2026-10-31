@@ -50,3 +50,12 @@ void pg_flush(HWND h) {
         if (U(GetUpdateRect)(h, NULL, FALSE)) { U(ValidateRect)(h, NULL); }
     }
 }
+HWND pg_topwin(int x, int y, int w, int h) {
+    HWND hw = pg_recwindow(WS_POPUP | WS_VISIBLE, WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, x, y, w, h, NULL);
+    if (hw) { U(ShowWindow)(hw, SW_SHOWNA); pg_flush(hw); }
+    return hw;
+}
+HWND pg_topwin_cls(const char *cls, int x, int y, int w, int h, HWND parent, DWORD style) {
+    return U(CreateWindowExA)(parent ? 0 : (WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE), cls, "pg", style, x, y, w, h, parent, NULL, GetModuleHandleA(NULL), NULL);
+}
+BOOL pg_visible_probe(HDC dc, int x, int y) { return PtVisible(dc, x, y); }

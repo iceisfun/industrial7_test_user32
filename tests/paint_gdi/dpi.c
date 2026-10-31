@@ -39,26 +39,26 @@ TEST(paint_gdi_dpi_isvalid_raw_encodings) {
 /* ---- GetAwarenessFromDpiAwarenessContext ---- */
 TEST(paint_gdi_dpi_awareness_from_context) {
     REQUIRE(U(GetAwarenessFromDpiAwarenessContext));
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_UNAWARE), DPI_AWARENESS_UNAWARE);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_SYSTEM), DPI_AWARENESS_SYSTEM_AWARE);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_PM), DPI_AWARENESS_PER_MONITOR_AWARE);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_PM2), DPI_AWARENESS_PER_MONITOR_AWARE);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_GDI), DPI_AWARENESS_UNAWARE);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_UNAWARE), DPI_AWARENESS_UNAWARE);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_SYSTEM), DPI_AWARENESS_SYSTEM_AWARE);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_PM), DPI_AWARENESS_PER_MONITOR_AWARE);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_PM2), DPI_AWARENESS_PER_MONITOR_AWARE);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_GDI), DPI_AWARENESS_UNAWARE);
 }
 TEST(paint_gdi_dpi_awareness_from_invalid) {
     REQUIRE(U(GetAwarenessFromDpiAwarenessContext));
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(NULL), DPI_AWARENESS_INVALID);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX(-6)), DPI_AWARENESS_INVALID);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX(7)), DPI_AWARENESS_INVALID);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(NULL), DPI_AWARENESS_INVALID);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX(-6)), DPI_AWARENESS_INVALID);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX(7)), DPI_AWARENESS_INVALID);
 }
 
 /* ---- GetDpiFromDpiAwarenessContext ---- */
 TEST(paint_gdi_dpi_dpi_from_context) {
     REQUIRE(U(GetDpiFromDpiAwarenessContext));
-    EXPECT_EQ(U(GetDpiFromDpiAwarenessContext)(CTX_UNAWARE), 96);
-    EXPECT_EQ(U(GetDpiFromDpiAwarenessContext)(CTX_GDI), 96);
-    EXPECT_EQ(U(GetDpiFromDpiAwarenessContext)(CTX_PM), 0);
-    EXPECT_EQ(U(GetDpiFromDpiAwarenessContext)(CTX_PM2), 0);
+    EQ(U(GetDpiFromDpiAwarenessContext)(CTX_UNAWARE), 96);
+    EQ(U(GetDpiFromDpiAwarenessContext)(CTX_GDI), 96);
+    EQ(U(GetDpiFromDpiAwarenessContext)(CTX_PM), 0);
+    EQ(U(GetDpiFromDpiAwarenessContext)(CTX_PM2), 0);
     if (U(GetDpiForSystem)) {
         /* system-aware contexts carry the system DPI */
         UINT sys = U(GetDpiForSystem)();
@@ -69,9 +69,9 @@ TEST(paint_gdi_dpi_dpi_from_context) {
 }
 TEST(paint_gdi_dpi_dpi_from_invalid) {
     REQUIRE(U(GetDpiFromDpiAwarenessContext));
-    EXPECT_EQ(U(GetDpiFromDpiAwarenessContext)(NULL), 0);
-    EXPECT_EQ(U(GetDpiFromDpiAwarenessContext)(CTX(-9)), 0);
-    EXPECT_EQ(U(GetDpiFromDpiAwarenessContext)(CTX(0x1234)), 0);
+    EQ(U(GetDpiFromDpiAwarenessContext)(NULL), 0);
+    EQ(U(GetDpiFromDpiAwarenessContext)(CTX(-9)), 0);
+    EQ(U(GetDpiFromDpiAwarenessContext)(CTX(0x1234)), 0);
 }
 
 /* ---- AreDpiAwarenessContextsEqual ---- */
@@ -155,13 +155,13 @@ TEST(paint_gdi_dpi_thread_awareness_enum) {
     REQUIRE(U(GetAwarenessFromDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
     U(SetThreadDpiAwarenessContext)(CTX_PM);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(U(GetThreadDpiAwarenessContext)()), DPI_AWARENESS_PER_MONITOR_AWARE);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(U(GetThreadDpiAwarenessContext)()), DPI_AWARENESS_PER_MONITOR_AWARE);
     U(SetThreadDpiAwarenessContext)(CTX_PM2);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(U(GetThreadDpiAwarenessContext)()), DPI_AWARENESS_PER_MONITOR_AWARE);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(U(GetThreadDpiAwarenessContext)()), DPI_AWARENESS_PER_MONITOR_AWARE);
     U(SetThreadDpiAwarenessContext)(CTX_UNAWARE);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(U(GetThreadDpiAwarenessContext)()), DPI_AWARENESS_UNAWARE);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(U(GetThreadDpiAwarenessContext)()), DPI_AWARENESS_UNAWARE);
     U(SetThreadDpiAwarenessContext)(CTX_GDI);
-    EXPECT_EQ((int)U(GetAwarenessFromDpiAwarenessContext)(U(GetThreadDpiAwarenessContext)()), DPI_AWARENESS_UNAWARE);
+    EQ((int)U(GetAwarenessFromDpiAwarenessContext)(U(GetThreadDpiAwarenessContext)()), DPI_AWARENESS_UNAWARE);
     U(SetThreadDpiAwarenessContext)(orig);
 }
 static DWORD WINAPI thr_ctx(LPVOID p) {
@@ -245,13 +245,13 @@ TEST(paint_gdi_dpi_for_window_valid) {
 TEST(paint_gdi_dpi_for_window_invalid) {
     REQUIRE(U(GetDpiForWindow));
     SetLastError(0);
-    EXPECT_EQ(U(GetDpiForWindow)(NULL), 0);
+    EQ(U(GetDpiForWindow)(NULL), 0);
     EXPECT_ERR(0, ERROR_INVALID_PARAMETER);
     SetLastError(0);
-    EXPECT_EQ(U(GetDpiForWindow)((HWND)(ULONG_PTR)0xdeadbeef), 0);
+    EQ(U(GetDpiForWindow)((HWND)(ULONG_PTR)0xdeadbeef), 0);
     EXPECT_ERR(0, ERROR_INVALID_PARAMETER);
     SetLastError(0);
-    EXPECT_EQ(U(GetDpiForWindow)((HWND)(LONG_PTR)-1), 0);
+    EQ(U(GetDpiForWindow)((HWND)(LONG_PTR)-1), 0);
 }
 TEST(paint_gdi_dpi_for_window_destroyed) {
     REQUIRE(U(GetDpiForWindow));
@@ -260,7 +260,7 @@ TEST(paint_gdi_dpi_for_window_destroyed) {
     if (!w) return;
     U(DestroyWindow)(w);
     SetLastError(0);
-    EXPECT_EQ(U(GetDpiForWindow)(w), 0);
+    EQ(U(GetDpiForWindow)(w), 0);
     EXPECT_ERR(0, ERROR_INVALID_PARAMETER);
 }
 TEST(paint_gdi_dpi_for_window_desktop) {
@@ -287,7 +287,7 @@ TEST(paint_gdi_dpi_window_awareness_context) {
     }
     if (w2) {
         CHECK(U(AreDpiAwarenessContextsEqual)(U(GetWindowDpiAwarenessContext)(w2), CTX_UNAWARE));
-        EXPECT_EQ(U(GetDpiForWindow)(w2), 96);
+        EQ(U(GetDpiForWindow)(w2), 96);
         U(DestroyWindow)(w2);
     }
 }
@@ -306,7 +306,7 @@ TEST(paint_gdi_dpi_unaware_window_dpi_is_96) {
     U(SetThreadDpiAwarenessContext)(orig);
     CHECK(w != NULL);
     if (!w) return;
-    EXPECT_EQ(U(GetDpiForWindow)(w), 96);
+    EQ(U(GetDpiForWindow)(w), 96);
     U(DestroyWindow)(w);
 }
 TEST(paint_gdi_dpi_gdiscaled_window_dpi_is_96) {
@@ -318,7 +318,7 @@ TEST(paint_gdi_dpi_gdiscaled_window_dpi_is_96) {
     U(SetThreadDpiAwarenessContext)(orig);
     CHECK(w != NULL);
     if (!w) return;
-    EXPECT_EQ(U(GetDpiForWindow)(w), 96);
+    EQ(U(GetDpiForWindow)(w), 96);
     CHECK(U(AreDpiAwarenessContextsEqual)(U(GetWindowDpiAwarenessContext)(w), CTX_GDI));
     U(DestroyWindow)(w);
 }
@@ -438,14 +438,14 @@ TEST(paint_gdi_dpi_adjust_matches_adjustwindowrectex_96) {
 /* ---- GetSystemMetricsForDpi ---- */
 TEST(paint_gdi_dpi_metrics_for_dpi_icon) {
     REQUIRE(U(GetSystemMetricsForDpi));
-    EXPECT_EQ(U(GetSystemMetricsForDpi)(SM_CXICON, 96), 32);
-    EXPECT_EQ(U(GetSystemMetricsForDpi)(SM_CYICON, 96), 32);
-    EXPECT_EQ(U(GetSystemMetricsForDpi)(SM_CXSMICON, 96), 16);
-    EXPECT_EQ(U(GetSystemMetricsForDpi)(SM_CYSMICON, 96), 16);
-    EXPECT_EQ(U(GetSystemMetricsForDpi)(SM_CXICON, 192), 64);
-    EXPECT_EQ(U(GetSystemMetricsForDpi)(SM_CXSMICON, 192), 32);
-    EXPECT_EQ(U(GetSystemMetricsForDpi)(SM_CXICON, 144), 48);
-    EXPECT_EQ(U(GetSystemMetricsForDpi)(SM_CXSMICON, 144), 24);
+    EQ(U(GetSystemMetricsForDpi)(SM_CXICON, 96), 32);
+    EQ(U(GetSystemMetricsForDpi)(SM_CYICON, 96), 32);
+    EQ(U(GetSystemMetricsForDpi)(SM_CXSMICON, 96), 16);
+    EQ(U(GetSystemMetricsForDpi)(SM_CYSMICON, 96), 16);
+    EQ(U(GetSystemMetricsForDpi)(SM_CXICON, 192), 64);
+    EQ(U(GetSystemMetricsForDpi)(SM_CXSMICON, 192), 32);
+    EQ(U(GetSystemMetricsForDpi)(SM_CXICON, 144), 48);
+    EQ(U(GetSystemMetricsForDpi)(SM_CXSMICON, 144), 24);
 }
 TEST(paint_gdi_dpi_metrics_for_dpi_scaling_monotonic) {
     REQUIRE(U(GetSystemMetricsForDpi));

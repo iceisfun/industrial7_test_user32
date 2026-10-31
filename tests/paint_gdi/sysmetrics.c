@@ -218,7 +218,7 @@ TEST(paint_gdi_sm_adjust_caption_vs_metric) {
     CHECK(-r.top >= GSM(SM_CYCAPTION));
     RECT m = {0, 0, 100, 100};
     CHECK(U(AdjustWindowRectEx)(&m, WS_POPUP, TRUE, 0));
-    EXPECT_EQ(-m.top, GSM(SM_CYMENU));
+    EQ(-m.top, GSM(SM_CYMENU));
     RECT tw = {0, 0, 100, 100};
     CHECK(U(AdjustWindowRectEx)(&tw, WS_POPUP | WS_CAPTION, FALSE, WS_EX_TOOLWINDOW));
     t_note("toolwindow caption adj %ld smcaption %d", -tw.top, GSM(SM_CYSMCAPTION));
