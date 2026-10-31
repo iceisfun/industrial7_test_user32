@@ -436,8 +436,8 @@ TEST(messages_icon_set_get_small_big) {
     REQUIRE(U(LoadIconW)); REQUIRE(SMA); REQUIRE_MH();
     mh_reset();
     h = mh_mk(0, 0, NULL); REQUIRE(h);
-    i1 = U(LoadIconW)(NULL, IDI_APPLICATION);
-    i2 = U(LoadIconW)(NULL, IDI_ERROR);
+    i1 = U(LoadIconW)(NULL, (LPCWSTR)IDI_APPLICATION);
+    i2 = U(LoadIconW)(NULL, (LPCWSTR)IDI_ERROR);
     REQUIRE(i1 && i2);
     EXPECT_EQ(SMA(h, WM_GETICON, ICON_BIG, 0), 0);
     EXPECT_EQ(SMA(h, WM_GETICON, ICON_SMALL, 0), 0);
@@ -464,7 +464,7 @@ TEST(messages_icon_a_w_parity) {
     REQUIRE(U(LoadIconW)); REQUIRE_MH();
     mh_reset();
     h = mh_mkw(0, 0, NULL); REQUIRE(h);
-    i1 = U(LoadIconW)(NULL, IDI_WARNING); REQUIRE(i1);
+    i1 = U(LoadIconW)(NULL, (LPCWSTR)IDI_WARNING); REQUIRE(i1);
     EXPECT_EQ(SMW(h, WM_SETICON, ICON_SMALL, (LPARAM)i1), 0);
     EXPECT_EQ(SMA(h, WM_GETICON, ICON_SMALL, 0), i1);
     EXPECT_EQ(SMW(h, WM_GETICON, ICON_SMALL, 0), i1);

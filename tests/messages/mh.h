@@ -48,6 +48,7 @@ MHV MH_HOOK mh_hook;
 MHV volatile LONG mh_flag[8];
 MHV volatile LONG mh_ins_a, mh_ins_b;
 MHV HWND mh_mainwnd;
+MHV WNDPROC mh_pA, mh_pW;   /* the procedures the test classes were actually registered with */
 
 static int mh_interesting(UINT m) {
     switch (m) {
@@ -106,6 +107,7 @@ static LRESULT mh_common(HWND h, UINT m, WPARAM w, LPARAM l, int wide, int *hand
         return -1;
     case WM_USER + 7: Sleep((DWORD)w); return 0x77;
     case WM_USER + 8: return w ? 1 + SMA(h, m, w - 1, 0) : 0;
+    case WM_USER + 10: lstrcpyA((LPSTR)l, "from-worker"); return 11;
     case WM_USER + 9: return (LRESULT)0x1122334455667788ull;
     case WM_REC_E: mh_flag[1] = 1; return (LRESULT)(w * 100 + l);
     }
@@ -137,6 +139,7 @@ static int mh_init(void) {
     if (!U(RegisterClassExA) || !U(RegisterClassExW) || !CWEA || !CWEW || !SMA || !SMW || !PMA || !PKA || !DWPA || !DWPW) return 0;
     {
         WNDCLASSEXA a; WNDCLASSEXW w;
+        if (!mh_pA) { mh_pA = mh_procA; mh_pW = mh_procW; }
         memset(&a, 0, sizeof a); a.cbSize = sizeof a; a.lpfnWndProc = mh_procA; a.hInstance = GetModuleHandleA(NULL); a.lpszClassName = MH_CLSA;
         memset(&w, 0, sizeof w); w.cbSize = sizeof w; w.lpfnWndProc = mh_procW; w.hInstance = GetModuleHandleA(NULL); w.lpszClassName = MH_CLSW;
         ok = (U(RegisterClassExA)(&a) != 0 || GetLastError() == ERROR_CLASS_ALREADY_EXISTS) &&
