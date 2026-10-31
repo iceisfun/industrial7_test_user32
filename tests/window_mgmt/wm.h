@@ -14,7 +14,8 @@ const WCHAR *wm_clsw(void);
 extern int wm_fail_nccreate;   /* WM_NCCREATE returns FALSE */
 extern int wm_fail_create;     /* WM_CREATE returns -1 */
 extern int wm_minmax_on;       /* apply wm_minmax below on WM_GETMINMAXINFO */
-extern MINMAXINFO wm_minmax;
+extern MINMAXINFO wm_minmax, wm_mmi_seen;
+extern int wm_mmi_count;
 extern CREATESTRUCTA wm_cs_nc, wm_cs_cr;
 extern char wm_name_nc[128], wm_name_cr[128];
 extern int wm_seen_nc, wm_seen_cr;

@@ -4,7 +4,8 @@
 static struct { UINT m; WPARAM w; LPARAM l; } g_log[LOGMAX];
 static int g_nlog;
 int wm_fail_nccreate, wm_fail_create, wm_minmax_on;
-MINMAXINFO wm_minmax;
+MINMAXINFO wm_minmax, wm_mmi_seen;
+int wm_mmi_count;
 CREATESTRUCTA wm_cs_nc, wm_cs_cr;
 char wm_name_nc[128], wm_name_cr[128];
 int wm_seen_nc, wm_seen_cr;
@@ -33,10 +34,10 @@ static LRESULT CALLBACK wm_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
     if (m == WM_CREATE) { CREATESTRUCTA *c = (CREATESTRUCTA *)l; wm_cs_cr = *c; wm_seen_cr++; wm_name_cr[0] = 0; if (c->lpszName && !IS_INTRESOURCE(c->lpszName)) lstrcpynA(wm_name_cr, c->lpszName, 128); }
     if (m == WM_NCCREATE && wm_fail_nccreate) return FALSE;
     if (m == WM_CREATE && wm_fail_create) return -1;
-    if (m == WM_GETMINMAXINFO && wm_minmax_on) {
+    if (m == WM_GETMINMAXINFO) {
         MINMAXINFO *p = (MINMAXINFO *)l;
-        *p = wm_minmax;
-        return 0;
+        if (w == 0 && l) { wm_mmi_seen = *p; wm_mmi_count++; }
+        if (wm_minmax_on) { *p = wm_minmax; return 0; }
     }
     return DefWindowProcA(h, m, w, l);
 }
