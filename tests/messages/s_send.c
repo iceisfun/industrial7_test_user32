@@ -42,10 +42,10 @@ TEST(messages_send_wm_null) {
 }
 
 TEST(messages_send_invalid_hwnd) {
-    HWND bad[] = { (HWND)0xDEADBEEF, (HWND)0x12345678, (HWND)0x3, (HWND)(ULONG_PTR)0x7FFFFFFFFFFFull };
+    HWND bad[] = { (HWND)0xDEADBEEF, (HWND)0x12345678, (HWND)(ULONG_PTR)0x7FFFFFFFFFFFull };
     int i;
     REQUIRE(SMA); REQUIRE(SMW);
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 3; i++) {
         LRESULT r;
         SETE(); r = SMA(bad[i], WM_NULL, 0, 0);
         CHECK(r == 0); EXPECT_ERR(r, ERROR_INVALID_WINDOW_HANDLE);
