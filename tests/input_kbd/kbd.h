@@ -20,6 +20,10 @@ int kbd_is_us(void);
 /* Is the layout language English? */
 int kbd_is_english(void);
 
+/* US layout (00000409) HKL; loads it if needed. Pair with kbd_us_release(). NULL if unavailable. */
+HKL kbd_us_hkl(void);
+void kbd_us_release(void);
+
 /* Create a visible popup that owns foreground+focus, or NULL (and t_skip) if
  * injection cannot be used on this desktop. */
 HWND kw_begin(void);

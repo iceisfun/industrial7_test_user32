@@ -181,3 +181,33 @@ void kw_end(HWND w)
     kw_pump(10, 1000, 0);
     kw_clear();
 }
+
+/* ---- US layout acquisition (explicit-HKL variants make tables layout agnostic) ---- */
+static int g_us_refs, g_us_loaded_by_us;
+static HKL g_us_hkl;
+
+HKL kbd_us_hkl(void)
+{
+    HKL list[64];
+    int n, i, had = 0;
+    HKL (WINAPI *lk)(LPCWSTR, UINT) = (void *)t_proc("LoadKeyboardLayoutW");
+    int (WINAPI *gl)(int, HKL *) = (void *)t_proc("GetKeyboardLayoutList");
+    HKL (WINAPI *gk)(DWORD) = (void *)t_proc("GetKeyboardLayout");
+    if (g_us_refs++) return g_us_hkl;
+    g_us_hkl = NULL; g_us_loaded_by_us = 0;
+    if (!lk || !gl || !gk) return NULL;
+    if (kbd_is_us()) { g_us_hkl = gk(0); return g_us_hkl; }
+    n = gl(64, list);
+    for (i = 0; i < n; i++) if ((ULONG_PTR)list[i] == 0x04090409) had = 1;
+    g_us_hkl = lk(L"00000409", 0);
+    if (g_us_hkl && !had) g_us_loaded_by_us = 1;
+    return g_us_hkl;
+}
+void kbd_us_release(void)
+{
+    BOOL (WINAPI *ul)(HKL) = (void *)t_proc("UnloadKeyboardLayout");
+    if (g_us_refs <= 0) return;
+    if (--g_us_refs) return;
+    if (g_us_loaded_by_us && ul && g_us_hkl) ul(g_us_hkl);
+    g_us_loaded_by_us = 0; g_us_hkl = NULL;
+}
