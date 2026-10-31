@@ -1,4 +1,5 @@
 /* Message queue: Post/Peek/Get, filters, flags, QS_ status, waits. */
+#define MH_IMPL
 #include "mh.h"
 
 #define MU(n) (WM_USER + (n))

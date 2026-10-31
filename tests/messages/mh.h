@@ -35,14 +35,19 @@
 
 typedef struct { HWND h; UINT m; WPARAM w; LPARAM l; DWORD tid; BYTE raw[96]; DWORD ins; } MH_EV;
 #define MH_MAXEV 4096
-static MH_EV mh_ev[MH_MAXEV];
-static volatile LONG mh_nev;
-static int mh_rec;                                   /* recording on/off */
+#ifdef MH_IMPL
+#define MHV
+#else
+#define MHV extern
+#endif
+MHV MH_EV mh_ev[MH_MAXEV];
+MHV volatile LONG mh_nev;
+MHV int mh_rec;                                   /* recording on/off */
 typedef LRESULT (*MH_HOOK)(HWND, UINT, WPARAM, LPARAM, int *handled);
-static MH_HOOK mh_hook;
-static volatile LONG mh_flag[8];
-static volatile LONG mh_ins_a, mh_ins_b;
-static HWND mh_mainwnd;
+MHV MH_HOOK mh_hook;
+MHV volatile LONG mh_flag[8];
+MHV volatile LONG mh_ins_a, mh_ins_b;
+MHV HWND mh_mainwnd;
 
 static int mh_interesting(UINT m) {
     switch (m) {
@@ -53,7 +58,7 @@ static int mh_interesting(UINT m) {
     case WM_GETTEXTLENGTH: case WM_SETFONT: case WM_GETFONT: case WM_SETICON: case WM_COPYDATA:
     case WM_NULL: case WM_PARENTNOTIFY: case WM_CHILDACTIVATE: case WM_QUERYENDSESSION:
     case WM_STYLECHANGING: case WM_STYLECHANGED: case WM_SETREDRAW: case WM_CAPTURECHANGED:
-    case WM_TIMER: case WM_MOUSEACTIVATE:
+    case WM_TIMER: case WM_MOUSEACTIVATE: case WM_CHAR:
         return 1;
     }
     return m >= WM_USER;
@@ -88,6 +93,7 @@ static LRESULT mh_common(HWND h, UINT m, WPARAM w, LPARAM l, int wide, int *hand
         mh_ins_a = (LONG)U(InSendMessageEx)(NULL);
         U(ReplyMessage)(0x55);
         mh_ins_b = (LONG)U(InSendMessageEx)(NULL);
+        mh_flag[2] = U(ReplyMessage)(0x99) ? 1 : 2;
         Sleep(30);
         mh_flag[0] = 1;
         return 0x66;
@@ -98,6 +104,9 @@ static LRESULT mh_common(HWND h, UINT m, WPARAM w, LPARAM l, int wide, int *hand
             return (LRESULT)r;
         }
         return -1;
+    case WM_USER + 7: Sleep((DWORD)w); return 0x77;
+    case WM_USER + 8: return w ? 1 + SMA(h, m, w - 1, 0) : 0;
+    case WM_USER + 9: return (LRESULT)0x1122334455667788ull;
     case WM_REC_E: mh_flag[1] = 1; return (LRESULT)(w * 100 + l);
     }
     *handled = 0;
@@ -130,7 +139,8 @@ static int mh_init(void) {
         WNDCLASSEXA a; WNDCLASSEXW w;
         memset(&a, 0, sizeof a); a.cbSize = sizeof a; a.lpfnWndProc = mh_procA; a.hInstance = GetModuleHandleA(NULL); a.lpszClassName = MH_CLSA;
         memset(&w, 0, sizeof w); w.cbSize = sizeof w; w.lpfnWndProc = mh_procW; w.hInstance = GetModuleHandleA(NULL); w.lpszClassName = MH_CLSW;
-        ok = U(RegisterClassExA)(&a) != 0 && U(RegisterClassExW)(&w) != 0;
+        ok = (U(RegisterClassExA)(&a) != 0 || GetLastError() == ERROR_CLASS_ALREADY_EXISTS) &&
+             (U(RegisterClassExW)(&w) != 0 || GetLastError() == ERROR_CLASS_ALREADY_EXISTS);
     }
     return ok;
 }
