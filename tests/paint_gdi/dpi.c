@@ -10,12 +10,14 @@ UDECL(DPI_AWARENESS_CONTEXT, GetDpiAwarenessContextForProcess, (HANDLE));
 
 /* ---- IsValidDpiAwarenessContext ---- */
 TEST(paint_gdi_dpi_isvalid_pseudo_handles) {
+    pg_gui();
     REQUIRE(U(IsValidDpiAwarenessContext));
     for (int i = -1; i >= -5; i--) {
         CHECKF(U(IsValidDpiAwarenessContext)(CTX(i)), "ctx %d", i);
     }
 }
 TEST(paint_gdi_dpi_isvalid_invalid_values) {
+    pg_gui();
     REQUIRE(U(IsValidDpiAwarenessContext));
     static const LONG_PTR bad[] = { 0, 1, 2, -6, -7, -100, 0x100, 0x7fff, 0x10000, 0x6000, 0x13000, 0x5555 };
     for (unsigned i = 0; i < sizeof bad / sizeof bad[0]; i++) {
@@ -25,6 +27,7 @@ TEST(paint_gdi_dpi_isvalid_invalid_values) {
     }
 }
 TEST(paint_gdi_dpi_isvalid_raw_encodings) {
+    pg_gui();
     REQUIRE(U(IsValidDpiAwarenessContext));
     /* the values the pseudo handles normalise to are themselves valid contexts */
     CHECK(U(IsValidDpiAwarenessContext)(CTX(0x6010)));
@@ -38,6 +41,7 @@ TEST(paint_gdi_dpi_isvalid_raw_encodings) {
 
 /* ---- GetAwarenessFromDpiAwarenessContext ---- */
 TEST(paint_gdi_dpi_awareness_from_context) {
+    pg_gui();
     REQUIRE(U(GetAwarenessFromDpiAwarenessContext));
     EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_UNAWARE), DPI_AWARENESS_UNAWARE);
     EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_SYSTEM), DPI_AWARENESS_SYSTEM_AWARE);
@@ -46,6 +50,7 @@ TEST(paint_gdi_dpi_awareness_from_context) {
     EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX_GDI), DPI_AWARENESS_UNAWARE);
 }
 TEST(paint_gdi_dpi_awareness_from_invalid) {
+    pg_gui();
     REQUIRE(U(GetAwarenessFromDpiAwarenessContext));
     EQ((int)U(GetAwarenessFromDpiAwarenessContext)(NULL), DPI_AWARENESS_INVALID);
     EQ((int)U(GetAwarenessFromDpiAwarenessContext)(CTX(-6)), DPI_AWARENESS_INVALID);
@@ -54,6 +59,7 @@ TEST(paint_gdi_dpi_awareness_from_invalid) {
 
 /* ---- GetDpiFromDpiAwarenessContext ---- */
 TEST(paint_gdi_dpi_dpi_from_context) {
+    pg_gui();
     REQUIRE(U(GetDpiFromDpiAwarenessContext));
     EQ(U(GetDpiFromDpiAwarenessContext)(CTX_UNAWARE), 96);
     EQ(U(GetDpiFromDpiAwarenessContext)(CTX_GDI), 96);
@@ -68,6 +74,7 @@ TEST(paint_gdi_dpi_dpi_from_context) {
     }
 }
 TEST(paint_gdi_dpi_dpi_from_invalid) {
+    pg_gui();
     REQUIRE(U(GetDpiFromDpiAwarenessContext));
     EQ(U(GetDpiFromDpiAwarenessContext)(NULL), 0);
     EQ(U(GetDpiFromDpiAwarenessContext)(CTX(-9)), 0);
@@ -76,16 +83,19 @@ TEST(paint_gdi_dpi_dpi_from_invalid) {
 
 /* ---- AreDpiAwarenessContextsEqual ---- */
 TEST(paint_gdi_dpi_equal_same) {
+    pg_gui();
     REQUIRE(U(AreDpiAwarenessContextsEqual));
     for (int i = -1; i >= -5; i--) CHECKF(U(AreDpiAwarenessContextsEqual)(CTX(i), CTX(i)), "ctx %d", i);
 }
 TEST(paint_gdi_dpi_equal_different) {
+    pg_gui();
     REQUIRE(U(AreDpiAwarenessContextsEqual));
     for (int i = -1; i >= -5; i--)
         for (int j = -1; j >= -5; j--)
             if (i != j) CHECKF(!U(AreDpiAwarenessContextsEqual)(CTX(i), CTX(j)), "ctx %d vs %d", i, j);
 }
 TEST(paint_gdi_dpi_equal_invalid) {
+    pg_gui();
     REQUIRE(U(AreDpiAwarenessContextsEqual));
     CHECK(!U(AreDpiAwarenessContextsEqual)(NULL, NULL));
     CHECK(!U(AreDpiAwarenessContextsEqual)(NULL, CTX_UNAWARE));
@@ -94,6 +104,7 @@ TEST(paint_gdi_dpi_equal_invalid) {
     CHECK(!U(AreDpiAwarenessContextsEqual)(CTX(0x777), CTX(0x777)));
 }
 TEST(paint_gdi_dpi_equal_raw_vs_pseudo) {
+    pg_gui();
     REQUIRE(U(AreDpiAwarenessContextsEqual));
     CHECK(U(AreDpiAwarenessContextsEqual)(CTX(0x6010), CTX_UNAWARE));
     CHECK(U(AreDpiAwarenessContextsEqual)(CTX(0x12), CTX_PM));
@@ -104,6 +115,7 @@ TEST(paint_gdi_dpi_equal_raw_vs_pseudo) {
 
 /* ---- Thread awareness ---- */
 TEST(paint_gdi_dpi_thread_get_valid) {
+    pg_gui();
     REQUIRE(U(GetThreadDpiAwarenessContext)); REQUIRE(U(IsValidDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT c = U(GetThreadDpiAwarenessContext)();
     CHECK(c != NULL);
@@ -112,6 +124,7 @@ TEST(paint_gdi_dpi_thread_get_valid) {
     CHECK(U(AreDpiAwarenessContextsEqual)(c, c2));
 }
 TEST(paint_gdi_dpi_thread_set_roundtrip) {
+    pg_gui();
     REQUIRE(U(SetThreadDpiAwarenessContext)); REQUIRE(U(GetThreadDpiAwarenessContext));
     REQUIRE(U(AreDpiAwarenessContextsEqual));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
@@ -129,6 +142,7 @@ TEST(paint_gdi_dpi_thread_set_roundtrip) {
     U(SetThreadDpiAwarenessContext)(orig);
 }
 TEST(paint_gdi_dpi_thread_set_returns_previous) {
+    pg_gui();
     REQUIRE(U(SetThreadDpiAwarenessContext)); REQUIRE(U(GetThreadDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
     DPI_AWARENESS_CONTEXT p1 = U(SetThreadDpiAwarenessContext)(CTX_PM2);
@@ -140,6 +154,7 @@ TEST(paint_gdi_dpi_thread_set_returns_previous) {
     U(SetThreadDpiAwarenessContext)(orig);
 }
 TEST(paint_gdi_dpi_thread_set_invalid) {
+    pg_gui();
     REQUIRE(U(SetThreadDpiAwarenessContext)); REQUIRE(U(GetThreadDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
     SetLastError(0);
@@ -151,6 +166,7 @@ TEST(paint_gdi_dpi_thread_set_invalid) {
     U(SetThreadDpiAwarenessContext)(orig);
 }
 TEST(paint_gdi_dpi_thread_awareness_enum) {
+    pg_gui();
     REQUIRE(U(SetThreadDpiAwarenessContext)); REQUIRE(U(GetThreadDpiAwarenessContext));
     REQUIRE(U(GetAwarenessFromDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
@@ -172,6 +188,7 @@ static DWORD WINAPI thr_ctx(LPVOID p) {
     return 0;
 }
 TEST(paint_gdi_dpi_thread_isolation) {
+    pg_gui();
     REQUIRE(U(SetThreadDpiAwarenessContext)); REQUIRE(U(GetThreadDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
     DPI_AWARENESS_CONTEXT out[3] = {0};
@@ -190,6 +207,7 @@ TEST(paint_gdi_dpi_thread_isolation) {
 
 /* ---- process awareness ---- */
 TEST(paint_gdi_dpi_process_context) {
+    pg_gui();
     REQUIRE(UN(GetDpiAwarenessContextForProcess)); REQUIRE(U(IsValidDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT c = UN(GetDpiAwarenessContextForProcess)(GetCurrentProcess());
     CHECK(c != NULL);
@@ -198,6 +216,7 @@ TEST(paint_gdi_dpi_process_context) {
     t_note("process ctx=%p, NULL-process ctx=%p", c, c0);
 }
 TEST(paint_gdi_dpi_process_vs_isprocessdpiaware) {
+    pg_gui();
     REQUIRE(UN(GetDpiAwarenessContextForProcess)); REQUIRE(U(IsProcessDPIAware));
     REQUIRE(U(GetAwarenessFromDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT c = UN(GetDpiAwarenessContextForProcess)(GetCurrentProcess());
@@ -207,6 +226,7 @@ TEST(paint_gdi_dpi_process_vs_isprocessdpiaware) {
     CHECK(a == (aw != DPI_AWARENESS_UNAWARE));
 }
 TEST(paint_gdi_dpi_set_process_invalid) {
+    pg_gui();
     REQUIRE(U(SetProcessDpiAwarenessContext));
     SetLastError(0);
     CHECK(U(SetProcessDpiAwarenessContext)(NULL) == FALSE);
@@ -222,6 +242,7 @@ TEST(paint_gdi_dpi_set_process_invalid) {
 
 /* ---- DPI queries ---- */
 TEST(paint_gdi_dpi_for_system) {
+    pg_gui();
     REQUIRE(U(GetDpiForSystem));
     UINT d = U(GetDpiForSystem)();
     CHECK(d >= 96);
@@ -230,6 +251,7 @@ TEST(paint_gdi_dpi_for_system) {
     t_note("GetDpiForSystem=%u", d);
 }
 TEST(paint_gdi_dpi_for_window_valid) {
+    pg_gui();
     REQUIRE(U(GetDpiForWindow));
     HWND w = pg_window(WS_OVERLAPPEDWINDOW, 0, 10, 10, 100, 100, NULL);
     CHECK(w != NULL);
@@ -243,6 +265,7 @@ TEST(paint_gdi_dpi_for_window_valid) {
     U(DestroyWindow)(w);
 }
 TEST(paint_gdi_dpi_for_window_invalid) {
+    pg_gui();
     REQUIRE(U(GetDpiForWindow));
     SetLastError(0);
     EQ(U(GetDpiForWindow)(NULL), 0);
@@ -254,6 +277,7 @@ TEST(paint_gdi_dpi_for_window_invalid) {
     EQ(U(GetDpiForWindow)((HWND)(LONG_PTR)-1), 0);
 }
 TEST(paint_gdi_dpi_for_window_destroyed) {
+    pg_gui();
     REQUIRE(U(GetDpiForWindow));
     HWND w = pg_window(WS_OVERLAPPED, 0, 0, 0, 50, 50, NULL);
     CHECK(w != NULL);
@@ -264,11 +288,13 @@ TEST(paint_gdi_dpi_for_window_destroyed) {
     EXPECT_ERR(0, ERROR_INVALID_PARAMETER);
 }
 TEST(paint_gdi_dpi_for_window_desktop) {
+    pg_gui();
     REQUIRE(U(GetDpiForWindow));
     UINT d = U(GetDpiForWindow)(U(GetDesktopWindow)());
     CHECK(d >= 96);
 }
 TEST(paint_gdi_dpi_window_awareness_context) {
+    pg_gui();
     REQUIRE(U(GetWindowDpiAwarenessContext)); REQUIRE(U(SetThreadDpiAwarenessContext));
     REQUIRE(U(GetThreadDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
@@ -292,6 +318,7 @@ TEST(paint_gdi_dpi_window_awareness_context) {
     }
 }
 TEST(paint_gdi_dpi_window_awareness_invalid) {
+    pg_gui();
     REQUIRE(U(GetWindowDpiAwarenessContext));
     CHECK(U(GetWindowDpiAwarenessContext)(NULL) == NULL);
     CHECK(U(GetWindowDpiAwarenessContext)((HWND)(ULONG_PTR)0x12345678) == NULL);
@@ -299,6 +326,7 @@ TEST(paint_gdi_dpi_window_awareness_invalid) {
     if (w) { U(DestroyWindow)(w); CHECK(U(GetWindowDpiAwarenessContext)(w) == NULL); }
 }
 TEST(paint_gdi_dpi_unaware_window_dpi_is_96) {
+    pg_gui();
     REQUIRE(U(SetThreadDpiAwarenessContext)); REQUIRE(U(GetThreadDpiAwarenessContext)); REQUIRE(U(GetDpiForWindow));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
     U(SetThreadDpiAwarenessContext)(CTX_UNAWARE);
@@ -310,6 +338,7 @@ TEST(paint_gdi_dpi_unaware_window_dpi_is_96) {
     U(DestroyWindow)(w);
 }
 TEST(paint_gdi_dpi_gdiscaled_window_dpi_is_96) {
+    pg_gui();
     REQUIRE(U(SetThreadDpiAwarenessContext)); REQUIRE(U(GetThreadDpiAwarenessContext)); REQUIRE(U(GetDpiForWindow));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
     DPI_AWARENESS_CONTEXT p = U(SetThreadDpiAwarenessContext)(CTX_GDI);
@@ -325,6 +354,7 @@ TEST(paint_gdi_dpi_gdiscaled_window_dpi_is_96) {
 
 /* ---- EnableNonClientDpiScaling ---- */
 TEST(paint_gdi_dpi_enable_nc_scaling_outside_nccreate) {
+    pg_gui();
     REQUIRE(U(EnableNonClientDpiScaling));
     HWND w = pg_window(WS_OVERLAPPED, 0, 0, 0, 50, 50, NULL);
     CHECK(w != NULL);
@@ -335,6 +365,7 @@ TEST(paint_gdi_dpi_enable_nc_scaling_outside_nccreate) {
     U(DestroyWindow)(w);
 }
 TEST(paint_gdi_dpi_enable_nc_scaling_invalid) {
+    pg_gui();
     REQUIRE(U(EnableNonClientDpiScaling));
     SetLastError(0);
     CHECK(U(EnableNonClientDpiScaling)(NULL) == FALSE);
@@ -350,6 +381,7 @@ static RECT adj(DWORD st, BOOL menu, DWORD ex, UINT dpi, BOOL *ok) {
     return r;
 }
 TEST(paint_gdi_dpi_adjust_popup_unchanged) {
+    pg_gui();
     REQUIRE(U(AdjustWindowRectExForDpi));
     UINT dpis[] = {96, 120, 144, 192, 288};
     for (unsigned i = 0; i < 5; i++) {
@@ -359,6 +391,7 @@ TEST(paint_gdi_dpi_adjust_popup_unchanged) {
     }
 }
 TEST(paint_gdi_dpi_adjust_border_styles) {
+    pg_gui();
     REQUIRE(U(AdjustWindowRectExForDpi));
     BOOL ok; RECT r;
     UINT dpis[] = {96, 144, 192};
@@ -372,6 +405,7 @@ TEST(paint_gdi_dpi_adjust_border_styles) {
     }
 }
 TEST(paint_gdi_dpi_adjust_menu_height) {
+    pg_gui();
     REQUIRE(U(AdjustWindowRectExForDpi)); REQUIRE(U(GetSystemMetricsForDpi));
     UINT dpis[] = {96, 120, 144, 192};
     for (unsigned i = 0; i < 4; i++) {
@@ -383,6 +417,7 @@ TEST(paint_gdi_dpi_adjust_menu_height) {
     }
 }
 TEST(paint_gdi_dpi_adjust_caption_height) {
+    pg_gui();
     REQUIRE(U(AdjustWindowRectExForDpi)); REQUIRE(U(GetSystemMetricsForDpi));
     UINT dpis[] = {96, 144, 192};
     for (unsigned i = 0; i < 3; i++) {
@@ -396,6 +431,7 @@ TEST(paint_gdi_dpi_adjust_caption_height) {
     }
 }
 TEST(paint_gdi_dpi_adjust_monotonic) {
+    pg_gui();
     REQUIRE(U(AdjustWindowRectExForDpi));
     BOOL ok;
     RECT a = adj(WS_OVERLAPPEDWINDOW, TRUE, 0, 96, &ok); CHECK(ok);
@@ -407,6 +443,7 @@ TEST(paint_gdi_dpi_adjust_monotonic) {
     CHECK(a.left < 100 && a.top < 100);
 }
 TEST(paint_gdi_dpi_adjust_invalid_dpi) {
+    pg_gui();
     REQUIRE(U(AdjustWindowRectExForDpi));
     RECT r = {1, 2, 3, 4};
     SetLastError(0);
@@ -415,6 +452,7 @@ TEST(paint_gdi_dpi_adjust_invalid_dpi) {
     CHECK_RECT(r, 1, 2, 3, 4);
 }
 TEST(paint_gdi_dpi_adjust_matches_adjustwindowrectex_96) {
+    pg_gui();
     REQUIRE(U(AdjustWindowRectExForDpi)); REQUIRE(U(AdjustWindowRectEx)); REQUIRE(U(SetThreadDpiAwarenessContext));
     DPI_AWARENESS_CONTEXT orig = U(GetThreadDpiAwarenessContext)();
     U(SetThreadDpiAwarenessContext)(CTX_UNAWARE);
@@ -437,6 +475,7 @@ TEST(paint_gdi_dpi_adjust_matches_adjustwindowrectex_96) {
 
 /* ---- GetSystemMetricsForDpi ---- */
 TEST(paint_gdi_dpi_metrics_for_dpi_icon) {
+    pg_gui();
     REQUIRE(U(GetSystemMetricsForDpi));
     EQ(U(GetSystemMetricsForDpi)(SM_CXICON, 96), 32);
     EQ(U(GetSystemMetricsForDpi)(SM_CYICON, 96), 32);
@@ -448,6 +487,7 @@ TEST(paint_gdi_dpi_metrics_for_dpi_icon) {
     EQ(U(GetSystemMetricsForDpi)(SM_CXSMICON, 144), 24);
 }
 TEST(paint_gdi_dpi_metrics_for_dpi_scaling_monotonic) {
+    pg_gui();
     REQUIRE(U(GetSystemMetricsForDpi));
     static const int idx[] = { SM_CXVSCROLL, SM_CYHSCROLL, SM_CYCAPTION, SM_CXSIZE, SM_CYSIZE, SM_CYMENU,
         SM_CXSIZEFRAME, SM_CYSIZEFRAME, SM_CXICON, SM_CYICON, SM_CXSMICON, SM_CYSMICON, SM_CXMENUCHECK,
@@ -462,6 +502,7 @@ TEST(paint_gdi_dpi_metrics_for_dpi_scaling_monotonic) {
     }
 }
 TEST(paint_gdi_dpi_metrics_for_dpi_repeatable) {
+    pg_gui();
     REQUIRE(U(GetSystemMetricsForDpi));
     for (int idx = 0; idx < 100; idx++) {
         int a = U(GetSystemMetricsForDpi)(idx, 120), b = U(GetSystemMetricsForDpi)(idx, 120);
@@ -469,6 +510,7 @@ TEST(paint_gdi_dpi_metrics_for_dpi_repeatable) {
     }
 }
 TEST(paint_gdi_dpi_metrics_for_dpi_invalid_index) {
+    pg_gui();
     REQUIRE(U(GetSystemMetricsForDpi));
     CHECK(U(GetSystemMetricsForDpi)(-1, 96) == 0);
     CHECK(U(GetSystemMetricsForDpi)(5000, 96) == 0);
@@ -476,12 +518,14 @@ TEST(paint_gdi_dpi_metrics_for_dpi_invalid_index) {
     CHECK(U(GetSystemMetricsForDpi)((int)0x80000000, 96) == 0);
 }
 TEST(paint_gdi_dpi_metrics_for_dpi_zero_dpi) {
+    pg_gui();
     REQUIRE(U(GetSystemMetricsForDpi));
     SetLastError(0);
     int v = U(GetSystemMetricsForDpi)(SM_CXICON, 0);
     t_note("GetSystemMetricsForDpi(SM_CXICON,0)=%d err=%lu", v, GetLastError());
 }
 TEST(paint_gdi_dpi_spi_for_dpi) {
+    pg_gui();
     REQUIRE(U(SystemParametersInfoForDpi));
     NONCLIENTMETRICSW a, b;
     memset(&a, 0, sizeof a); memset(&b, 0, sizeof b);
@@ -499,6 +543,7 @@ TEST(paint_gdi_dpi_spi_for_dpi) {
     CHECK(U(SystemParametersInfoForDpi)(SPI_GETICONTITLELOGFONT, sizeof(LOGFONTW), &(LOGFONTW){0}, 0, 96));
 }
 TEST(paint_gdi_dpi_spi_for_dpi_invalid) {
+    pg_gui();
     REQUIRE(U(SystemParametersInfoForDpi));
     NONCLIENTMETRICSW a; memset(&a, 0, sizeof a);
     a.cbSize = 3;   /* wrong */
@@ -511,6 +556,7 @@ TEST(paint_gdi_dpi_spi_for_dpi_invalid) {
 
 /* ---- Physical/logical point, auto rotation ---- */
 TEST(paint_gdi_dpi_logical_to_physical_point) {
+    pg_gui();
     REQUIRE(U(LogicalToPhysicalPointForPerMonitorDPI));
     POINT p = {10, 10};
     HWND w = pg_window(WS_OVERLAPPED | WS_VISIBLE, 0, 0, 0, 50, 50, NULL);
@@ -524,6 +570,7 @@ TEST(paint_gdi_dpi_logical_to_physical_point) {
     U(DestroyWindow)(w);
 }
 TEST(paint_gdi_dpi_physical_to_logical_point) {
+    pg_gui();
     REQUIRE(U(PhysicalToLogicalPointForPerMonitorDPI));
     HWND w = pg_window(WS_OVERLAPPED | WS_VISIBLE, 0, 0, 0, 50, 50, NULL);
     if (!w) return;
@@ -533,6 +580,7 @@ TEST(paint_gdi_dpi_physical_to_logical_point) {
     U(DestroyWindow)(w);
 }
 TEST(paint_gdi_dpi_autorotation_state) {
+    pg_gui();
     REQUIRE(U(GetAutoRotationState));
     AR_STATE st = (AR_STATE)0x12345;
     SetLastError(0);
@@ -543,6 +591,7 @@ TEST(paint_gdi_dpi_autorotation_state) {
     }
 }
 TEST(paint_gdi_dpi_autorotation_prefs) {
+    pg_gui();
     REQUIRE(U(GetDisplayAutoRotationPreferences));
     ORIENTATION_PREFERENCE p = (ORIENTATION_PREFERENCE)0x7777;
     BOOL r = U(GetDisplayAutoRotationPreferences)(&p);

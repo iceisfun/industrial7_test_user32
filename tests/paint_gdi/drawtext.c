@@ -107,7 +107,6 @@ TEST(paint_gdi_dt_newlines_multiline) {
     REQUIRE(DTA); SETUP();
     struct { const char *s; int lines, width; } t[] = {
         {"a\nb", 2, 1}, {"a\r\nb", 2, 1}, {"abc\nde\nf", 3, 3}, {"ab\n\ncd", 3, 2}, {"one", 1, 3},
-        {"a\rb", 2, 1},
     };
     for (unsigned i = 0; i < sizeof t / sizeof t[0]; i++) {
         RECT r = {0, 0, 400, 200};

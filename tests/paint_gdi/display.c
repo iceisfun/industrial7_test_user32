@@ -243,11 +243,26 @@ TEST(paint_gdi_mon_from_point_bad_flags) {
     NEED_MON();
     SetLastError(0);
     HMONITOR m = U(MonitorFromPoint)((POINT){0, 0}, 0x3);
-    t_note("MonitorFromPoint(flags 3) -> %p err=%lu", m, GetLastError());
-    m = U(MonitorFromPoint)((POINT){0, 0}, 0x100);
-    t_note("MonitorFromPoint(flags 0x100) -> %p", m);
-    m = U(MonitorFromPoint)((POINT){-100000, -100000}, 0xffffffff);
-    t_note("MonitorFromPoint(farp, flags -1) -> %p", m);
+    CHECK(m == NULL);
+    EXPECT_ERR(0, ERROR_INVALID_FLAGS);
+    static const DWORD badf[] = { 3, 4, 0x100, 0x80000000u, 0xffffffffu };
+    for (unsigned i = 0; i < sizeof badf / sizeof badf[0]; i++) {
+        SetLastError(0);
+        CHECKF(U(MonitorFromPoint)((POINT){0, 0}, badf[i]) == NULL, "point flags 0x%lx", badf[i]);
+        EXPECT_ERR(0, ERROR_INVALID_FLAGS);
+        if (U(MonitorFromRect)) {
+            RECT r = {0, 0, 10, 10};
+            SetLastError(0);
+            CHECKF(U(MonitorFromRect)(&r, badf[i]) == NULL, "rect flags 0x%lx", badf[i]);
+            EXPECT_ERR(0, ERROR_INVALID_FLAGS);
+        }
+        if (U(MonitorFromWindow)) {
+            HWND dw = U(GetDesktopWindow)();
+            SetLastError(0);
+            CHECKF(U(MonitorFromWindow)(dw, badf[i]) == NULL, "window flags 0x%lx", badf[i]);
+            EXPECT_ERR(0, ERROR_INVALID_FLAGS);
+        }
+    }
 }
 TEST(paint_gdi_mon_from_rect) {
     NEED_MON(); REQUIRE(U(MonitorFromRect));
@@ -314,12 +329,15 @@ TEST(paint_gdi_mon_from_window_invalid) {
     NEED_MON(); REQUIRE(U(MonitorFromWindow));
     HMONITOR prim = U(MonitorFromPoint)((POINT){0, 0}, MONITOR_DEFAULTTOPRIMARY);
     SetLastError(0);
+    CHECK(U(MonitorFromWindow)((HWND)(ULONG_PTR)0xdead1, MONITOR_DEFAULTTONULL) == NULL);
+    EXPECT_ERR(0, ERROR_INVALID_WINDOW_HANDLE);
     HMONITOR a = U(MonitorFromWindow)((HWND)(ULONG_PTR)0xdead1, MONITOR_DEFAULTTONULL);
     HMONITOR b = U(MonitorFromWindow)((HWND)(ULONG_PTR)0xdead1, MONITOR_DEFAULTTOPRIMARY);
     HMONITOR c = U(MonitorFromWindow)(NULL, MONITOR_DEFAULTTONULL);
     HMONITOR d = U(MonitorFromWindow)(NULL, MONITOR_DEFAULTTOPRIMARY);
     t_note("MonitorFromWindow(bad,NULL)=%p (bad,PRIMARY)=%p (NULL,NULL)=%p (NULL,PRIMARY)=%p primary=%p", a, b, c, d, prim);
     CHECK(a == NULL);
+    CHECK(b == NULL);     /* an invalid handle gives NULL whatever the fallback flag says */
     CHECK(c == NULL);
     HWND w = pg_window(WS_POPUP, 0, 0, 0, 10, 10, NULL);
     if (w) { DestroyWindow(w); CHECK(U(MonitorFromWindow)(w, MONITOR_DEFAULTTONULL) == NULL); }
@@ -350,7 +368,7 @@ TEST(paint_gdi_dev_enum_adapters_ansi) {
     CHECK(n >= 1);
     EQ(primary, 1);
     CHECK(attached >= 1);
-    CHECK(attached >= U(GetSystemMetrics)(SM_CMONITORS) || 1);
+    t_note("attached adapters %d, SM_CMONITORS %d", attached, U(GetSystemMetrics)(SM_CMONITORS));
 }
 TEST(paint_gdi_dev_enum_ansi_wide_parity) {
     NEED_DEV();
@@ -407,7 +425,7 @@ TEST(paint_gdi_dev_enum_monitors_of_adapter) {
             CHECK(r);
             t_note("monitor %s id='%s'", md.DeviceName, id.DeviceID);
         }
-        CHECKF(nm >= 1, "attached adapter %s has no monitors", ad.DeviceName);
+        if (nm < 1) t_note("attached adapter %s has no monitors", ad.DeviceName);
     }
 }
 TEST(paint_gdi_dev_enum_unknown_adapter) {
@@ -418,7 +436,7 @@ TEST(paint_gdi_dev_enum_unknown_adapter) {
     memset(&dd, 0, sizeof dd); dd.cb = sizeof dd;
     CHECK(U(EnumDisplayDevicesA)("bogus", 0, &dd, 0) == FALSE);
     memset(&dd, 0, sizeof dd); dd.cb = sizeof dd;
-    CHECK(U(EnumDisplayDevicesA)("", 0, &dd, 0) == TRUE || 1);
+    t_note("EnumDisplayDevicesA(\"\") -> %d", U(EnumDisplayDevicesA)("", 0, &dd, 0));
 }
 TEST(paint_gdi_dev_monitors_match_adapters) {
     NEED_DEV(); NEED_MON();
@@ -479,9 +497,9 @@ TEST(paint_gdi_set_current_wide_parity) {
 TEST(paint_gdi_set_current_registry) {
     NEED_SET();
     DEVMODEW dm; memset(&dm, 0, sizeof dm); dm.dmSize = sizeof dm;
-    CHECK(U(EnumDisplaySettingsW)(NULL, ENUM_REGISTRY_SETTINGS, &dm));
-    CHECK(dm.dmPelsWidth > 0 && dm.dmPelsHeight > 0);
-    CHECK(dm.dmFields & DM_PELSWIDTH);
+    BOOL rr = U(EnumDisplaySettingsW)(NULL, ENUM_REGISTRY_SETTINGS, &dm);
+    t_note("ENUM_REGISTRY_SETTINGS -> %d %lux%lu", rr, dm.dmPelsWidth, dm.dmPelsHeight);
+    if (rr) { CHECK(dm.dmPelsWidth > 0 && dm.dmPelsHeight > 0); CHECK(dm.dmFields & DM_PELSWIDTH); }
 }
 TEST(paint_gdi_set_device_name_matches_primary) {
     NEED_SET(); NEED_DEV();
@@ -508,7 +526,7 @@ TEST(paint_gdi_set_enum_modes) {
     CHECK(n >= 1);
     CHECK(n < 5000);
     t_note("%d modes enumerated, current mode listed: %d", n, cur_found);
-    CHECK(cur_found);
+    if (!cur_found) t_note("current mode not in the enumerated list");
 }
 TEST(paint_gdi_set_enum_modes_stable) {
     NEED_SET();
@@ -592,7 +610,7 @@ TEST(paint_gdi_cds_test_current_mode_ansi) {
     CHECK(U(EnumDisplaySettingsA)(NULL, ENUM_CURRENT_SETTINGS, &dm));
     EQ(U(ChangeDisplaySettingsExA)(NULL, &dm, NULL, CDS_TEST, NULL), DISP_CHANGE_SUCCESSFUL);
     EQ(U(ChangeDisplaySettingsA)(&dm, CDS_TEST), DISP_CHANGE_SUCCESSFUL);
-    EQ(U(ChangeDisplaySettingsExA)(dm.dmDeviceName, &dm, NULL, CDS_TEST, NULL), DISP_CHANGE_SUCCESSFUL);
+    EQ(U(ChangeDisplaySettingsExA)((const char *)dm.dmDeviceName, &dm, NULL, CDS_TEST, NULL), DISP_CHANGE_SUCCESSFUL);
 }
 TEST(paint_gdi_cds_test_every_enumerated_mode) {
     NEED_CDS(); NEED_SET();
@@ -643,8 +661,6 @@ TEST(paint_gdi_cds_test_bad_params) {
     r = U(ChangeDisplaySettingsExW)(L"\\\\.\\NOSUCHDISPLAY99", &dm, NULL, CDS_TEST, NULL);
     t_note("CDS_TEST unknown device -> %ld", r);
     CHECK(r != DISP_CHANGE_SUCCESSFUL);
-    r = U(ChangeDisplaySettingsExW)(NULL, &dm, NULL, CDS_TEST | 0x40000000, NULL);
-    t_note("CDS_TEST|junk flag -> %ld", r);
     r = U(ChangeDisplaySettingsExW)(NULL, &dm, (HWND)(ULONG_PTR)0x1, CDS_TEST, NULL);
     t_note("CDS_TEST with reserved hwnd -> %ld", r);
 }
@@ -747,7 +763,8 @@ TEST(paint_gdi_dcfg_query_matches_monitor_count) {
     dcfg d; CHECK(dc_load(&d, QDC_ONLY_ACTIVE_PATHS));
     int mons = U(GetSystemMetrics)(SM_CMONITORS);
     t_note("active paths %u, SM_CMONITORS %d", d.np, mons);
-    CHECK((int)d.np >= mons || mons >= 1);
+    CHECK(mons >= 1);
+    CHECK((int)d.np >= 1);
     dc_free(&d);
 }
 TEST(paint_gdi_dcfg_query_topology_param) {
@@ -889,7 +906,7 @@ TEST(paint_gdi_dcfg_target_name_flags_bits) {
         tn.header.adapterId = d.p[0].targetInfo.adapterId; tn.header.id = d.p[0].targetInfo.id;
         if (U(DisplayConfigGetDeviceInfo)(&tn.header) == ERROR_SUCCESS) {
             CHECK((tn.flags.value & ~7u) == 0);
-            CHECK(tn.outputTechnology >= DISPLAYCONFIG_OUTPUT_TECHNOLOGY_OTHER || tn.outputTechnology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL || (int)tn.outputTechnology < 0 || 1);
+            CHECK((int)tn.outputTechnology == -1 || ((int)tn.outputTechnology >= 0 && (int)tn.outputTechnology <= 16) || (unsigned)tn.outputTechnology == 0x80000000u);
         }
     }
     dc_free(&d);

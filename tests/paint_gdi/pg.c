@@ -63,3 +63,19 @@ HWND pg_topwin_cls(const char *cls, int x, int y, int w, int h, HWND parent, DWO
     return U(CreateWindowExA)(parent ? 0 : (WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE), cls, "pg", style, x, y, w, h, parent, NULL, GetModuleHandleA(NULL), NULL);
 }
 BOOL pg_visible_probe(HDC dc, int x, int y) { return PtVisible(dc, x, y); }
+
+BOOL pg_scaled(void) {
+    /* DPI-unaware process on a scaled desktop: screen metrics are virtualised while DC origins are physical */
+    DEVMODEW dm; memset(&dm, 0, sizeof dm); dm.dmSize = sizeof dm;
+    if (!U(EnumDisplaySettingsW) || !U(EnumDisplaySettingsW)(NULL, ENUM_CURRENT_SETTINGS, &dm)) return FALSE;
+    return (int)dm.dmPelsWidth != U(GetSystemMetrics)(SM_CXSCREEN) || (int)dm.dmPelsHeight != U(GetSystemMetrics)(SM_CYSCREEN);
+}
+
+void pg_gui(void) {
+    /* make this thread a GUI thread (some DPI APIs report nothing for a thread that never touched win32k) */
+    static int done;
+    if (done) return;
+    HWND w = t_make_window(NULL, WS_POPUP, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, 0, 0, 1, 1, NULL);
+    if (w) { if (U(DestroyWindow)) U(DestroyWindow)(w); t_pump(); }
+    done = 1;
+}

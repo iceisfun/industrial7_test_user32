@@ -35,4 +35,6 @@ void pg_pump(void);
 HWND pg_topwin(int x, int y, int w, int h);
 HWND pg_topwin_cls(const char *cls, int x, int y, int w, int h, HWND parent, DWORD style);
 BOOL pg_visible_probe(HDC dc, int x, int y);
+BOOL pg_scaled(void);
+void pg_gui(void);
 #endif

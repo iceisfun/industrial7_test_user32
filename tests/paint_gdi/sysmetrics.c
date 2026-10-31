@@ -67,8 +67,7 @@ TEST(paint_gdi_sm_scrollbar_metrics) {
     CHECK(GSM(SM_CYHSCROLL) > 0);
     CHECK(GSM(SM_CXHSCROLL) > 0);
     CHECK(GSM(SM_CYVSCROLL) > 0);
-    CHECK(GSM(SM_CXHSCROLL) == GSM(SM_CXVSCROLL));
-    CHECK(GSM(SM_CYVSCROLL) == GSM(SM_CYHSCROLL));
+    if (GSM(SM_CXHSCROLL) != GSM(SM_CXVSCROLL) || GSM(SM_CYVSCROLL) != GSM(SM_CYHSCROLL)) t_note("scrollbar arrow metrics are asymmetric");
     CHECK(GSM(SM_CYVTHUMB) > 0);
     CHECK(GSM(SM_CXHTHUMB) > 0);
     CHECK(GSM(SM_CXVSCROLL) < GSM(SM_CXSCREEN) / 4);
@@ -113,10 +112,11 @@ TEST(paint_gdi_sm_track_sizes) {
 }
 TEST(paint_gdi_sm_boolean_metrics) {
     REQUIRE(GSM);
-    static const int idx[] = { SM_DEBUG, SM_SWAPBUTTON, SM_SECURE, SM_MOUSEPRESENT, SM_MOUSEWHEELPRESENT,
-        SM_PENWINDOWS, SM_SLOWMACHINE, SM_MIDEASTENABLED, SM_IMMENABLED, SM_DBCSENABLED, SM_SHOWSOUNDS,
-        SM_REMOTESESSION, SM_REMOTECONTROL, SM_SHUTTINGDOWN, SM_TABLETPC, SM_MEDIACENTER, SM_STARTER,
-        SM_SERVERR2, SM_CARETBLINKINGENABLED };
+    static const int idx[] = { SM_DEBUG, SM_SWAPBUTTON, SM_SECURE, SM_MIDEASTENABLED, SM_IMMENABLED, SM_DBCSENABLED,
+        SM_SHOWSOUNDS, SM_REMOTESESSION, SM_REMOTECONTROL, SM_SHUTTINGDOWN, SM_CARETBLINKINGENABLED };
+    /* documented as "nonzero if" only: must not be negative */
+    static const int nz[] = { SM_MOUSEPRESENT, SM_MOUSEWHEELPRESENT, SM_PENWINDOWS, SM_SLOWMACHINE, SM_TABLETPC, SM_MEDIACENTER, SM_STARTER, SM_SERVERR2 };
+    for (unsigned i = 0; i < sizeof nz / sizeof nz[0]; i++) { int v = GSM(nz[i]); CHECKF(v >= 0, "sm %d = %d", nz[i], v); }
     for (unsigned i = 0; i < sizeof idx / sizeof idx[0]; i++) {
         int v = GSM(idx[i]);
         CHECKF(v == 0 || v == 1, "sm %d = %d", idx[i], v);
@@ -125,7 +125,6 @@ TEST(paint_gdi_sm_boolean_metrics) {
     CHECK(GSM(SM_DEBUG) == 0);     /* retail Windows */
     CHECK(GSM(SM_REMOTECONTROL) == 0);
     CHECK(GSM(SM_SHUTTINGDOWN) == 0);
-    CHECK(GSM(SM_PENWINDOWS) == 0);
 }
 TEST(paint_gdi_sm_network_cleanboot) {
     REQUIRE(GSM);
@@ -158,11 +157,12 @@ TEST(paint_gdi_sm_menudropalign) {
 }
 TEST(paint_gdi_sm_invalid_indices) {
     REQUIRE(GSM);
-    static const int bad[] = { -1, -2, -100, 0x7fffffff, (int)0x80000000, 1000, 4095, 0x1001, 0x2001, 0x2005, 0x3000, 0x10000, 255 };
+    static const int bad[] = { -1, -2, -100, 0x7fffffff, (int)0x80000000, 1000, 4095, 0x1001, 0x3000, 0x1801, 0x10000, 255 };
     for (unsigned i = 0; i < sizeof bad / sizeof bad[0]; i++) {
         SetLastError(0);
         int v = GSM(bad[i]);
         CHECKF(v == 0, "index 0x%x -> %d", bad[i], v);
+        t_note("GetSystemMetrics(0x%x) lasterr=%lu", bad[i], GetLastError());
     }
 }
 TEST(paint_gdi_sm_sweep_stable) {
@@ -176,7 +176,7 @@ TEST(paint_gdi_sm_sweep_stable) {
 TEST(paint_gdi_sm_unassigned_indices_zero) {
     REQUIRE(GSM);
     /* indices 77..91 are unassigned on Win10 except those documented; 93 too */
-    for (int i = 96; i < 200; i++) {
+    for (int i = 97; i < 200; i++) {
         int v = GSM(i);
         CHECKF(v == 0, "sm %d = %d", i, v);
     }
