@@ -73,3 +73,9 @@ void g7_pump_ms(int ms)
     DWORD end = GetTickCount() + ms;
     do { t_pump(); Sleep(5); } while ((int)(end - GetTickCount()) > 0);
 }
+
+int g7_is_wine(void)
+{
+    HMODULE n = GetModuleHandleA("ntdll.dll");
+    return n && GetProcAddress(n, "wine_get_version") != NULL;
+}
