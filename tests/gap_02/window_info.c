@@ -18,7 +18,7 @@ typedef HWND (WINAPI *hwnd1_fn)(HWND);
 TEST(gap2_band_resolve) {
     REQUIRE(BAND_FN());
     CHECK(t_proc("GetWindowBand") != NULL);
-    CHECK(t_proc_ord(1981) == t_proc("GetWindowBand"));
+    NOTE_EQ(t_proc_ord(1981), t_proc("GetWindowBand")); /* ordinals vary between builds */
     CHECK((ULONG_PTR)t_proc("GetWindowBand") != (ULONG_PTR)t_proc("GetWindowCompositionAttribute"));
 }
 
@@ -125,7 +125,7 @@ TEST(gap2_band_repeat) {
 /* ------------------------------------------------ GetWindowCompositionAttribute */
 TEST(gap2_wca_resolve) {
     REQUIRE(WCA_FN());
-    CHECK(t_proc_ord(1982) == t_proc("GetWindowCompositionAttribute"));
+    NOTE_EQ(t_proc_ord(1982), t_proc("GetWindowCompositionAttribute")); /* ordinals vary between builds */
 }
 
 TEST(gap2_wca_invalid_hwnd) {
@@ -221,7 +221,7 @@ TEST(gap2_wca_cloaked) {
 /* ---------------------------------------------------- GetWindowCompositionInfo */
 TEST(gap2_wci_resolve) {
     REQUIRE(t_proc("GetWindowCompositionInfo"));
-    CHECK(t_proc_ord(1983) == t_proc("GetWindowCompositionInfo"));
+    NOTE_EQ(t_proc_ord(1983), t_proc("GetWindowCompositionInfo")); /* ordinals vary between builds */
 }
 TEST(gap2_wci_invalid_hwnd) {
     wci_fn f = (wci_fn)t_proc("GetWindowCompositionInfo"); REQUIRE(f);
@@ -239,7 +239,7 @@ TEST(gap2_wci_invalid_hwnd) {
 /* ----------------------------------------------------- GetWindowMinimizeRect */
 TEST(gap2_minrect_resolve) {
     REQUIRE(t_proc("GetWindowMinimizeRect"));
-    CHECK(t_proc_ord(1995) == t_proc("GetWindowMinimizeRect"));
+    NOTE_EQ(t_proc_ord(1995), t_proc("GetWindowMinimizeRect")); /* ordinals vary between builds */
 }
 TEST(gap2_minrect_invalid_hwnd) {
     minrect_fn f = (minrect_fn)t_proc("GetWindowMinimizeRect"); REQUIRE(f);
@@ -277,7 +277,7 @@ TEST(gap2_minrect_dead_window) {
 /* ---------------------------------------------------- GetWindowProcessHandle */
 TEST(gap2_wph_resolve) {
     REQUIRE(t_proc("GetWindowProcessHandle"));
-    CHECK(t_proc_ord(2000) == t_proc("GetWindowProcessHandle"));
+    NOTE_EQ(t_proc_ord(2000), t_proc("GetWindowProcessHandle")); /* ordinals vary between builds */
 }
 TEST(gap2_wph_invalid_hwnd) {
     wph_fn f = (wph_fn)t_proc("GetWindowProcessHandle"); REQUIRE(f);
@@ -317,7 +317,7 @@ TEST(gap2_wph_dead_window) {
 /* ------------------------------------------------------------ GetWindowRgnEx */
 TEST(gap2_rgnex_resolve) {
     REQUIRE(t_proc("GetWindowRgnEx"));
-    CHECK(t_proc_ord(2007) == t_proc("GetWindowRgnEx"));
+    NOTE_EQ(t_proc_ord(2007), t_proc("GetWindowRgnEx")); /* ordinals vary between builds */
 }
 TEST(gap2_rgnex_invalid_hwnd) {
     rgnex_fn f = (rgnex_fn)t_proc("GetWindowRgnEx"); REQUIRE(f);
@@ -386,8 +386,8 @@ TEST(gap2_rgnex_bad_hrgn) {
 TEST(gap2_ghost_resolve) {
     REQUIRE(t_proc("GhostWindowFromHungWindow"));
     REQUIRE(t_proc("HungWindowFromGhostWindow"));
-    CHECK(t_proc_ord(2015) == t_proc("GhostWindowFromHungWindow"));
-    CHECK(t_proc_ord(2020) == t_proc("HungWindowFromGhostWindow"));
+    NOTE_EQ(t_proc_ord(2015), t_proc("GhostWindowFromHungWindow")); /* ordinals vary between builds */
+    NOTE_EQ(t_proc_ord(2020), t_proc("HungWindowFromGhostWindow")); /* ordinals vary between builds */
     CHECK(t_proc("GhostWindowFromHungWindow") != t_proc("HungWindowFromGhostWindow"));
 }
 TEST(gap2_ghost_invalid_hwnd) {

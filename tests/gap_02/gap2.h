@@ -35,6 +35,15 @@ static HWND g2_dead_hwnd(void) {
     return h;
 }
 
+/* Wine aborts the process when an unimplemented user32 stub is *called*; those
+ * calls are skipped there (real Windows implements them). */
+static int g2_is_wine(void) {
+    static int v = -1;
+    if (v < 0) { HMODULE nt = GetModuleHandleA("ntdll.dll"); v = nt && GetProcAddress(nt, "wine_get_version") ? 1 : 0; }
+    return v;
+}
+#define REQUIRE_NOT_WINE_STUB(name) do { if (g2_is_wine()) { t_skip("wine stub aborts when called: " name); return; } } while (0)
+
 /* Run fn(arg) on a fresh thread, wait at most 5 s. Returns thread exit code or 0xdead0001 on timeout. */
 typedef DWORD (WINAPI *g2_thread_fn)(void *);
 static DWORD g2_run_thread(g2_thread_fn fn, void *arg) {
