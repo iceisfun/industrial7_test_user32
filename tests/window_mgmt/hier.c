@@ -490,8 +490,11 @@ static LPARAM g_seen_lp;
 static BOOL CALLBACK lp_cb(HWND h, LPARAM l) { g_seen_lp = l; return FALSE; }
 TEST(wm_enum_lparam_passthrough) {
     LPARAM seen;
+    HWND h = wm_hidden();
+    g_seen_lp = 0;
     U(EnumWindows)(lp_cb, 0x1234567812345678ULL);
     seen = g_seen_lp;
+    wm_destroy(h);
     EQ(seen, 0x1234567812345678ULL);
 }
 
