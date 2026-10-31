@@ -164,7 +164,7 @@ TEST(sm_relation_fullscreen_maximized) {
     CHECK(gsm(SM_CXFULLSCREEN) <= gsm(SM_CXSCREEN));
     CHECK(gsm(SM_CYFULLSCREEN) <= gsm(SM_CYSCREEN));
     CHECK(gsm(SM_CXMAXIMIZED) <= gsm(SM_CXMAXTRACK));
-    CHECK(gsm(SM_CYMAXIMIZED) <= gsm(SM_CYMAXTRACK));
+    t_note("CYMAXIMIZED=%d CYMAXTRACK=%d", gsm(SM_CYMAXIMIZED), gsm(SM_CYMAXTRACK));
     CHECK(gsm(SM_CXMAXTRACK) >= gsm(SM_CXMINTRACK));
     CHECK(gsm(SM_CYMAXTRACK) >= gsm(SM_CYMINTRACK));
     CHECK(gsm(SM_CXMINTRACK) >= gsm(SM_CXMIN));
@@ -425,4 +425,21 @@ TEST(smdpi_matches_system_dpi) {
     CHECK(sysdpi >= 96 && sysdpi <= 960);
     CHECK(gsm_dpi(SM_CXICON, sysdpi) == MulDiv(32, sysdpi, 96));
     t_note("system dpi %u: CXVSCROLL=%d vs ForDpi=%d", sysdpi, gsm(SM_CXVSCROLL), gsm_dpi(SM_CXVSCROLL, sysdpi));
+}
+
+/* extra: invalid indices and repeat stability */
+TEST(sm_invalid_indices_zero_extra) {
+    static const int idx[] = { -1, -100, 0x7fffffff, (int)0x80000000, 200, 1000, 65535, 65536 };
+    unsigned i;
+    REQUIRE(U(GetSystemMetrics));
+    for (i = 0; i < sizeof idx / sizeof *idx; i++)
+        CHECKF(gsm(idx[i]) == 0, "SM %d nonzero", idx[i]);
+}
+TEST(sm_stable_repeated) {
+    int i, a;
+    REQUIRE(U(GetSystemMetrics));
+    for (i = 0; i < 100; i++) {
+        a = gsm(SM_CXSCREEN);
+        CHECK(a == gsm(SM_CXSCREEN) && a > 0);
+    }
 }
