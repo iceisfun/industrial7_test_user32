@@ -5,6 +5,47 @@
 #include <ddeml.h>
 #include <dde.h>
 
+/* user32 is never linked: route every direct call through GetProcAddress. */
+#define DefWindowProcA (*(__typeof__(&DefWindowProcA))t_proc("DefWindowProcA"))
+#define DispatchMessageA (*(__typeof__(&DispatchMessageA))t_proc("DispatchMessageA"))
+#define EnableWindow (*(__typeof__(&EnableWindow))t_proc("EnableWindow"))
+#define EndDialog (*(__typeof__(&EndDialog))t_proc("EndDialog"))
+#define EndMenu (*(__typeof__(&EndMenu))t_proc("EndMenu"))
+#define FindWindowA (*(__typeof__(&FindWindowA))t_proc("FindWindowA"))
+#define GetActiveWindow (*(__typeof__(&GetActiveWindow))t_proc("GetActiveWindow"))
+#define GetFocus (*(__typeof__(&GetFocus))t_proc("GetFocus"))
+#define GetKeyState (*(__typeof__(&GetKeyState))t_proc("GetKeyState"))
+#define GetWindowRect (*(__typeof__(&GetWindowRect))t_proc("GetWindowRect"))
+#define IsIconic (*(__typeof__(&IsIconic))t_proc("IsIconic"))
+#define IsWindow (*(__typeof__(&IsWindow))t_proc("IsWindow"))
+#define IsZoomed (*(__typeof__(&IsZoomed))t_proc("IsZoomed"))
+#define KillTimer (*(__typeof__(&KillTimer))t_proc("KillTimer"))
+#define MoveWindow (*(__typeof__(&MoveWindow))t_proc("MoveWindow"))
+#define MsgWaitForMultipleObjects (*(__typeof__(&MsgWaitForMultipleObjects))t_proc("MsgWaitForMultipleObjects"))
+#define PeekMessageA (*(__typeof__(&PeekMessageA))t_proc("PeekMessageA"))
+#define PeekMessageW (*(__typeof__(&PeekMessageW))t_proc("PeekMessageW"))
+#define PostMessageA (*(__typeof__(&PostMessageA))t_proc("PostMessageA"))
+#define PostMessageW (*(__typeof__(&PostMessageW))t_proc("PostMessageW"))
+#define PostQuitMessage (*(__typeof__(&PostQuitMessage))t_proc("PostQuitMessage"))
+#define PostThreadMessageA (*(__typeof__(&PostThreadMessageA))t_proc("PostThreadMessageA"))
+#define SendMessageA (*(__typeof__(&SendMessageA))t_proc("SendMessageA"))
+#define SendMessageW (*(__typeof__(&SendMessageW))t_proc("SendMessageW"))
+#define SetActiveWindow (*(__typeof__(&SetActiveWindow))t_proc("SetActiveWindow"))
+#define SetFocus (*(__typeof__(&SetFocus))t_proc("SetFocus"))
+#define SetForegroundWindow (*(__typeof__(&SetForegroundWindow))t_proc("SetForegroundWindow"))
+#define SetTimer (*(__typeof__(&SetTimer))t_proc("SetTimer"))
+#define SetWindowPos (*(__typeof__(&SetWindowPos))t_proc("SetWindowPos"))
+#define TranslateMessage (*(__typeof__(&TranslateMessage))t_proc("TranslateMessage"))
+#define UnregisterClassA (*(__typeof__(&UnregisterClassA))t_proc("UnregisterClassA"))
+#define UnregisterClassW (*(__typeof__(&UnregisterClassW))t_proc("UnregisterClassW"))
+#define CreatePopupMenu (*(__typeof__(&CreatePopupMenu))t_proc("CreatePopupMenu"))
+#define AppendMenuA (*(__typeof__(&AppendMenuA))t_proc("AppendMenuA"))
+#define DestroyMenu (*(__typeof__(&DestroyMenu))t_proc("DestroyMenu"))
+#define TrackPopupMenu (*(__typeof__(&TrackPopupMenu))t_proc("TrackPopupMenu"))
+#define MessageBoxA (*(__typeof__(&MessageBoxA))t_proc("MessageBoxA"))
+#define DialogBoxIndirectParamA (*(__typeof__(&DialogBoxIndirectParamA))t_proc("DialogBoxIndirectParamA"))
+#define RegisterClassW (*(__typeof__(&RegisterClassW))t_proc("RegisterClassW"))
+
 #ifndef DMLERR_NO_ERROR
 #define DMLERR_NO_ERROR 0
 #endif

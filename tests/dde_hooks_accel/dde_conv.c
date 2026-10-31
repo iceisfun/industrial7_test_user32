@@ -70,7 +70,7 @@ static HDDEDATA CALLBACK srv_cb(UINT t, UINT f, HCONV c, HSZ h1, HSZ h2, HDDEDAT
         return mkdata(g_srv, "reqdata", h2, f);
     case XTYP_POKE: case XTYP_EXECUTE: return (HDDEDATA)(ULONG_PTR)s_xact_ret;
     case XTYP_ADVSTART: return (HDDEDATA)(ULONG_PTR)(s_advstart_ok ? 1 : 0);
-    case XTYP_ADVREQ: { char b[32]; wsprintfA(b, "adv%d", ++s_advreq_n); return mkdata(g_srv, b, h2, f); }
+    case XTYP_ADVREQ: { char b[32]; sprintf(b, "adv%d", ++s_advreq_n); return mkdata(g_srv, b, h2, f); }
     case XTYP_DISCONNECT: return NULL;
     }
     return NULL;
