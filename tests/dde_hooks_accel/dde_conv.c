@@ -550,7 +550,6 @@ TEST(ddeconv_queryconvinfo_sync) {
     EQ(ci.wConvst, XST_CONNECTED);
     EQ(ci.wType, 0);
     EQ(ci.wLastError, 0);
-    CHECK(ci.hConvPartner != NULL || 1);
     EQ(ci.hszSvcPartner, g_hsvc);
     EQ(ci.hszTopic, g_htop);
     EQ(ci.ConvCtxt.cb, sizeof(CONVCONTEXT));

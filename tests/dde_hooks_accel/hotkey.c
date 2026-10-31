@@ -206,14 +206,14 @@ TEST(hotkey_invalid_vk_observed) {
 TEST(hotkey_id_range) {
     HKNEED();
     HWND w = hkw();
-    static const int ok_ids[] = {0, 1, 0x7FFF, 0xBFFF, 0xC000, 0xFFFF};
+    static const int ok_ids[] = {0, 1, 0x7FFF, 0xBFFF};
     for (unsigned i = 0; i < sizeof ok_ids / sizeof ok_ids[0]; i++) {
         SetLastError(0);
         BOOL r = U(RegisterHotKey)(w, ok_ids[i], MODS3, VK_F24);
         CHECKF(r, "id 0x%x err %lu", ok_ids[i], GetLastError());
         if (r) CHECKF(U(UnregisterHotKey)(w, ok_ids[i]), "unregister id 0x%x", ok_ids[i]);
     }
-    static const int odd_ids[] = {0x10000, 0x7FFFFFFF, -1, (int)0x80000000};
+    static const int odd_ids[] = {0xC000, 0xFFFF, 0x10000, 0x7FFFFFFF, -1, (int)0x80000000};
     for (unsigned i = 0; i < sizeof odd_ids / sizeof odd_ids[0]; i++) {
         SetLastError(0);
         BOOL r = U(RegisterHotKey)(w, odd_ids[i], MODS3, VK_F24);

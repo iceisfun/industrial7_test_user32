@@ -216,7 +216,6 @@ TEST(ddelparam_stress_pack_free) {
         if (!lp || !U(UnpackDDElParam)(WM_DDE_DATA, lp, &lo, &hi) || lo != (UINT_PTR)i || hi != (UINT_PTR)i * 3) { CHECKF(0, "iteration %d", i); break; }
         U(FreeDDElParam)(WM_DDE_DATA, lp);
     }
-    CHECK(1);
 }
 
 /* ---------- message flow between two windows of this thread ---------- */

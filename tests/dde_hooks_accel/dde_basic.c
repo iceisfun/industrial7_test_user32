@@ -127,7 +127,6 @@ TEST(dde_init_uninit_loop) {
         if (!dde_open(&id, 0)) { CHECKF(0, "iteration %d", i); break; }
         if (!U(DdeUninitialize)(id)) { CHECKF(0, "uninit iteration %d", i); break; }
     }
-    CHECK(1);
 }
 TEST(dde_init_many_instances) {
     REQUIRE(U(DdeInitializeA)); REQUIRE(U(DdeUninitialize));
@@ -192,7 +191,7 @@ TEST(dde_hsz_create_query_a) {
 }
 TEST(dde_hsz_create_query_w) {
     REQUIRE(U(DdeInitializeW)); REQUIRE(U(DdeUninitialize)); REQUIRE(U(DdeCreateStringHandleW)); REQUIRE(U(DdeQueryStringW)); REQUIRE(U(DdeFreeStringHandle));
-    DWORD id; CHECK(U(DdeInitializeW)(&(DWORD){0}, dh_null_cb, 0, 0) == 0 || 1);
+    DWORD id; (void)id;
     id = 0; CHECK(U(DdeInitializeW)(&id, dh_null_cb, 0, 0) == 0);
     HSZ h = U(DdeCreateStringHandleW)(id, L"T32HelloW", CP_WINUNICODE);
     CHECK(h != NULL);
