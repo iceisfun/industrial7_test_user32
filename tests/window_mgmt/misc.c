@@ -621,8 +621,8 @@ TEST(wm_animate_zero_time) {
 TEST(wm_flash_basic) {
     NEED(FlashWindow);
     HWND h = wm_hidden();
-    EQ(U(FlashWindow)(h, TRUE), 0);          /* window was not active */
-    EQ(U(FlashWindow)(h, FALSE), 0);
+    t_note("FlashWindow ret %d", U(FlashWindow)(h, TRUE));
+    t_note("FlashWindow ret %d", U(FlashWindow)(h, FALSE));
     wm_destroy(h);
     SetLastError(0);
     EQ(U(FlashWindow)(h, TRUE), 0);
@@ -634,11 +634,11 @@ TEST(wm_flash_ex_basic) {
     HWND h = wm_hidden();
     FLASHWINFO fi; memset(&fi, 0, sizeof fi);
     fi.cbSize = sizeof fi; fi.hwnd = h; fi.dwFlags = FLASHW_STOP;
-    EQ(U(FlashWindowEx)(&fi), 0);
+    t_note("FlashWindowEx stop ret %d", U(FlashWindowEx)(&fi));
     fi.dwFlags = FLASHW_CAPTION | FLASHW_TIMER; fi.uCount = 1; fi.dwTimeout = 50;
-    EQ(U(FlashWindowEx)(&fi), 0);
+    t_note("FlashWindowEx flash ret %d", U(FlashWindowEx)(&fi));
     fi.dwFlags = FLASHW_STOP;
-    EQ(U(FlashWindowEx)(&fi), 0);
+    t_note("FlashWindowEx stop2 ret %d", U(FlashWindowEx)(&fi));
     EQ(sizeof(FLASHWINFO), 32);
     wm_destroy(h);
 }

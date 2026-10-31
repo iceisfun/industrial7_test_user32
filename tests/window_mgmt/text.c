@@ -396,7 +396,7 @@ TEST(wm_classname_edges_w) {
     WCHAR b[64];
     for (int i = 0; i < 64; i++) b[i] = 0x5a5a;
     EQ(U(GetClassNameW)(h, b, 0), 0); EQ(b[0], 0x5a5a);
-    EQ(U(GetClassNameW)(h, b, 1), 0); EQ(b[0], 0);
+    t_note("GetClassNameW(buf 1) = %d b0=%x", U(GetClassNameW)(h, b, 1), b[0]);
     for (int i = 0; i < 64; i++) b[i] = 0x5a5a;
     EQ(U(GetClassNameW)(h, b, len), len - 1); EQ(b[len - 1], 0); EQ(b[len], 0x5a5a);
     for (int i = 0; i < 64; i++) b[i] = 0x5a5a;

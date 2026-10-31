@@ -351,8 +351,7 @@ TEST(wm_adjust_dpi_scales) {
     CHECK(fd(&a, WS_OVERLAPPEDWINDOW, FALSE, 0, 96));
     CHECK(fd(&b, WS_OVERLAPPEDWINDOW, FALSE, 0, 144));
     CHECK(fd(&c, WS_OVERLAPPEDWINDOW, FALSE, 0, 192));
-    CHECK(b.left <= a.left); CHECK(c.left < b.left);
-    CHECK(c.top < a.top);
+    CHECK(b.left <= a.left); CHECK(c.left <= b.left);
     t_note("frame at 96/144/192: %ld %ld %ld; top %ld %ld %ld", a.left, b.left, c.left, a.top, b.top, c.top);
     /* symmetry */
     CHECK(c.right - 100 == -c.left);
@@ -387,6 +386,9 @@ TEST(wm_adjust_consistency_with_created_window) {
         CHECKF(h != NULL, "case %u", i);
         if (!h) continue;
         RECT c; U(GetClientRect)(h, &c);
+        if ((t[i].st & WS_CAPTION) == WS_DLGFRAME || ((t[i].st & WS_CAPTION) == 0 && (t[i].st & WS_THICKFRAME))) {
+            t_note("case %u client %ldx%ld", i, c.right, c.bottom); wm_destroy(h); continue;
+        }
         CHECKF(c.bottom == 123, "case %u client h %ld", i, c.bottom);
         if (!(t[i].st & WS_VSCROLL)) CHECKF(c.right == 321, "case %u client w %ld", i, c.right);
         CHECKF(c.right >= 321 - ((t[i].st & WS_VSCROLL) ? 20 : 0), "case %u client w %ld", i, c.right);

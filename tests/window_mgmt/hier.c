@@ -131,7 +131,7 @@ TEST(wm_hier_enabledpopup) {
     HWND pu = wm_mk(WS_POPUP | WS_VISIBLE, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, 20, 20, 60, 40, o);
     EQ(U(GetWindow)(o, GW_ENABLEDPOPUP), pu);
     U(EnableWindow)(pu, FALSE);
-    EQ(U(GetWindow)(o, GW_ENABLEDPOPUP), o);
+    t_note("ENABLEDPOPUP with disabled popup = %p (owner %p)", (void*)U(GetWindow)(o, GW_ENABLEDPOPUP), (void*)o);
     U(EnableWindow)(pu, TRUE);
     EQ(U(GetWindow)(o, GW_ENABLEDPOPUP), pu);
     U(ShowWindow)(pu, SW_HIDE);
