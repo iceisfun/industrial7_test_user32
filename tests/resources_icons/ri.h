@@ -10,6 +10,13 @@
 /* OBM_* ids are hidden behind OEMRESOURCE in the SDK header */
 #ifndef OBM_CLOSE
 #define OBM_CLOSE 32754
+#endif
+#ifndef OCR_NORMAL
+#define OCR_NORMAL 32512
+#define OCR_UP 32516
+#endif
+#ifndef OBM_UPARROW
+
 #define OBM_UPARROW 32753
 #define OBM_DNARROW 32752
 #define OBM_RGARROW 32751
