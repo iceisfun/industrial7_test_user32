@@ -59,6 +59,10 @@ static BYTE *ri_curdata(int w, int h, int bpp, DWORD argb, int hx, int hy, DWORD
     return r;
 }
 
+/* single-evaluation equality (the harness EXPECT_EQ evaluates its arguments twice) */
+#define RI_EQ(a, b) do { ULONG_PTR a_ = (ULONG_PTR)(a), b_ = (ULONG_PTR)(b); \
+    t_check(a_ == b_, __FILE__, __LINE__, #a " == " #b, "got 0x%llx want 0x%llx", (unsigned long long)a_, (unsigned long long)b_); } while (0)
+
 /* ---- bitmap info ------------------------------------------------------ */
 static BOOL ri_bmp(HBITMAP hb, BITMAP *bm)
 {

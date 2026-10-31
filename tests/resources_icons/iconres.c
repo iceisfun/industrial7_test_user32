@@ -49,7 +49,7 @@ TEST(resources_icons_res_cursor_resource_data)
     if (r) {
         WORD *d = LockResource(LoadResource(m, r));
         CHECK(d != NULL);
-        if (d) { EXPECT_EQ(d[0], 5); EXPECT_EQ(d[1], 7); EXPECT_EQ(*(DWORD *)(d + 2), 40); }
+        if (d) { RI_EQ(d[0], 5); RI_EQ(d[1], 7); RI_EQ(*(DWORD *)(d + 2), 40); }
     }
 }
 
@@ -66,9 +66,9 @@ TEST(resources_icons_res_loadimage_group_sizes)
         CHECKF(ic != NULL, "size %d", sz[i]);
         if (!ic) continue;
         CHECK(ri_iconsize(ic, &w, &h, &bpp, &cur));
-        EXPECT_EQ(w, sz[i]); EXPECT_EQ(h, sz[i]);
-        EXPECT_EQ(cur, FALSE);
-        EXPECT_EQ(bpp, 32);
+        RI_EQ(w, sz[i]); RI_EQ(h, sz[i]);
+        RI_EQ(cur, FALSE);
+        RI_EQ(bpp, 32);
         CHECK(U(DestroyIcon)(ic));
     }
 }
@@ -84,12 +84,12 @@ TEST(resources_icons_res_loadicon_group)
     b = U(LoadIconW)(m, MAKEINTRESOURCEW(RI_GRP_ICON));
     CHECK(b != NULL);
     /* LoadIcon returns a shared handle: repeated loads give the same handle */
-    EXPECT_EQ(a, b);
+    RI_EQ(a, b);
     {
         int w = 0, h = 0;
         if (a && ri_iconsize(a, &w, &h, NULL, NULL)) {
-            EXPECT_EQ(w, ri_defsize(0,0));
-            EXPECT_EQ(h, ri_defsize(0,1));
+            RI_EQ(w, ri_defsize(0,0));
+            RI_EQ(h, ri_defsize(0,1));
         }
     }
 }
@@ -104,7 +104,7 @@ TEST(resources_icons_res_loadimage_actual_size)
     REQUIRE_FIX(m);
     ic = ri_li(m, RI_GRP_ICON24, IMAGE_ICON, 0, 0, 0);
     CHECK(ic != NULL);
-    if (ic) { CHECK(ri_iconsize(ic, &w, &h, NULL, NULL)); EXPECT_EQ(w, 24); EXPECT_EQ(h, 24); U(DestroyIcon)(ic); }
+    if (ic) { CHECK(ri_iconsize(ic, &w, &h, NULL, NULL)); RI_EQ(w, 24); RI_EQ(h, 24); U(DestroyIcon)(ic); }
 }
 
 TEST(resources_icons_res_loadimage_defaultsize)
@@ -118,8 +118,8 @@ TEST(resources_icons_res_loadimage_defaultsize)
     CHECK(ic != NULL);
     if (ic) {
         CHECK(ri_iconsize(ic, &w, &h, NULL, NULL));
-        EXPECT_EQ(w, ri_defsize(0,0));
-        EXPECT_EQ(h, ri_defsize(0,1));
+        RI_EQ(w, ri_defsize(0,0));
+        RI_EQ(h, ri_defsize(0,1));
         U(DestroyIcon)(ic);
     }
     /* explicit cx/cy override LR_DEFAULTSIZE */
@@ -145,7 +145,7 @@ TEST(resources_icons_res_loadimage_scaled)
         CHECKF(ic != NULL, "sz %d", sz[i]);
         if (!ic) continue;
         CHECK(ri_iconsize(ic, &w, &h, NULL, NULL));
-        EXPECT_EQ(w, sz[i]); EXPECT_EQ(h, sz[i]);
+        RI_EQ(w, sz[i]); RI_EQ(h, sz[i]);
         U(DestroyIcon)(ic);
     }
 }
@@ -159,7 +159,7 @@ TEST(resources_icons_res_loadimage_nonsquare)
     REQUIRE_FIX(m);
     ic = ri_li(m, RI_GRP_ICON24, IMAGE_ICON, 20, 40, 0);
     CHECK(ic != NULL);
-    if (ic) { CHECK(ri_iconsize(ic, &w, &h, NULL, NULL)); EXPECT_EQ(w, 20); EXPECT_EQ(h, 40); U(DestroyIcon)(ic); }
+    if (ic) { CHECK(ri_iconsize(ic, &w, &h, NULL, NULL)); RI_EQ(w, 20); RI_EQ(h, 40); U(DestroyIcon)(ic); }
 }
 
 TEST(resources_icons_res_loadimage_depths)
@@ -176,7 +176,7 @@ TEST(resources_icons_res_loadimage_depths)
         CHECKF(ic != NULL, "group %d", ids[i]);
         if (!ic) continue;
         CHECK(ri_iconsize(ic, &w, &h, &bpp, NULL));
-        EXPECT_EQ(w, exp[i]); EXPECT_EQ(h, exp[i]);
+        RI_EQ(w, exp[i]); RI_EQ(h, exp[i]);
         t_note("group %d colour bitmap bpp=%d", ids[i], bpp);
         U(DestroyIcon)(ic);
     }
@@ -195,17 +195,17 @@ TEST(resources_icons_res_iconinfo_icon)
     if (!ic) return;
     memset(&ii, 0xAA, sizeof ii);
     CHECK(U(GetIconInfo)(ic, &ii));
-    EXPECT_EQ(ii.fIcon, TRUE);
-    EXPECT_EQ(ii.xHotspot, 16);
-    EXPECT_EQ(ii.yHotspot, 16);
+    RI_EQ(ii.fIcon, TRUE);
+    RI_EQ(ii.xHotspot, 16);
+    RI_EQ(ii.yHotspot, 16);
     CHECK(ii.hbmMask != NULL);
     CHECK(ii.hbmColor != NULL);
     CHECK(ri_bmp(ii.hbmMask, &bm));
-    EXPECT_EQ(bm.bmWidth, 32); EXPECT_EQ(bm.bmHeight, 32); EXPECT_EQ(bm.bmBitsPixel, 1); EXPECT_EQ(bm.bmPlanes, 1);
+    RI_EQ(bm.bmWidth, 32); RI_EQ(bm.bmHeight, 32); RI_EQ(bm.bmBitsPixel, 1); RI_EQ(bm.bmPlanes, 1);
     CHECK(ri_bmp(ii.hbmColor, &bm));
-    EXPECT_EQ(bm.bmWidth, 32); EXPECT_EQ(bm.bmHeight, 32);
-    EXPECT_EQ(GetObjectType(ii.hbmMask), OBJ_BITMAP);
-    EXPECT_EQ(GetObjectType(ii.hbmColor), OBJ_BITMAP);
+    RI_EQ(bm.bmWidth, 32); RI_EQ(bm.bmHeight, 32);
+    RI_EQ(GetObjectType(ii.hbmMask), OBJ_BITMAP);
+    RI_EQ(GetObjectType(ii.hbmColor), OBJ_BITMAP);
     /* every call returns fresh bitmap copies */
     {
         ICONINFO i2;
@@ -230,8 +230,8 @@ TEST(resources_icons_res_iconinfo_hotspot_icon_sizes)
         HICON ic = ri_li(m, RI_GRP_ICON, IMAGE_ICON, sz[i], sz[i], 0);
         if (!ic) { CHECK(0); continue; }
         CHECK(U(GetIconInfo)(ic, &ii));
-        EXPECT_EQ(ii.xHotspot, sz[i] / 2);
-        EXPECT_EQ(ii.yHotspot, sz[i] / 2);
+        RI_EQ(ii.xHotspot, sz[i] / 2);
+        RI_EQ(ii.yHotspot, sz[i] / 2);
         DeleteObject(ii.hbmMask); DeleteObject(ii.hbmColor);
         U(DestroyIcon)(ic);
     }
@@ -248,12 +248,12 @@ TEST(resources_icons_res_cursor_loadimage)
     CHECK(c != NULL);
     if (!c) return;
     CHECK(U(GetIconInfo)(c, &ii));
-    EXPECT_EQ(ii.fIcon, FALSE);
-    EXPECT_EQ(ii.xHotspot, 5);
-    EXPECT_EQ(ii.yHotspot, 7);
+    RI_EQ(ii.fIcon, FALSE);
+    RI_EQ(ii.xHotspot, 5);
+    RI_EQ(ii.yHotspot, 7);
     CHECK(ii.hbmMask != NULL);
     CHECK(ri_bmp(ii.hbmMask, &bm));
-    EXPECT_EQ(bm.bmWidth, 32);
+    RI_EQ(bm.bmWidth, 32);
     t_note("mono cursor: hbmColor=%p mask height=%d", ii.hbmColor, bm.bmHeight);
     if (ii.hbmMask) DeleteObject(ii.hbmMask);
     if (ii.hbmColor) DeleteObject(ii.hbmColor);
@@ -267,7 +267,7 @@ TEST(resources_icons_res_cursor_loadcursor)
     REQUIRE_FIX(m);
     c = U(LoadCursorW)(m, MAKEINTRESOURCEW(RI_GRP_CUR));
     CHECK(c != NULL);
-    EXPECT_EQ(U(LoadCursorW)(m, MAKEINTRESOURCEW(RI_GRP_CUR)), c);
+    RI_EQ(U(LoadCursorW)(m, MAKEINTRESOURCEW(RI_GRP_CUR)), c);
 }
 
 TEST(resources_icons_res_cursor_scaled_hotspot)
@@ -328,13 +328,13 @@ TEST(resources_icons_res_loadbitmap)
     CHECK(b != NULL);
     if (!b) return;
     CHECK(ri_bmp(b, &bm));
-    EXPECT_EQ(bm.bmWidth, 8); EXPECT_EQ(bm.bmHeight, 4);
-    EXPECT_EQ(bm.bmType, 0);
-    EXPECT_EQ(GetObjectType(b), OBJ_BITMAP);
+    RI_EQ(bm.bmWidth, 8); RI_EQ(bm.bmHeight, 4);
+    RI_EQ(bm.bmType, 0);
+    RI_EQ(GetObjectType(b), OBJ_BITMAP);
     /* LoadBitmap yields a DDB: GetObject(DIBSECTION size) returns only a BITMAP */
     {
         DIBSECTION ds;
-        EXPECT_EQ(GetObjectW(b, sizeof ds, &ds), sizeof(BITMAP));
+        RI_EQ(GetObjectW(b, sizeof ds, &ds), sizeof(BITMAP));
     }
     CHECK(DeleteObject(b));
 }
@@ -350,7 +350,7 @@ TEST(resources_icons_res_loadbitmap_a_w_parity)
     CHECK(a && w);
     if (a && w) {
         ri_bmp(a, &ba); ri_bmp(w, &bw);
-        EXPECT_EQ(ba.bmWidth, bw.bmWidth); EXPECT_EQ(ba.bmHeight, bw.bmHeight); EXPECT_EQ(ba.bmBitsPixel, bw.bmBitsPixel);
+        RI_EQ(ba.bmWidth, bw.bmWidth); RI_EQ(ba.bmHeight, bw.bmHeight); RI_EQ(ba.bmBitsPixel, bw.bmBitsPixel);
     }
     if (a) DeleteObject(a);
     if (w) DeleteObject(w);
@@ -365,11 +365,11 @@ TEST(resources_icons_res_loadimage_bitmap_dibsection)
     CHECK(b != NULL);
     if (!b) return;
     memset(&ds, 0, sizeof ds);
-    EXPECT_EQ(GetObjectW(b, sizeof ds, &ds), sizeof ds);
-    EXPECT_EQ(ds.dsBm.bmWidth, 8); EXPECT_EQ(ds.dsBm.bmHeight, 4);
+    RI_EQ(GetObjectW(b, sizeof ds, &ds), sizeof ds);
+    RI_EQ(ds.dsBm.bmWidth, 8); RI_EQ(ds.dsBm.bmHeight, 4);
     CHECK(ds.dsBm.bmBits != NULL);
-    EXPECT_EQ(ds.dsBmih.biBitCount, 24);
-    EXPECT_EQ(GetObjectType(b), OBJ_BITMAP);
+    RI_EQ(ds.dsBmih.biBitCount, 24);
+    RI_EQ(GetObjectType(b), OBJ_BITMAP);
     DeleteObject(b);
 }
 
@@ -382,8 +382,8 @@ TEST(resources_icons_res_loadimage_bitmap_monochrome)
     CHECK(b != NULL);
     if (!b) return;
     CHECK(ri_bmp(b, &bm));
-    EXPECT_EQ(bm.bmBitsPixel, 1); EXPECT_EQ(bm.bmPlanes, 1);
-    EXPECT_EQ(bm.bmWidth, 8); EXPECT_EQ(bm.bmHeight, 4);
+    RI_EQ(bm.bmBitsPixel, 1); RI_EQ(bm.bmPlanes, 1);
+    RI_EQ(bm.bmWidth, 8); RI_EQ(bm.bmHeight, 4);
     DeleteObject(b);
 }
 
@@ -396,7 +396,7 @@ TEST(resources_icons_res_loadimage_bitmap_resize)
     CHECK(b != NULL);
     if (!b) return;
     CHECK(ri_bmp(b, &bm));
-    EXPECT_EQ(bm.bmWidth, 16); EXPECT_EQ(bm.bmHeight, 12);
+    RI_EQ(bm.bmWidth, 16); RI_EQ(bm.bmHeight, 12);
     DeleteObject(b);
 }
 
@@ -415,7 +415,7 @@ TEST(resources_icons_cifr_basic_sizes)
         CHECKF(ic != NULL, "size %d", sz[i]);
         if (ic) {
             CHECK(ri_iconsize(ic, &w, &h, NULL, &cur));
-            EXPECT_EQ(w, sz[i]); EXPECT_EQ(h, sz[i]); EXPECT_EQ(cur, FALSE);
+            RI_EQ(w, sz[i]); RI_EQ(h, sz[i]); RI_EQ(cur, FALSE);
             CHECK(U(DestroyIcon)(ic));
         }
         free(d);
@@ -434,7 +434,7 @@ TEST(resources_icons_cifr_depths)
         CHECKF(ic != NULL, "bpp %d", bpp[i]);
         if (ic) {
             CHECK(ri_iconsize(ic, &w, &h, &cb, NULL));
-            EXPECT_EQ(w, 32); EXPECT_EQ(h, 32);
+            RI_EQ(w, 32); RI_EQ(h, 32);
             t_note("bpp %d icon -> colour bitmap bpp %d", bpp[i], cb);
             U(DestroyIcon)(ic);
         }
@@ -452,7 +452,7 @@ TEST(resources_icons_cifr_scaled)
         int w = 0, h = 0;
         HICON ic = U(CreateIconFromResourceEx)(d, n, TRUE, 0x30000, want[i], want[i], 0);
         CHECKF(ic != NULL, "want %d", want[i]);
-        if (ic) { ri_iconsize(ic, &w, &h, NULL, NULL); EXPECT_EQ(w, want[i]); EXPECT_EQ(h, want[i]); U(DestroyIcon)(ic); }
+        if (ic) { ri_iconsize(ic, &w, &h, NULL, NULL); RI_EQ(w, want[i]); RI_EQ(h, want[i]); U(DestroyIcon)(ic); }
         free(d);
     }
 }
@@ -467,8 +467,8 @@ TEST(resources_icons_cifr_defaultsize_icon)
     CHECK(ic != NULL);
     if (ic) {
         ri_iconsize(ic, &w, &h, NULL, NULL);
-        EXPECT_EQ(w, ri_defsize(0,0));
-        EXPECT_EQ(h, ri_defsize(0,1));
+        RI_EQ(w, ri_defsize(0,0));
+        RI_EQ(h, ri_defsize(0,1));
         U(DestroyIcon)(ic);
     }
     free(d);
@@ -484,8 +484,8 @@ TEST(resources_icons_cifr_defaultsize_cursor)
     CHECK(ic != NULL);
     if (ic) {
         ri_iconsize(ic, &w, &h, NULL, NULL);
-        EXPECT_EQ(w, ri_defsize(1,0));
-        EXPECT_EQ(h, ri_defsize(1,1));
+        RI_EQ(w, ri_defsize(1,0));
+        RI_EQ(h, ri_defsize(1,1));
         U(DestroyCursor)(ic);
     }
     free(d);
@@ -502,7 +502,7 @@ TEST(resources_icons_cifr_cursor_hotspot)
     CHECK(c != NULL);
     if (c) {
         CHECK(U(GetIconInfo)(c, &ii));
-        EXPECT_EQ(ii.fIcon, FALSE); EXPECT_EQ(ii.xHotspot, 9); EXPECT_EQ(ii.yHotspot, 11);
+        RI_EQ(ii.fIcon, FALSE); RI_EQ(ii.xHotspot, 9); RI_EQ(ii.yHotspot, 11);
         if (ii.hbmMask) DeleteObject(ii.hbmMask);
         if (ii.hbmColor) DeleteObject(ii.hbmColor);
         U(DestroyCursor)(c);
@@ -520,7 +520,7 @@ TEST(resources_icons_cifr_cursor_color)
     CHECK(c != NULL);
     if (c) {
         CHECK(ri_iconsize(c, &w, &h, NULL, &cur));
-        EXPECT_EQ(cur, TRUE); EXPECT_EQ(w, 32); EXPECT_EQ(h, 32);
+        RI_EQ(cur, TRUE); RI_EQ(w, 32); RI_EQ(h, 32);
         U(DestroyCursor)(c);
     }
     free(d);
@@ -530,18 +530,18 @@ TEST(resources_icons_cifr_invalid_args)
 {
     DWORD n; BYTE *d = ri_dib(32, 32, 32, 0xFF000000, 0, &n);
     REQUIRE(U(CreateIconFromResourceEx));
-    EXPECT_EQ(U(CreateIconFromResourceEx)(NULL, n, TRUE, 0x30000, 0, 0, 0), NULL);
-    EXPECT_EQ(U(CreateIconFromResourceEx)(NULL, 0, TRUE, 0x30000, 0, 0, 0), NULL);
-    EXPECT_EQ(U(CreateIconFromResourceEx)(d, 0, TRUE, 0x30000, 0, 0, 0), NULL);
-    EXPECT_EQ(U(CreateIconFromResourceEx)(d, 0x27, TRUE, 0x30000, 0, 0, 0), NULL);
-    EXPECT_EQ(U(CreateIconFromResourceEx)(d, 1, TRUE, 0x30000, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(NULL, n, TRUE, 0x30000, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(NULL, 0, TRUE, 0x30000, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(d, 0, TRUE, 0x30000, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(d, 0x27, TRUE, 0x30000, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(d, 1, TRUE, 0x30000, 0, 0, 0), NULL);
     /* version must be within 0x20000..0x30000 */
-    EXPECT_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0, 0, 0, 0), NULL);
-    EXPECT_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0x10000, 0, 0, 0), NULL);
-    EXPECT_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0x1FFFF, 0, 0, 0), NULL);
-    EXPECT_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0x30001, 0, 0, 0), NULL);
-    EXPECT_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0x40000, 0, 0, 0), NULL);
-    EXPECT_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0xFFFFFFFF, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0x10000, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0x1FFFF, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0x30001, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0x40000, 0, 0, 0), NULL);
+    RI_EQ(U(CreateIconFromResourceEx)(d, n, TRUE, 0xFFFFFFFF, 0, 0, 0), NULL);
     free(d);
 }
 
@@ -590,7 +590,7 @@ TEST(resources_icons_cifr_icon_flag_hotspot)
     CHECK(ic != NULL);
     if (ic) {
         CHECK(U(GetIconInfo)(ic, &ii));
-        EXPECT_EQ(ii.fIcon, TRUE); EXPECT_EQ(ii.xHotspot, 16); EXPECT_EQ(ii.yHotspot, 16);
+        RI_EQ(ii.fIcon, TRUE); RI_EQ(ii.xHotspot, 16); RI_EQ(ii.yHotspot, 16);
         DeleteObject(ii.hbmMask); if (ii.hbmColor) DeleteObject(ii.hbmColor);
         U(DestroyIcon)(ic);
     }
@@ -607,10 +607,10 @@ TEST(resources_icons_cifr_legacy_wrapper)
     ic = U(CreateIconFromResource)(d, n, TRUE, 0x30000);
     CHECK(ic != NULL);
     /* the wrapper passes LR_SHARED|LR_DEFAULTSIZE */
-    if (ic) { ri_iconsize(ic, &w, &h, NULL, NULL); EXPECT_EQ(w, ri_defsize(0, 0)); EXPECT_EQ(h, ri_defsize(0, 1)); }
-    EXPECT_EQ(U(CreateIconFromResource)(NULL, n, TRUE, 0x30000), NULL);
-    EXPECT_EQ(U(CreateIconFromResource)(d, 0x10, TRUE, 0x30000), NULL);
-    EXPECT_EQ(U(CreateIconFromResource)(d, n, TRUE, 0x10000), NULL);
+    if (ic) { ri_iconsize(ic, &w, &h, NULL, NULL); RI_EQ(w, ri_defsize(0, 0)); RI_EQ(h, ri_defsize(0, 1)); }
+    RI_EQ(U(CreateIconFromResource)(NULL, n, TRUE, 0x30000), NULL);
+    RI_EQ(U(CreateIconFromResource)(d, 0x10, TRUE, 0x30000), NULL);
+    RI_EQ(U(CreateIconFromResource)(d, n, TRUE, 0x10000), NULL);
     free(d);
 }
 
@@ -638,9 +638,9 @@ TEST(resources_icons_lookup_exact_sizes)
     int sz[] = {16, 32, 48}, bpp[] = {32, 32, 32}, ids[] = {10, 11, 12};
     DWORD n; BYTE *g = ri_grpdir(3, sz, bpp, ids, &n, 0);
     REQUIRE(U(LookupIconIdFromDirectoryEx));
-    EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 16, 16, 0), 10);
-    EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 32, 32, 0), 11);
-    EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 48, 48, 0), 12);
+    RI_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 16, 16, 0), 10);
+    RI_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 32, 32, 0), 11);
+    RI_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 48, 48, 0), 12);
     free(g);
 }
 
@@ -652,9 +652,9 @@ TEST(resources_icons_lookup_closest_and_extremes)
     REQUIRE(U(LookupIconIdFromDirectoryEx));
     r = U(LookupIconIdFromDirectoryEx)(g, TRUE, 1, 1, 0);
     CHECK(r == 10 || r == 11 || r == 12);
-    EXPECT_EQ(r, 10);
+    RI_EQ(r, 10);
     r = U(LookupIconIdFromDirectoryEx)(g, TRUE, 256, 256, 0);
-    EXPECT_EQ(r, 12);
+    RI_EQ(r, 12);
     r = U(LookupIconIdFromDirectoryEx)(g, TRUE, 17, 17, 0);
     t_note("lookup 17 -> id %d", r);
     r = U(LookupIconIdFromDirectoryEx)(g, TRUE, 40, 40, 0);
@@ -670,12 +670,12 @@ TEST(resources_icons_lookup_default_size)
     REQUIRE(U(LookupIconIdFromDirectoryEx));
     r = U(LookupIconIdFromDirectoryEx)(g, TRUE, 0, 0, LR_DEFAULTSIZE);
     want = cx == 16 ? 10 : cx == 32 ? 11 : cx == 48 ? 12 : 0;
-    if (want) EXPECT_EQ(r, want); else t_note("SM_CXICON=%d lookup -> %d", cx, r);
+    if (want) RI_EQ(r, want); else t_note("SM_CXICON=%d lookup -> %d", cx, r);
     r = U(LookupIconIdFromDirectoryEx)(g, TRUE, 0, 0, 0);
     t_note("lookup 0x0 no flags -> %d", r);
     if (U(LookupIconIdFromDirectory)) {
         r = U(LookupIconIdFromDirectory)(g, TRUE);
-        if (want) EXPECT_EQ(r, want);
+        if (want) RI_EQ(r, want);
     }
     free(g);
 }
@@ -685,8 +685,8 @@ TEST(resources_icons_lookup_cursor_dir)
     int sz[] = {32, 48}, bpp[] = {1, 1}, ids[] = {30, 31};
     DWORD n; BYTE *g = ri_grpdir(2, sz, bpp, ids, &n, 1);
     REQUIRE(U(LookupIconIdFromDirectoryEx));
-    EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(g, FALSE, 32, 32, 0), 30);
-    EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(g, FALSE, 48, 48, 0), 31);
+    RI_EQ(U(LookupIconIdFromDirectoryEx)(g, FALSE, 32, 32, 0), 30);
+    RI_EQ(U(LookupIconIdFromDirectoryEx)(g, FALSE, 48, 48, 0), 31);
     free(g);
 }
 
@@ -696,8 +696,8 @@ TEST(resources_icons_lookup_single_entry)
     DWORD n; BYTE *g = ri_grpdir(1, sz, bpp, ids, &n, 0);
     int cx;
     REQUIRE(U(LookupIconIdFromDirectoryEx));
-    for (cx = 1; cx < 300; cx += 37) EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, cx, cx, 0), 77);
-    EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 0, 0, LR_DEFAULTSIZE), 77);
+    for (cx = 1; cx < 300; cx += 37) RI_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, cx, cx, 0), 77);
+    RI_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 0, 0, LR_DEFAULTSIZE), 77);
     free(g);
 }
 
@@ -709,9 +709,9 @@ TEST(resources_icons_lookup_depth_preference)
     int r;
     REQUIRE(U(LookupIconIdFromDirectoryEx));
     r = U(LookupIconIdFromDirectoryEx)(g, TRUE, 32, 32, 0);
-    EXPECT_EQ(r, 8);
+    RI_EQ(r, 8);
     r = U(LookupIconIdFromDirectoryEx)(g, TRUE, 32, 32, LR_MONOCHROME);
-    EXPECT_EQ(r, 1);
+    RI_EQ(r, 1);
     free(g);
 }
 
@@ -720,7 +720,7 @@ TEST(resources_icons_lookup_empty_dir)
     BYTE g[6 + 14] = {0};
     REQUIRE(U(LookupIconIdFromDirectoryEx));
     *(WORD *)(g + 2) = 1; *(WORD *)(g + 4) = 0;
-    EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 32, 32, 0), 0);
+    RI_EQ(U(LookupIconIdFromDirectoryEx)(g, TRUE, 32, 32, 0), 0);
     *(WORD *)(g + 2) = 7; *(WORD *)(g + 4) = 1;
     t_note("bad idType: %d", U(LookupIconIdFromDirectoryEx)(g, TRUE, 32, 32, 0));
 }
@@ -733,12 +733,12 @@ TEST(resources_icons_lookup_real_group)
     BYTE *d = r ? LockResource(LoadResource(m, r)) : NULL;
     CHECK(d != NULL);
     if (d) {
-        EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(d, TRUE, 16, 16, 0), RI_RT_ICON_BASE);
-        EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(d, TRUE, 32, 32, 0), RI_RT_ICON_BASE + 1);
-        EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(d, TRUE, 48, 48, 0), RI_RT_ICON_BASE + 2);
+        RI_EQ(U(LookupIconIdFromDirectoryEx)(d, TRUE, 16, 16, 0), RI_RT_ICON_BASE);
+        RI_EQ(U(LookupIconIdFromDirectoryEx)(d, TRUE, 32, 32, 0), RI_RT_ICON_BASE + 1);
+        RI_EQ(U(LookupIconIdFromDirectoryEx)(d, TRUE, 48, 48, 0), RI_RT_ICON_BASE + 2);
     }
     r = FindResourceA(m, MAKEINTRESOURCEA(RI_GRP_CUR), RT_GROUP_CURSOR);
     d = r ? LockResource(LoadResource(m, r)) : NULL;
     CHECK(d != NULL);
-    if (d) EXPECT_EQ(U(LookupIconIdFromDirectoryEx)(d, FALSE, 32, 32, 0), RI_RT_CUR_BASE);
+    if (d) RI_EQ(U(LookupIconIdFromDirectoryEx)(d, FALSE, 32, 32, 0), RI_RT_CUR_BASE);
 }
