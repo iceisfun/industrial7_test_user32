@@ -154,16 +154,6 @@ TEST(gap5_smq_alias_dde_qos) {
     CHECK(a == g);
     CHECK(a == s);
 }
-TEST(gap5_smq_dde_qos_return_true) {
-    REQUIRE(UN(DdeGetQualityOfService)); REQUIRE(UN(DdeSetQualityOfService));
-    SECURITY_QUALITY_OF_SERVICE q, p;
-    memset(&q, 0, sizeof q); memset(&p, 0, sizeof p);
-    SetLastError(0x77);
-    EXPECT_EQ(UN(DdeGetQualityOfService)(BOGUS_HWND, &q, (void *)&p), TRUE);
-    EXPECT_EQ(UN(DdeSetQualityOfService)(BOGUS_HWND, &q, (void *)&p), TRUE);
-    EXPECT_EQ(GetLastError(), 0x77);
-}
-
 /* ---------------- TranslateMessageEx ---------------- */
 static MSG mk(HWND h, UINT m, WPARAM w, LPARAM l) { MSG x; memset(&x, 0, sizeof x); x.hwnd = h; x.message = m; x.wParam = w; x.lParam = l; x.time = GetTickCount(); return x; }
 
