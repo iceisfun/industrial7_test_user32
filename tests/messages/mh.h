@@ -144,6 +144,13 @@ static int mh_init(void) {
     }
     return ok;
 }
+/* single-evaluation versions (the harness macros evaluate their arguments twice) */
+#undef EXPECT_EQ
+#undef EXPECT_NE
+#define EXPECT_EQ(a, b) do { ULONG_PTR a_ = (ULONG_PTR)(a), b_ = (ULONG_PTR)(b); \
+    t_check(a_ == b_, __FILE__, __LINE__, #a " == " #b, "got 0x%llx want 0x%llx", (unsigned long long)a_, (unsigned long long)b_); } while (0)
+#define EXPECT_NE(a, b) do { ULONG_PTR a_ = (ULONG_PTR)(a), b_ = (ULONG_PTR)(b); \
+    t_check(a_ != b_, __FILE__, __LINE__, #a " != " #b, "got 0x%llx", (unsigned long long)a_); } while (0)
 #define REQUIRE_MH() do { if (!mh_init()) { t_skip("cannot register test classes"); return; } } while (0)
 
 static HWND mh_mk(DWORD st, DWORD ex, HWND parent) {
