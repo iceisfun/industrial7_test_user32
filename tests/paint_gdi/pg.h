@@ -21,6 +21,8 @@ typedef struct pg_rec {
     int do_paint;   /* 1: BeginPaint/EndPaint in WM_PAINT; 0: leave to DefWindowProc; 2: ignore */
     int erase_ret;
     int in_wm_paint_rgn_type;
+    WPARAM ncpaint_wp, paint_wp, erase_wp; int erase_dctype; RECT erase_clip; int syscolor;
+    int prt_paint_wp_hdc;
 } pg_rec;
 extern pg_rec pg_r;
 

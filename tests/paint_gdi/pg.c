@@ -2,15 +2,19 @@
 pg_rec pg_r;
 static LRESULT CALLBACK recproc(HWND h, UINT m, WPARAM w, LPARAM l) {
     switch (m) {
+    case WM_SYSCOLORCHANGE: pg_r.syscolor++; break;
     case WM_ERASEBKGND:
-        pg_r.erase++; if (pg_r.norder < 64) pg_r.order[pg_r.norder++] = WM_ERASEBKGND;
+        pg_r.erase++; pg_r.erase_wp = w; pg_r.erase_dctype = GetObjectType((HDC)w); GetClipBox((HDC)w, &pg_r.erase_clip);
+        if (pg_r.norder < 64) pg_r.order[pg_r.norder++] = WM_ERASEBKGND;
         if (pg_r.erase_ret >= 0) return pg_r.erase_ret;
         break;
     case WM_NCPAINT:
-        pg_r.ncpaint++; if (pg_r.norder < 64) pg_r.order[pg_r.norder++] = WM_NCPAINT;
+        pg_r.ncpaint++; pg_r.ncpaint_wp = w; if (pg_r.norder < 64) pg_r.order[pg_r.norder++] = WM_NCPAINT;
         break;
     case WM_PAINT:
         pg_r.paint++; if (pg_r.norder < 64) pg_r.order[pg_r.norder++] = WM_PAINT;
+        pg_r.paint_wp = w;
+        if (w) { pg_r.prt_paint_wp_hdc = (GetObjectType((HDC)w) == OBJ_DC || GetObjectType((HDC)w) == OBJ_MEMDC); return 0; }
         GetUpdateRect(h, &pg_r.upd_at_paint, FALSE);
         if (pg_r.do_paint == 1) {
             PAINTSTRUCT ps; BeginPaint(h, &ps);
