@@ -19,9 +19,9 @@ typedef struct {
     UINT msg; WPARAM wp; LPARAM lp;
     DRAWITEMSTRUCT di; MEASUREITEMSTRUCT mi; DELETEITEMSTRUCT de; COMPAREITEMSTRUCT ci;
 } c_logent;
-static c_logent c_log[LOG_MAX];
-static int c_nlogent;
-static int c_logging = 1;
+extern c_logent c_log[LOG_MAX];
+extern int c_nlogent;
+extern int c_logging;
 
 static void c_logclear(void) { c_nlogent = 0; }
 
