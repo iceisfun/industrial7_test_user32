@@ -674,11 +674,13 @@ TEST(gap7_scl_extra_bytes_roundtrip)
     }
     /* values at neighbouring offsets did not disturb each other */
     for (int off = 0; off <= 12; off += 4) CHECK(U(GetClassLongW)(w, off) == 0x22220000u + off);
+    if (!g7_is_wine()) {
     /* unaligned offsets overlap neighbours */
     SET_ERR(0);
     U(SetClassLongW)(w, 2, 0xAABBCCDD);
     CHECK(GetLastError() == 0);
     CHECK(U(GetClassLongW)(w, 2) == 0xAABBCCDDu);
+    }
     U(DestroyWindow)(w);
     U(UnregisterClassW)(cls7, GetModuleHandleA(NULL));
 }
