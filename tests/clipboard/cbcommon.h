@@ -23,6 +23,7 @@
 /* messages seen by the owner window proc */
 #define CB_LOGMAX 256
 extern UINT cb_log[CB_LOGMAX]; extern WPARAM cb_logw[CB_LOGMAX]; extern int cb_nlog;
+extern HWND cb_next;
 extern HANDLE cb_render_data; /* handle returned for WM_RENDERFORMAT (set by test) */
 extern int cb_render_open_ok; /* result of GetOpenClipboardWindow-based check during render */
 void cb_logclear(void);

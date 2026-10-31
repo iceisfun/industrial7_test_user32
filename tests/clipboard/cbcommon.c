@@ -4,7 +4,12 @@ HANDLE cb_render_data;
 int cb_render_open_ok;
 void cb_logclear(void) { cb_nlog = 0; }
 int cb_logcount(UINT m) { int n = 0; for (int i = 0; i < cb_nlog; i++) if (cb_log[i] == m) n++; return n; }
+HWND cb_next;
 static LRESULT CALLBACK cbproc(HWND h, UINT m, WPARAM w, LPARAM l) {
+    if ((m == WM_DRAWCLIPBOARD || m == WM_CHANGECBCHAIN) && cb_next && U(IsWindow)(cb_next)) {
+        if (m == WM_CHANGECBCHAIN && (HWND)w == cb_next) { cb_next = (HWND)l; }
+        else U(SendMessageA)(cb_next, m, w, l);
+    }
     switch (m) {
     case WM_RENDERFORMAT: case WM_RENDERALLFORMATS: case WM_DESTROYCLIPBOARD:
     case WM_DRAWCLIPBOARD: case WM_CHANGECBCHAIN: case WM_CLIPBOARDUPDATE:

@@ -202,8 +202,7 @@ TEST(clipboard_enum_matches_count) {
     OPEN(w);
     int n = 0; UINT f = 0;
     while (n < 100 && (f = ENUM(f))) n++;
-    CHECK(n == COUNT());
-    CHECK(n >= 3);
+    CHECK(n == COUNT()); CHECK(n >= 3);
     CLOSE();
     cb_reset(); cb_destroy(w);
 }
