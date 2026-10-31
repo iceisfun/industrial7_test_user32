@@ -27,7 +27,7 @@ static struct {
 
 static BOOL CALLBACK mb_enum_top(HWND h, LPARAM l) {
     char c[32];
-    if (GetClassNameA(h, c, 32) && !strcmp(c, "#32770") && IsWindowVisible(h)) { mb.box = h; return FALSE; }
+    if (GetClassNameA(h, c, 32) && !strcmp(c, "#32770") && IsWindowVisible(h) && GetWindow(h, GW_CHILD) != NULL) { mb.box = h; return FALSE; }
     return TRUE;
 }
 static BOOL CALLBACK mb_enum_child(HWND h, LPARAM l) {
