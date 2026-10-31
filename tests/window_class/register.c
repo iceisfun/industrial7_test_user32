@@ -213,7 +213,7 @@ TEST(window_class_register_atom_equals_getclassinfo) {
     WNDCLASSEXA o; memset(&o, 0, sizeof o); o.cbSize = sizeof o;
     UINT_PTR r = U(GetClassInfoExA)(wc_inst(), n, &o);
     CHECK(r != 0);
-    EXPECT_EQ(r, a);
+    EQ(r, a);
     CHECK(U(UnregisterClassA)(n, wc_inst()));
 }
 
@@ -227,7 +227,7 @@ TEST(window_class_register_atom_as_name) {
     CHECK(h != NULL);
     if (h) {
         char buf[128]; int r = U(GetClassNameA)(h, buf, sizeof buf);
-        EXPECT_EQ(r, (int)strlen(n));
+        EQ(r, (int)strlen(n));
         EXPECT_STR(buf, n);
         CHECK(U(DestroyWindow)(h));
     }
@@ -265,7 +265,7 @@ TEST(window_class_register_numeric_hash_name) {
     if (h) {
         char buf[32]; int r = U(GetClassNameA)(h, buf, sizeof buf);
         t_note("class name of integer-atom class: '%s' (%d)", buf, r);
-        EXPECT_EQ((UINT)U(GetClassWord)(h, GCW_ATOM), 0x1ACD);
+        EQ((UINT)U(GetClassWord)(h, GCW_ATOM), 0x1ACD);
         U(DestroyWindow)(h);
     }
     CHECK(U(UnregisterClassA)(MAKEINTATOM(0x1ACD), wc_inst()));
@@ -456,14 +456,14 @@ TEST(window_class_getclassinfo_roundtrip_a) {
     WNDCLASSA o; memset(&o, 0xAA, sizeof o);
     UINT_PTR r = U(GetClassInfoA)(wc_inst(), n, &o);
     CHECK(r != 0);
-    EXPECT_EQ(o.style, wc.style);
-    EXPECT_EQ(o.lpfnWndProc, wc.lpfnWndProc);
-    EXPECT_EQ(o.cbClsExtra, 12);
-    EXPECT_EQ(o.cbWndExtra, 20);
-    EXPECT_EQ(o.hInstance, wc.hInstance);
-    EXPECT_EQ(o.hIcon, wc.hIcon);
-    EXPECT_EQ(o.hCursor, wc.hCursor);
-    EXPECT_EQ(o.hbrBackground, br);
+    EQ(o.style, wc.style);
+    EQ(o.lpfnWndProc, wc.lpfnWndProc);
+    EQ(o.cbClsExtra, 12);
+    EQ(o.cbWndExtra, 20);
+    EQ(o.hInstance, wc.hInstance);
+    EQ(o.hIcon, wc.hIcon);
+    EQ(o.hCursor, wc.hCursor);
+    EQ(o.hbrBackground, br);
     CHECK(o.lpszMenuName && !strcmp(o.lpszMenuName, "MyMenuName"));
     t_note("GetClassInfoA lpszClassName=%p (input %p)", o.lpszClassName, n);
     CHECK(U(UnregisterClassA)(n, wc_inst()));
@@ -479,12 +479,12 @@ TEST(window_class_getclassinfo_roundtrip_w) {
     CHECK(U(RegisterClassW)(&wc));
     WNDCLASSW o; memset(&o, 0xAA, sizeof o);
     CHECK(U(GetClassInfoW)(wc_inst(), w, &o));
-    EXPECT_EQ(o.style, wc.style);
-    EXPECT_EQ(o.lpfnWndProc, wc.lpfnWndProc);
-    EXPECT_EQ(o.cbClsExtra, 8);
-    EXPECT_EQ(o.cbWndExtra, 16);
-    EXPECT_EQ(o.hInstance, wc.hInstance);
-    EXPECT_EQ(o.hbrBackground, wc.hbrBackground);
+    EQ(o.style, wc.style);
+    EQ(o.lpfnWndProc, wc.lpfnWndProc);
+    EQ(o.cbClsExtra, 8);
+    EQ(o.cbWndExtra, 16);
+    EQ(o.hInstance, wc.hInstance);
+    EQ(o.hbrBackground, wc.hbrBackground);
     CHECK(o.lpszMenuName && !lstrcmpW(o.lpszMenuName, L"MenuW"));
     CHECK(U(UnregisterClassW)(w, wc_inst()));
 }
@@ -509,7 +509,7 @@ TEST(window_class_getclassinfoex_cbsize_w) {
     REQUIRE(U(GetClassInfoExW));
     WNDCLASSEXW o; memset(&o, 0, sizeof o); o.cbSize = 0;
     CHECK(U(GetClassInfoExW)(NULL, L"Static", &o));
-    EXPECT_EQ(o.cbSize, 0);
+    EQ(o.cbSize, 0);
     CHECK(o.lpfnWndProc != NULL);
 }
 
@@ -550,13 +550,13 @@ TEST(window_class_getclassinfo_a_vs_w_parity) {
     memset(&oa, 0, sizeof oa); memset(&ow, 0, sizeof ow);
     CHECK(U(GetClassInfoA)(wc_inst(), n, &oa));
     CHECK(U(GetClassInfoW)(wc_inst(), w, &ow));
-    EXPECT_EQ(oa.style, ow.style);
-    EXPECT_EQ(oa.cbClsExtra, ow.cbClsExtra);
-    EXPECT_EQ(oa.cbWndExtra, ow.cbWndExtra);
-    EXPECT_EQ(oa.hInstance, ow.hInstance);
-    EXPECT_EQ(oa.hbrBackground, ow.hbrBackground);
-    EXPECT_EQ(oa.hCursor, ow.hCursor);
-    EXPECT_EQ(oa.lpfnWndProc, wc_defA);
+    EQ(oa.style, ow.style);
+    EQ(oa.cbClsExtra, ow.cbClsExtra);
+    EQ(oa.cbWndExtra, ow.cbWndExtra);
+    EQ(oa.hInstance, ow.hInstance);
+    EQ(oa.hbrBackground, ow.hbrBackground);
+    EQ(oa.hCursor, ow.hCursor);
+    EQ(oa.lpfnWndProc, wc_defA);
     t_note("A class read via W: proc %p (A proc %p)", ow.lpfnWndProc, wc_defA);
     U(UnregisterClassA)(n, wc_inst());
 }
@@ -580,7 +580,7 @@ TEST(window_class_getclassinfo_menu_resource_id) {
     CHECK(U(RegisterClassExA)(&wc));
     WNDCLASSEXA o; memset(&o, 0, sizeof o); o.cbSize = sizeof o;
     CHECK(U(GetClassInfoExA)(wc_inst(), n, &o));
-    EXPECT_EQ(o.lpszMenuName, MAKEINTRESOURCEA(101));
+    EQ(o.lpszMenuName, MAKEINTRESOURCEA(101));
     U(UnregisterClassA)(n, wc_inst());
 }
 
@@ -594,8 +594,8 @@ TEST(window_class_getclassinfoex_small_icon) {
     CHECK(U(RegisterClassExA)(&wc));
     WNDCLASSEXA o; memset(&o, 0, sizeof o); o.cbSize = sizeof o;
     CHECK(U(GetClassInfoExA)(wc_inst(), n, &o));
-    EXPECT_EQ(o.hIcon, big);
-    EXPECT_EQ(o.hIconSm, small);
+    EQ(o.hIcon, big);
+    EQ(o.hIconSm, small);
     U(UnregisterClassA)(n, wc_inst());
 }
 
@@ -647,8 +647,8 @@ TEST(window_class_extra_sizes_roundtrip) {
         if (!a) continue;
         WNDCLASSEXA o; memset(&o, 0, sizeof o); o.cbSize = sizeof o;
         CHECK(U(GetClassInfoExA)(wc_inst(), n, &o));
-        EXPECT_EQ(o.cbClsExtra, cb[i]);
-        EXPECT_EQ(o.cbWndExtra, cb[i] + 1);
+        EQ(o.cbClsExtra, cb[i]);
+        EQ(o.cbWndExtra, cb[i] + 1);
         CHECK(U(UnregisterClassA)(n, wc_inst()));
     }
 }
@@ -690,7 +690,7 @@ TEST(window_class_register_other_instance_value) {
     if (a) {
         WNDCLASSEXA o; o.cbSize = sizeof o;
         CHECK(U(GetClassInfoExA)(fake, n, &o));
-        EXPECT_EQ(o.hInstance, fake);
+        EQ(o.hInstance, fake);
         CHECK(U(UnregisterClassA)(n, fake));
     }
 }
@@ -703,8 +703,8 @@ TEST(window_class_register_proc_roundtrip_many) {
         WNDCLASSEXA o; memset(&o, 0, sizeof o); o.cbSize = sizeof o;
         CHECK(U(GetClassInfoExA)(wc_inst(), n, &o));
         CHECK(o.lpfnWndProc == ((i & 1) ? wc_recA : wc_defA));
-        EXPECT_EQ(o.cbClsExtra, i);
-        EXPECT_EQ(o.cbWndExtra, i * 2);
+        EQ(o.cbClsExtra, i);
+        EQ(o.cbWndExtra, i * 2);
         CHECK(U(UnregisterClassA)(n, wc_inst()));
     }
 }
@@ -797,7 +797,7 @@ TEST(window_class_register_unicode_name) {
     CHECK(h);
     if (h) {
         WCHAR b[64]; int r = U(GetClassNameW)(h, b, 64);
-        EXPECT_EQ(r, (int)lstrlenW(w));
+        EQ(r, (int)lstrlenW(w));
         EXPECT_WSTR(b, w);
         U(DestroyWindow)(h);
     }

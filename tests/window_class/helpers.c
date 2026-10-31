@@ -65,3 +65,8 @@ LRESULT CALLBACK wc_recW(HWND h, UINT m, WPARAM w, LPARAM l) {
     }
     return U(DefWindowProcW)(h, m, w, l);
 }
+
+int wc_is_wine(void) {
+    HMODULE n = GetModuleHandleA("ntdll.dll");
+    return n && GetProcAddress(n, "wine_get_version") != NULL;
+}

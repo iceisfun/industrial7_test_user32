@@ -10,6 +10,13 @@
 #define ERR_CLASS_HAS_WINDOWS 1412
 #define ERR_INVALID_PARAM     87
 #define MAGIC_ERR             0xDEAD0001u
+#ifndef GCL_HMODULE
+#define GCL_HMODULE (-16)
+#define GCL_HBRBACKGROUND (-10)
+#define GCL_HCURSOR (-12)
+#define GCL_HICON (-14)
+#define GCL_HICONSM (-34)
+#endif
 
 static inline HINSTANCE wc_inst(void) { return GetModuleHandleA(NULL); }
 
@@ -42,6 +49,10 @@ extern struct wc_rec wc_rec;
 LRESULT CALLBACK wc_recA(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK wc_recW(HWND, UINT, WPARAM, LPARAM);
 
+/* single-evaluation equality check */
+#define EQ(a, b) do { ULONG_PTR a_ = (ULONG_PTR)(a), b_ = (ULONG_PTR)(b); \
+    t_check(a_ == b_, __FILE__, __LINE__, #a " == " #b, "got 0x%llx want 0x%llx", (unsigned long long)a_, (unsigned long long)b_); } while (0)
 #define EXPECT_LAST_ERR(e) do { DWORD e_ = GetLastError(); \
     t_check(e_ == (DWORD)(e), __FILE__, __LINE__, "GetLastError()==" #e, "got %lu want %lu", e_, (DWORD)(e)); } while (0)
+int wc_is_wine(void);
 #endif
