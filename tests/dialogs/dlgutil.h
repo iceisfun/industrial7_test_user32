@@ -116,6 +116,21 @@
 #define LoadCursorW U(LoadCursorW)
 #define MsgWaitForMultipleObjects U(MsgWaitForMultipleObjects)
 #define GetWindowInfo U(GetWindowInfo)
+#define UpdateWindow U(UpdateWindow)
+#define GetClassInfoExW U(GetClassInfoExW)
+#define GetClassInfoExA U(GetClassInfoExA)
+#define IsWindowUnicode U(IsWindowUnicode)
+#define GetWindowContextHelpId U(GetWindowContextHelpId)
+#define SetWindowContextHelpId U(SetWindowContextHelpId)
+#define GetSysColorBrush U(GetSysColorBrush)
+#define GetSysColor U(GetSysColor)
+#define SystemParametersInfoW U(SystemParametersInfoW)
+#define GetCapture U(GetCapture)
+#define GetDpiForSystem U(GetDpiForSystem)
+#define GetWindowRgn U(GetWindowRgn)
+#define ScreenToClient U(ScreenToClient)
+#define MapWindowPoints U(MapWindowPoints)
+#define GetMenu U(GetMenu)
 #define DlgDirListA U(DlgDirListA)
 #define DlgDirListW U(DlgDirListW)
 #define DlgDirSelectExA U(DlgDirSelectExA)
@@ -208,10 +223,21 @@ typedef struct {
     int ndestroy, nncdestroy, nsetfont; HFONT font;
     int idx_setfont, idx_init;
     int ncolor; HWND colorhwnd; UINT colormsg;
+    int end_in_init; HWND focus_timer, active_timer; void (*onrun)(HWND);
     INT_PTR (CALLBACK *hook)(HWND, UINT, WPARAM, LPARAM); /* optional extra handler, returns -1 for unhandled */
 } DS;
 static DS ds;
-static void ds_reset(void) { memset(&ds, 0, sizeof ds); ds.initret = 1; ds.idx_setfont = ds.idx_init = -1; }
+/* watchdog: if a modal loop is still running 6s after the last ds_reset, end the active dialog */
+static UINT_PTR wd_id;
+static VOID CALLBACK wd_proc(HWND h, UINT m, UINT_PTR id, DWORD t) {
+    HWND a = GetActiveWindow();
+    if (a) EndDialog(a, -999);
+}
+static void ds_reset(void) {
+    memset(&ds, 0, sizeof ds); ds.initret = 1; ds.idx_setfont = ds.idx_init = -1;
+    if (wd_id) KillTimer(NULL, wd_id);
+    wd_id = SetTimer(NULL, 0, 6000, wd_proc);
+}
 static INT_PTR CALLBACK gdp(HWND h, UINT m, WPARAM w, LPARAM l) {
     if (ds.nmsg < 128) ds.seq[ds.nmsg++] = m;
     if (ds.hook) { INT_PTR r = ds.hook(h, m, w, l); if (r != -1) return r; }
@@ -219,10 +245,16 @@ static INT_PTR CALLBACK gdp(HWND h, UINT m, WPARAM w, LPARAM l) {
     case WM_SETFONT: ds.nsetfont++; ds.font = (HFONT)w; if (ds.idx_setfont < 0) ds.idx_setfont = ds.nmsg - 1; return 0;
     case WM_INITDIALOG:
         ds.ninit++; ds.lp = l; ds.hfocus = (HWND)w; ds.hinit = h; ds.idx_init = ds.nmsg - 1;
-        if (ds.tmo) SetTimer(h, 77, ds.tmo, NULL);
+        if (ds.end_in_init) EndDialog(h, ds.endval);
+        else if (ds.tmo) SetTimer(h, 77, ds.tmo, NULL);
         return ds.initret;
     case WM_TIMER:
-        if (w == 77) { KillTimer(h, 77); ds.timer_fired++; EndDialog(h, ds.endval); return 1; }
+        if (w == 77) {
+            KillTimer(h, 77); ds.timer_fired++;
+            ds.focus_timer = GetFocus(); ds.active_timer = GetActiveWindow();
+            if (ds.onrun) ds.onrun(h);
+            EndDialog(h, ds.endval); return 1;
+        }
         return 0;
     case WM_DESTROY: ds.ndestroy++; return 0;
     case WM_NCDESTROY: ds.nncdestroy++; return 0;
