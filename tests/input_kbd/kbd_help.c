@@ -76,10 +76,10 @@ void kw_pump(int ms, int want, int xlat)
     MSG m;
     for (;;) {
         int got = 0;
-        while (U(PeekMessageA)(&m, NULL, 0, 0, PM_REMOVE)) {
+        while (U(PeekMessageW)(&m, NULL, 0, 0, PM_REMOVE)) {
             got = 1;
             if (xlat) U(TranslateMessage)(&m);
-            U(DispatchMessageA)(&m);
+            U(DispatchMessageW)(&m);
         }
         if (g_nklog >= want) {
             if (got) quiet = GetTickCount();
@@ -151,7 +151,7 @@ HWND kw_begin(void)
 {
     HWND w;
     DWORD end;
-    if (!U(SendInput) || !U(SetForegroundWindow) || !U(CreateWindowExW) || !U(RegisterClassW) || !U(PeekMessageA)) {
+    if (!U(SendInput) || !U(SetForegroundWindow) || !U(CreateWindowExW) || !U(RegisterClassW) || !U(PeekMessageW)) {
         t_skip("missing exports for injection"); return NULL;
     }
     if (g_probe_state < 0) { t_skip("key injection unavailable on this desktop"); return NULL; }
