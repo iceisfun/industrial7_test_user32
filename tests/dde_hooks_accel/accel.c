@@ -208,9 +208,9 @@ TEST(accel_create_in_place_key_conversion) {
 TEST(accel_a_w_parity_ascii_chars) {
     NEED();
     for (WORD ch = 0x20; ch < 0x7F; ch++) {
-        ACCEL aa __attribute__((aligned(8))) = {0, ch, 900}, aw = {0, ch, 900};
+        ACCEL aa __attribute__((aligned(8))) = {0, ch, 900}; ACCEL aw __attribute__((aligned(8))) = {0, ch, 900};
         HACCEL ha = U(CreateAcceleratorTableA)(&aa, 1), hw = U(CreateAcceleratorTableW)(&aw, 1);
-        ACCEL oa __attribute__((aligned(8))) = {0}, ow = {0};
+        ACCEL oa __attribute__((aligned(8))) = {0}; ACCEL ow __attribute__((aligned(8))) = {0};
         if (!ha || !hw) { CHECKF(0, "create 0x%x", ch); if (ha) U(DestroyAcceleratorTable)(ha); if (hw) U(DestroyAcceleratorTable)(hw); continue; }
         U(CopyAcceleratorTableA)(ha, &oa, 1); U(CopyAcceleratorTableW)(hw, &ow, 1);
         CHECKF(oa.key == ch && ow.key == ch, "key 0x%x -> A 0x%x W 0x%x", ch, oa.key, ow.key);
@@ -350,9 +350,9 @@ TEST(accel_load_null_name) {
 }
 TEST(accel_load_from_bad_module) {
     REQUIRE(U(LoadAcceleratorsA)); REQUIRE(U(LoadAcceleratorsW));
+    /* A bogus (unmapped) HINSTANCE is not validated on Win10 22H2: the resource lookup faults (0xc0000005),
+     * so the probe is not part of the corpus. The module-without-table case is accel_load_from_user32. */
     SetLastError(0);
-    EQ(U(LoadAcceleratorsA)((HINSTANCE)(ULONG_PTR)0x10000, "X"), NULL);
-    EQ(U(LoadAcceleratorsW)((HINSTANCE)(ULONG_PTR)0x10000, L"X"), NULL);
 }
 TEST(accel_load_from_user32) {
     REQUIRE(U(LoadAcceleratorsA));

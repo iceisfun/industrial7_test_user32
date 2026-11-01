@@ -144,7 +144,7 @@ TEST(ddelparam_free_ignored_for_plain_msgs) {
     CHECK(GlobalFlags(h) != GMEM_INVALID_HANDLE);
     /* a packed type frees the block (any valid global handle) */
     EQ(U(FreeDDElParam)(WM_DDE_ACK, (LPARAM)h), TRUE);
-    t_note("block after FreeDDElParam: flags 0x%x", GlobalFlags(h));
+    /* the freed block is not probed afterwards: GlobalFlags on it corrupts the heap on Win10 */
 }
 TEST(ddelparam_reuse_packed_to_packed) {
     REQUIRE(U(PackDDElParam)); REQUIRE(U(UnpackDDElParam)); REQUIRE(U(ReuseDDElParam)); REQUIRE(U(FreeDDElParam));
