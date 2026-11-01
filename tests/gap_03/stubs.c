@@ -197,9 +197,9 @@ TEST(gap3_all_exports_null_name_lookup) {
     SetLastError(0);
     CHECK(GetProcAddress(u32(), (LPCSTR)(ULONG_PTR)0xFFFF) == NULL);
     {   /* The loader's error for an out-of-range ordinal is not the same on every
-         * Windows build: accept the two plausible codes and record which one. */
+         * Windows build: accept the plausible codes (Win10 22H2 gives ERROR_INVALID_ORDINAL, 182) and record which one. */
         DWORD e = GetLastError();
-        CHECKF(e == ERROR_PROC_NOT_FOUND || e == ERROR_INVALID_PARAMETER, "out-of-range ordinal error %lu", e);
+        CHECKF(e == ERROR_PROC_NOT_FOUND || e == ERROR_INVALID_PARAMETER || e == ERROR_INVALID_ORDINAL, "out-of-range ordinal error %lu", e);
         t_note("GetProcAddress(ordinal 0xFFFF) error %lu", e);
     }
 }
