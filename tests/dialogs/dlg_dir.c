@@ -529,9 +529,7 @@ TEST(dialogs_dircombo_errors) {
     EQ(DlgDirSelectComboBoxExA(dlg, out, 16, 999), 0);
     EQ(GetLastError(), 1421);
     SET_ERR(0);
-    t_note("step 2: DlgDirSelectComboBoxEx on a static");
-    int rr = DlgDirSelectComboBoxExA(dlg, out, 16, S_PATH);      /* a static is not a combo box */
-    t_note("DlgDirSelectComboBoxEx on a static: ret=%d err=%lu (1423 WINDOW_NOT_COMBOBOX)", rr, GetLastError());
+    /* DlgDirSelectComboBoxEx on a static control faults inside user32 on Win10 22H2 (0xc0000005): not probed */
     SET_ERR(0);
     t_note("step 3: DlgDirSelectComboBoxEx NULL dialog");
     EQ(DlgDirSelectComboBoxExA(NULL, out, 16, C_BOX), 0);
