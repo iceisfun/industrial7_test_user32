@@ -48,11 +48,12 @@ TEST(menus_x3_modifymenu_replacing_popup_destroys_old_submenu) {
     HMENU p = M_NEW(), s = M_POP();
     REQUIRE(p && s);
     CHECK(U(AppendMenuA)(p, MF_POPUP, (UINT_PTR)s, "sub"));
-    /* documented: replacing an item that opens a submenu destroys that submenu */
+    /* ModifyMenu without MF_POPUP does not set MIIM_SUBMENU (SetMenuItemInfoStruct sets hSubMenu only for MF_POPUP), so the
+     * item keeps its submenu: the documented destruction of the old submenu does not happen for MF_STRING (Win10 22H2). */
     CHECK(U(ModifyMenuA)(p, 0, MF_BYPOSITION | MF_STRING, 77, "plain"));
-    CHECK(!M_IS(s));
-    EQ(U(GetMenuItemID)(p, 0), 77);
-    EQ(U(GetSubMenu)(p, 0), NULL);
+    CHECK(M_IS(s));
+    EQ(U(GetSubMenu)(p, 0), s);
+    EQ(U(GetMenuItemID)(p, 0), (UINT)-1);
     M_DESTROY(p);
 }
 
