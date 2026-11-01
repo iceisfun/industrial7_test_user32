@@ -7,7 +7,7 @@
 #endif
 
 TEST(controls_x3_button_style_constants) {
-    EXPECT_EQ(BS_TEXT, 0); EXPECT_EQ(BS_USERBUTTON, 7); EXPECT_EQ(BS_RIGHTBUTTON, BS_LEFTTEXT);
+    EXPECT_EQ(BS_TEXT, 0); EXPECT_EQ(BS_USERBUTTON, 8); EXPECT_EQ(BS_RIGHTBUTTON, BS_LEFTTEXT);
     EXPECT_EQ(BS_LEFTTEXT, 0x20); EXPECT_EQ(BS_ICON, 0x40); EXPECT_EQ(BS_BITMAP, 0x80);
     EXPECT_EQ(BS_LEFT, 0x100); EXPECT_EQ(BS_RIGHT, 0x200); EXPECT_EQ(BS_CENTER, 0x300);
     EXPECT_EQ(BS_TOP, 0x400); EXPECT_EQ(BS_BOTTOM, 0x800); EXPECT_EQ(BS_VCENTER, 0xC00);
@@ -97,9 +97,13 @@ TEST(controls_x3_lbs_standard_sorts_and_notifies) {
     HWND lb = c_ctl(p, "ListBox", "", LBS_STANDARD, 50, 0, 0, 100, 100);
     REQUIRE(lb);
     DWORD st = (DWORD)U(GetWindowLongW)(lb, GWL_STYLE);
-    EXPECT_EQ(st & (LBS_NOTIFY | LBS_SORT | WS_VSCROLL | WS_BORDER), LBS_NOTIFY | LBS_SORT | WS_VSCROLL | WS_BORDER);
+    /* WS_VSCROLL tracks the visible scroll bar: an empty list box does not show one (Win10 22H2), so it is checked below */
+    EXPECT_EQ(st & (LBS_NOTIFY | LBS_SORT | WS_BORDER), LBS_NOTIFY | LBS_SORT | WS_BORDER);
     SA(lb, LB_ADDSTRING, 0, "pear"); SA(lb, LB_ADDSTRING, 0, "apple"); SA(lb, LB_ADDSTRING, 0, "mango");
     CHECK(c_lbtext_is(lb, 0, "apple")); CHECK(c_lbtext_is(lb, 1, "mango")); CHECK(c_lbtext_is(lb, 2, "pear"));
+    for (int i = 0; i < 40; i++) SA(lb, LB_ADDSTRING, 0, "zzz");
+    st = (DWORD)U(GetWindowLongW)(lb, GWL_STYLE);
+    EXPECT_EQ(st & WS_VSCROLL, WS_VSCROLL);              /* overflowing list: the vertical scroll bar is present */
     U(DestroyWindow)(p);
 }
 
