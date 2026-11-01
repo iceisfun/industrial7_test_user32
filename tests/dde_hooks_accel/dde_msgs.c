@@ -174,7 +174,7 @@ TEST(ddelparam_reuse_packed_to_execute) {
     LPARAM lp = U(PackDDElParam)(WM_DDE_ACK, 1, 2);
     LPARAM r = U(ReuseDDElParam)(lp, WM_DDE_ACK, WM_DDE_EXECUTE, 0x10, 0xABCDEF12345ull);
     EQ(r, 0xABCDEF12345ull);
-    t_note("old block after reuse->EXECUTE: flags 0x%x", GlobalFlags((HGLOBAL)lp));
+    /* the freed block is not probed (GlobalFlags on it corrupts the heap on Win10) */
 }
 TEST(ddelparam_reuse_packed_to_plain) {
     REQUIRE(U(PackDDElParam)); REQUIRE(U(ReuseDDElParam)); REQUIRE(U(UnpackDDElParam));

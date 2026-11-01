@@ -34,7 +34,7 @@ static int need_accel(void) {
 #define NEED() do { if (!need_accel()) { t_skip("missing exports"); return; } } while (0)
 
 static HACCEL mk1(BYTE virt, WORD key, WORD cmd) {
-    ACCEL a = {virt, key, cmd};
+    ACCEL a __attribute__((aligned(8))) = {virt, key, cmd};
     return U(CreateAcceleratorTableA)(&a, 1);
 }
 static LRESULT ta(HWND w, HACCEL h, UINT msg, WPARAM wp) {
@@ -53,7 +53,7 @@ static LRESULT taw(HWND w, HACCEL h, UINT msg, WPARAM wp) {
 /* ---------- creation / destruction ---------- */
 TEST(accel_create_single) {
     NEED();
-    ACCEL a = {FVIRTKEY, 'A', 100};
+    ACCEL a __attribute__((aligned(8))) = {FVIRTKEY, 'A', 100};
     HACCEL h = U(CreateAcceleratorTableA)(&a, 1);
     CHECK(h != NULL);
     EQ(U(DestroyAcceleratorTable)(h), TRUE);
@@ -63,7 +63,7 @@ TEST(accel_create_single) {
 }
 TEST(accel_create_zero_count) {
     NEED();
-    ACCEL a = {FVIRTKEY, 'A', 100};
+    ACCEL a __attribute__((aligned(8))) = {FVIRTKEY, 'A', 100};
     SetLastError(0);
     EQ(U(CreateAcceleratorTableA)(&a, 0), NULL);
     t_note("CreateAcceleratorTableA(cEntries=0) err=%lu", GetLastError());
@@ -75,7 +75,7 @@ TEST(accel_create_zero_count) {
 }
 TEST(accel_create_negative_count_w) {
     NEED();
-    ACCEL a = {FVIRTKEY, 'A', 100};
+    ACCEL a __attribute__((aligned(8))) = {FVIRTKEY, 'A', 100};
     SetLastError(0);
     HACCEL h = U(CreateAcceleratorTableW)(&a, -1);
     EQ(h, NULL);
@@ -117,7 +117,7 @@ TEST(accel_destroy_wrong_object_type) {
 }
 TEST(accel_copy_count_query) {
     NEED();
-    ACCEL a[3] = {{FVIRTKEY, 'A', 1}, {FVIRTKEY | FCONTROL, 'B', 2}, {0, 'c', 3}};
+    ACCEL a[3] __attribute__((aligned(8))) = {{FVIRTKEY, 'A', 1}, {FVIRTKEY | FCONTROL, 'B', 2}, {0, 'c', 3}};
     HACCEL h = U(CreateAcceleratorTableA)(a, 3);
     CHECK(h != NULL);
     EQ(U(CopyAcceleratorTableA)(h, NULL, 0), 3);
@@ -127,11 +127,11 @@ TEST(accel_copy_count_query) {
 }
 TEST(accel_copy_roundtrip) {
     NEED();
-    ACCEL a[5] = {{FVIRTKEY, 'A', 11}, {FVIRTKEY | FCONTROL, 'S', 22}, {FVIRTKEY | FSHIFT | FALT, VK_F5, 33},
+    ACCEL a[5] __attribute__((aligned(8))) = {{FVIRTKEY, 'A', 11}, {FVIRTKEY | FCONTROL, 'S', 22}, {FVIRTKEY | FSHIFT | FALT, VK_F5, 33},
                   {0, 'z', 44}, {FVIRTKEY | FNOINVERT, VK_ESCAPE, 55}};
-    ACCEL src[5]; memcpy(src, a, sizeof a);
+    ACCEL src[5] __attribute__((aligned(8))); memcpy(src, a, sizeof a);
     HACCEL h = U(CreateAcceleratorTableA)(a, 5);
-    ACCEL out[8]; memset(out, 0xEE, sizeof out);
+    ACCEL out[8] __attribute__((aligned(8))); memset(out, 0xEE, sizeof out);
     EQ(U(CopyAcceleratorTableA)(h, out, 8), 5);
     for (int i = 0; i < 5; i++) {
         CHECKF((out[i].fVirt & ~FLASTKEY) == src[i].fVirt, "A fVirt[%d] 0x%x vs 0x%x", i, out[i].fVirt, src[i].fVirt);
@@ -149,9 +149,9 @@ TEST(accel_copy_roundtrip) {
 }
 TEST(accel_copy_fvirt_last_flag) {
     NEED();
-    ACCEL a[2] = {{FVIRTKEY, 'A', 1}, {FVIRTKEY, 'B', 2}};
+    ACCEL a[2] __attribute__((aligned(8))) = {{FVIRTKEY, 'A', 1}, {FVIRTKEY, 'B', 2}};
     HACCEL h = U(CreateAcceleratorTableA)(a, 2);
-    ACCEL out[2] = {{0}};
+    ACCEL out[2] __attribute__((aligned(8))) = {{0}};
     EQ(U(CopyAcceleratorTableA)(h, out, 2), 2);
     t_note("fVirt of copied entries: 0x%02x 0x%02x (FLASTKEY=0x80)", out[0].fVirt, out[1].fVirt);
     CHECK((out[0].fVirt & FLASTKEY) == 0);
@@ -159,9 +159,9 @@ TEST(accel_copy_fvirt_last_flag) {
 }
 TEST(accel_copy_buffer_sizes) {
     NEED();
-    ACCEL a[4] = {{FVIRTKEY, 'A', 1}, {FVIRTKEY, 'B', 2}, {FVIRTKEY, 'C', 3}, {FVIRTKEY, 'D', 4}};
+    ACCEL a[4] __attribute__((aligned(8))) = {{FVIRTKEY, 'A', 1}, {FVIRTKEY, 'B', 2}, {FVIRTKEY, 'C', 3}, {FVIRTKEY, 'D', 4}};
     HACCEL h = U(CreateAcceleratorTableA)(a, 4);
-    ACCEL out[6];
+    ACCEL out[6] __attribute__((aligned(8)));
     static const int req[] = {0, 1, 2, 3, 4, 5, 6};
     static const int want[] = {0, 1, 2, 3, 4, 4, 4};
     for (int i = 0; i < 7; i++) {
@@ -175,7 +175,7 @@ TEST(accel_copy_buffer_sizes) {
 }
 TEST(accel_copy_invalid_handle) {
     NEED();
-    ACCEL out[2];
+    ACCEL out[2] __attribute__((aligned(8)));
     static const ULONG_PTR bad[] = {0, 1, 0x1234, 0xDEADBEEF};
     for (unsigned i = 0; i < sizeof bad / sizeof bad[0]; i++) {
         SetLastError(0);
@@ -190,7 +190,7 @@ TEST(accel_copy_after_destroy) {
     NEED();
     HACCEL h = mk1(FVIRTKEY, 'A', 1);
     U(DestroyAcceleratorTable)(h);
-    ACCEL out[1];
+    ACCEL out[1] __attribute__((aligned(8)));
     SetLastError(0);
     EQ(U(CopyAcceleratorTableA)(h, out, 1), 0);
     BADACCEL_ERR("copy after destroy");
@@ -198,7 +198,7 @@ TEST(accel_copy_after_destroy) {
 TEST(accel_create_in_place_key_conversion) {
     NEED();
     /* The A entry point rewrites the key of non-virtual-key entries in the caller's array. ASCII is unchanged. */
-    ACCEL a[2] = {{0, 'q', 5}, {FVIRTKEY, 'Q', 6}};
+    ACCEL a[2] __attribute__((aligned(8))) = {{0, 'q', 5}, {FVIRTKEY, 'Q', 6}};
     HACCEL h = U(CreateAcceleratorTableA)(a, 2);
     EQ(a[0].key, 'q');
     EQ(a[1].key, 'Q');
@@ -208,9 +208,9 @@ TEST(accel_create_in_place_key_conversion) {
 TEST(accel_a_w_parity_ascii_chars) {
     NEED();
     for (WORD ch = 0x20; ch < 0x7F; ch++) {
-        ACCEL aa = {0, ch, 900}, aw = {0, ch, 900};
+        ACCEL aa __attribute__((aligned(8))) = {0, ch, 900}, aw = {0, ch, 900};
         HACCEL ha = U(CreateAcceleratorTableA)(&aa, 1), hw = U(CreateAcceleratorTableW)(&aw, 1);
-        ACCEL oa = {0}, ow = {0};
+        ACCEL oa __attribute__((aligned(8))) = {0}, ow = {0};
         if (!ha || !hw) { CHECKF(0, "create 0x%x", ch); if (ha) U(DestroyAcceleratorTable)(ha); if (hw) U(DestroyAcceleratorTable)(hw); continue; }
         U(CopyAcceleratorTableA)(ha, &oa, 1); U(CopyAcceleratorTableW)(hw, &ow, 1);
         CHECKF(oa.key == ch && ow.key == ch, "key 0x%x -> A 0x%x W 0x%x", ch, oa.key, ow.key);
@@ -219,10 +219,10 @@ TEST(accel_a_w_parity_ascii_chars) {
 }
 TEST(accel_wide_key_beyond_ascii) {
     NEED();
-    ACCEL w = {0, 0x20AC, 3};     /* euro sign as a wide character */
+    ACCEL w __attribute__((aligned(8))) = {0, 0x20AC, 3};     /* euro sign as a wide character */
     HACCEL h = U(CreateAcceleratorTableW)(&w, 1);
     CHECK(h != NULL);
-    ACCEL o = {0};
+    ACCEL o __attribute__((aligned(8))) = {0};
     EQ(U(CopyAcceleratorTableW)(h, &o, 1), 1);
     EQ(o.key, 0x20AC);
     U(DestroyAcceleratorTable)(h);
@@ -230,10 +230,10 @@ TEST(accel_wide_key_beyond_ascii) {
 TEST(accel_virtkey_codes_roundtrip) {
     NEED();
     for (WORD vk = 1; vk < 0xFF; vk++) {
-        ACCEL a = {FVIRTKEY, vk, vk};
+        ACCEL a __attribute__((aligned(8))) = {FVIRTKEY, vk, vk};
         HACCEL h = U(CreateAcceleratorTableW)(&a, 1);
         if (!h) { CHECKF(0, "vk 0x%x", vk); continue; }
-        ACCEL o = {0};
+        ACCEL o __attribute__((aligned(8))) = {0};
         int n = U(CopyAcceleratorTableW)(h, &o, 1);
         CHECKF(n == 1 && o.key == vk && o.cmd == vk, "vk 0x%x", vk);
         U(DestroyAcceleratorTable)(h);
@@ -243,11 +243,11 @@ TEST(accel_all_modifier_combinations) {
     NEED();
     for (BYTE m = 0; m < 0x20; m++) {
         BYTE f = (BYTE)(m & (FVIRTKEY | FNOINVERT | FSHIFT | FCONTROL | FALT));
-        ACCEL a = {f, 'M', 1234};
+        ACCEL a __attribute__((aligned(8))) = {f, 'M', 1234};
         HACCEL h = U(CreateAcceleratorTableW)(&a, 1);
         CHECKF(h != NULL, "flags 0x%x", f);
         if (!h) continue;
-        ACCEL o = {0};
+        ACCEL o __attribute__((aligned(8))) = {0};
         U(CopyAcceleratorTableW)(h, &o, 1);
         CHECKF((o.fVirt & ~FLASTKEY) == f, "flags 0x%x -> 0x%x", f, o.fVirt);
         U(DestroyAcceleratorTable)(h);
@@ -257,9 +257,9 @@ TEST(accel_cmd_extremes) {
     NEED();
     static const WORD cmds[] = {0, 1, 0x7FFF, 0x8000, 0xFFFF, 0xF000, 0xF060};
     for (unsigned i = 0; i < sizeof cmds / sizeof cmds[0]; i++) {
-        ACCEL a = {FVIRTKEY, 'C', cmds[i]};
+        ACCEL a __attribute__((aligned(8))) = {FVIRTKEY, 'C', cmds[i]};
         HACCEL h = U(CreateAcceleratorTableW)(&a, 1);
-        ACCEL o = {0};
+        ACCEL o __attribute__((aligned(8))) = {0};
         CHECKF(h && U(CopyAcceleratorTableW)(h, &o, 1) == 1 && o.cmd == cmds[i], "cmd 0x%x", cmds[i]);
         if (h) U(DestroyAcceleratorTable)(h);
     }
@@ -454,7 +454,7 @@ TEST(accel_translate_char_entry_w) {
     NEED();
     if (mods_down()) { t_skip("modifier key held"); return; }
     HWND w = mkwnd();
-    ACCEL a = {0, 0x20AC, 201};
+    ACCEL a __attribute__((aligned(8))) = {0, 0x20AC, 201};
     HACCEL h = U(CreateAcceleratorTableW)(&a, 1);
     LRESULT r = taw(w, h, WM_CHAR, 0x20AC);
     CHECK(r != 0);
@@ -490,7 +490,7 @@ TEST(accel_translate_first_match_wins) {
     NEED();
     if (mods_down()) { t_skip("modifier key held"); return; }
     HWND w = mkwnd();
-    ACCEL a[3] = {{FVIRTKEY, 'M', 11}, {FVIRTKEY, 'M', 22}, {FVIRTKEY, 'N', 33}};
+    ACCEL a[3] __attribute__((aligned(8))) = {{FVIRTKEY, 'M', 11}, {FVIRTKEY, 'M', 22}, {FVIRTKEY, 'N', 33}};
     HACCEL h = U(CreateAcceleratorTableA)(a, 3);
     CHECK(ta(w, h, WM_KEYDOWN, 'M') != 0);
     EQ(g_cmd_count, 1);
@@ -572,7 +572,7 @@ TEST(accel_translate_posted_message_loop) {
     NEED();
     if (mods_down()) { t_skip("modifier key held"); return; }
     HWND w = mkwnd();
-    ACCEL a[2] = {{FVIRTKEY, VK_F7, 701}, {FVIRTKEY, VK_F8, 702}};
+    ACCEL a[2] __attribute__((aligned(8))) = {{FVIRTKEY, VK_F7, 701}, {FVIRTKEY, VK_F8, 702}};
     HACCEL h = U(CreateAcceleratorTableA)(a, 2);
     /* A private window that is never shown does not receive key messages from the system, so these
      * are synthetic posts. */

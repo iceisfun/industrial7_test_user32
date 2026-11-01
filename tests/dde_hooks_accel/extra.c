@@ -147,7 +147,7 @@ TEST(extra_accel_create_large_table) {
 }
 TEST(extra_accel_create_many_tables) {
     REQUIRE(U(CreateAcceleratorTableA)); REQUIRE(U(DestroyAcceleratorTable));
-    ACCEL a = {FVIRTKEY, 'A', 1};
+    ACCEL a __attribute__((aligned(8))) = {FVIRTKEY, 'A', 1};
     HACCEL hs[50]; int ok = 0;
     DWORD first_err = 0;
     for (int i = 0; i < 50; i++) { SetLastError(0); hs[i] = U(CreateAcceleratorTableA)(&a, 1); if (hs[i]) ok++; else if (!first_err) first_err = GetLastError(); }
@@ -158,7 +158,7 @@ TEST(extra_accel_create_many_tables) {
 }
 TEST(extra_accel_translate_null_msg_table_survives) {
     REQUIRE(U(CreateAcceleratorTableA)); REQUIRE(U(DestroyAcceleratorTable)); REQUIRE(U(TranslateAcceleratorA));
-    ACCEL a = {FVIRTKEY, 'A', 1};
+    ACCEL a __attribute__((aligned(8))) = {FVIRTKEY, 'A', 1};
     SetLastError(0);
     HACCEL h = U(CreateAcceleratorTableA)(&a, 1);
     CHECKF(h != NULL, "CreateAcceleratorTableA failed, error %lu", GetLastError());
