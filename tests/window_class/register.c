@@ -682,7 +682,9 @@ TEST(window_class_register_local_not_visible_null_instance) {
 TEST(window_class_register_other_instance_value) {
     REQUIRE(U(GetClassInfoExA)); REQUIRE(U(RegisterClassExA)); REQUIRE(U(UnregisterClassA));
     char n[64]; wc_uname(n, sizeof n, "wcFakeInst");
-    HINSTANCE fake = (HINSTANCE)0x12340000;
+    /* a bogus address makes Win10 user32 fault while probing it as a PE image (handled
+     * internally); use a real module that is not the exe instance */
+    HINSTANCE fake = GetModuleHandleA("kernel32.dll");
     WNDCLASSEXA wc; memset(&wc, 0, sizeof wc);
     wc.cbSize = sizeof wc; wc.lpfnWndProc = wc_defA; wc.hInstance = fake; wc.lpszClassName = n;
     ATOM a = U(RegisterClassExA)(&wc);
@@ -699,7 +701,9 @@ TEST(window_class_register_proc_roundtrip_many) {
     REQUIRE(U(GetClassInfoExA));
     for (int i = 0; i < 30; i++) {
         char n[64]; wc_uname(n, sizeof n, "wcMany");
-        CHECK(wc_regA(n, i & 0x7, i, i * 2, (i & 1) ? wc_recA : wc_defA));
+        /* Win10 rejects style bits outside CS_VALID with 87 for current-SDK apps (0x4 here);
+         * keep the low bits within the valid set: 0..3 and DBLCLKS */
+        CHECK(wc_regA(n, (i & 0x3) | ((i & 0x4) ? CS_DBLCLKS : 0), i, i * 2, (i & 1) ? wc_recA : wc_defA));
         WNDCLASSEXA o; memset(&o, 0, sizeof o); o.cbSize = sizeof o;
         CHECK(U(GetClassInfoExA)(wc_inst(), n, &o));
         CHECK(o.lpfnWndProc == ((i & 1) ? wc_recA : wc_defA));

@@ -49,8 +49,11 @@ TEST(window_class_cs_noclose_disables_close) {
         HMENU s1 = U(GetSystemMenu)(h1, FALSE), s2 = U(GetSystemMenu)(h2, FALSE);
         CHECK(s1 && s2);
         UINT st1 = U(GetMenuState)(s1, SC_CLOSE, MF_BYCOMMAND), st2 = U(GetMenuState)(s2, SC_CLOSE, MF_BYCOMMAND);
-        CHECK(st1 != 0xFFFFFFFF && st2 != 0xFFFFFFFF);
-        CHECK(st1 & MF_GRAYED);
+        CHECK(st2 != 0xFFFFFFFF);
+        /* Win10: with CS_NOCLOSE the system menu has no SC_CLOSE item at all (state -1);
+         * an implementation may instead gray it */
+        t_note("CS_NOCLOSE SC_CLOSE state 0x%x", st1);
+        CHECK(st1 == 0xFFFFFFFF || (st1 & MF_GRAYED));
         CHECK(!(st2 & MF_GRAYED));
     }
     if (h1) U(DestroyWindow)(h1);

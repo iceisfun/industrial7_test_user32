@@ -119,7 +119,10 @@ TEST(window_class_gwl_hinstance_is_createwindow_arg) {
     REQUIRE(U(GetWindowLongPtrA)); REQUIRE(U(GetClassLongPtrA));
     char n[64]; wc_uname(n, sizeof n, "wcWlInst");
     CHECK(wc_regA(n, CS_GLOBALCLASS, 0, 0, NULL));
-    HINSTANCE fake = (HINSTANCE)0x3330000;
+    /* Win10 RegisterClass/CreateWindow probe the hInstance as a PE image (version lookup);
+     * a bogus address faults inside user32 (handled there, but the harness exception hook
+     * counts it as a failure). Use a real module that is not the exe instead. */
+    HINSTANCE fake = GetModuleHandleA("kernel32.dll");
     HWND h = U(CreateWindowExA)(0, n, "x", WS_POPUP, 0, 0, 10, 10, NULL, NULL, fake, NULL);
     CHECK(h);
     if (h) {

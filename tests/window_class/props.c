@@ -321,10 +321,12 @@ TEST(window_class_prop_bad_hwnd) {
     for (unsigned i = 0; i < sizeof bad / sizeof *bad; i++) {
         SetLastError(MAGIC_ERR);
         CHECKF(U(SetPropA)(bad[i], "wcBadHwndProp", (HANDLE)1) == FALSE, "set %p", bad[i]);
-        EXPECT_LAST_ERR(ERR_INVALID_HWND);
+        /* Win10: SetProp on an invalid window fails without touching the last error
+         * (GetProp does set 1400) */
+        EXPECT_LAST_ERR(MAGIC_ERR);
         SetLastError(MAGIC_ERR);
         CHECK(U(SetPropW)(bad[i], L"wcBadHwndProp", (HANDLE)1) == FALSE);
-        EXPECT_LAST_ERR(ERR_INVALID_HWND);
+        EXPECT_LAST_ERR(MAGIC_ERR);
         SetLastError(MAGIC_ERR);
         CHECK(U(GetPropA)(bad[i], "wcBadHwndProp") == NULL);
         EXPECT_LAST_ERR(ERR_INVALID_HWND);
@@ -352,7 +354,7 @@ TEST(window_class_prop_destroyed_window) {
     EXPECT_LAST_ERR(ERR_INVALID_HWND);
     SetLastError(MAGIC_ERR);
     CHECK(U(SetPropA)(h, n, (HANDLE)4) == FALSE);
-    EXPECT_LAST_ERR(ERR_INVALID_HWND);
+    EXPECT_LAST_ERR(MAGIC_ERR); /* Win10: SetProp leaves the last error untouched */
     CHECK(U(RemovePropA)(h, n) == NULL);
     e_reset();
     EQ(U(EnumPropsA)(h, enumA), -1);
