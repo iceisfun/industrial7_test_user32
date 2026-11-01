@@ -900,6 +900,18 @@ TEST(dialogs_mb_repeated_boxes) {
     }
     EQ(bad, 0);
 }
+/* Diagnostic: where the time of one message box goes (arm -> call -> box seen -> return). */
+TEST(dialogs_mb_timing_probe) {
+    REQUIRE(MessageBoxW);
+    for (int i = 0; i < 3; i++) {
+        mb_arm(ACT_CLICK, IDOK, 0, 0);
+        DWORD t0 = GetTickCount();
+        int r = MessageBoxW(NULL, L"timing", L"Timing", MB_OK | (i == 2 ? MB_ICONINFORMATION : 0));
+        DWORD t1 = GetTickCount();
+        mb_disarm();
+        t_note("box %d: returned %d after %lu ms, timer ticks %d, found %d", i, r, t1 - t0, mb.ticks, mb.found);
+    }
+}
 TEST(dialogs_mb_box_window_gone_after_return) {
     REQUIRE(MessageBoxW); REQUIRE(IsWindow);
     t_pump();
