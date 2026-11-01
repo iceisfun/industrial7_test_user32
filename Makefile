@@ -17,3 +17,8 @@ WINEPREFIX ?= /tmp/claude-1000/-home-iceisfun-test-user32/0dbca224-e0c6-4aac-803
 wine-run: all
 	@for e in $(EXES); do echo "== $$e"; WINEPREFIX=$(WINEPREFIX) WINEARCH=win64 WINEDEBUG=-all timeout 300 $(WINE) $$e 2>/dev/null | grep -E '^(FAIL|SKIP|SUMMARY)|^  (FAIL|NOTE)'; done
 .PHONY: all clean wine-run
+# Harness self-test (deliberate failures, crashes, hangs); not part of the corpus: build/selftest/selftest.exe
+selftest: common/t.c common/t.h tools/selftest/selftest.c
+	@mkdir -p build/selftest
+	$(CC) $(CFLAGS) -Icommon -o build/selftest/selftest.exe tools/selftest/selftest.c common/t.c -static -lkernel32 -ladvapi32 -lgdi32 -lntdll
+.PHONY: selftest
