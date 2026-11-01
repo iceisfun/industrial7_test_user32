@@ -43,7 +43,7 @@ TEST(ddelparam_packed_is_a_handle) {
     CHECK(fl != GMEM_INVALID_HANDLE);
     CHECK(GlobalSize((HGLOBAL)lp) >= 2 * sizeof(UINT_PTR));
     CHECK(U(FreeDDElParam)(WM_DDE_ACK, lp));
-    t_note("GlobalFlags after free: 0x%x", GlobalFlags((HGLOBAL)lp));
+    /* the freed handle is not probed (GlobalFlags on it raises a heap-corruption exception on Win10 22H2) */
 }
 TEST(ddelparam_plain_msgs_pack_into_32_bits) {
     REQUIRE(U(PackDDElParam)); REQUIRE(U(UnpackDDElParam));
