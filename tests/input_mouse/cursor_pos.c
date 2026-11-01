@@ -26,8 +26,14 @@ TEST(input_mouse_setcursorpos_roundtrip) {
     for (unsigned i = 0; i < sizeof pts / sizeof *pts; i++) {
         POINT p = {-1, -1};
         SET_ERR(0);
-        CHECKF(U(SetCursorPos)(pts[i].x, pts[i].y), "i=%u", i);
-        CHECK(U(GetCursorPos)(&p));
+        /* class G: the hypervisor pointer device can move the cursor back to its own position once; set again (up to 5 times) */
+        for (int attempt = 0; attempt < 5; attempt++) {
+            CHECKF(U(SetCursorPos)(pts[i].x, pts[i].y), "i=%u", i);
+            CHECK(U(GetCursorPos)(&p));
+            if (p.x == pts[i].x && p.y == pts[i].y) break;
+            t_note("i=%u attempt %d read %ld,%ld", i, attempt, p.x, p.y);
+            Sleep(15);
+        }
         CHECKF(p.x == pts[i].x && p.y == pts[i].y, "i=%u got %ld,%ld", i, p.x, p.y);
     }
     im_restore(&s);
