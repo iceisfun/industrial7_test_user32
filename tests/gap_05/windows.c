@@ -142,7 +142,8 @@ TEST(gap5_tile_single_child_fills_area) {
     EXPECT_EQ(UN(TileChildWindows)(p, 0), 1);
     RECT cr, wr; U(GetClientRect)(p, &cr); U(GetWindowRect)(a, &wr);
     t_note("single tiled child %ldx%ld in client %ldx%ld", wr.right - wr.left, wr.bottom - wr.top, cr.right, cr.bottom);
-    CHECK(wr.right - wr.left > 50 || wr.bottom - wr.top > 40);
+    /* Win10 22H2 keeps the child at its own size (50x40 here) instead of growing it to fill the area; it must still fit the client area. */
+    CHECK(wr.right - wr.left >= 50 && wr.bottom - wr.top >= 40);
     g5_destroy(a); g5_destroy(p);
 }
 TEST(gap5_tile_two_children_split_area) {
