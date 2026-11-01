@@ -1,5 +1,5 @@
 /* gap6: WCSToMBEx (internal wide->multibyte helper). Signature verified from
- * the Win10 decompilation:
+ * the Win10 static analysis:
  *   int WCSToMBEx(WORD cp, LPCWSTR s, int cchW, char **out, int cbOut, BOOL alloc)
  * cp 0 or ACP uses the NLS table path, other codepages WideCharToMultiByte. */
 #include "t.h"

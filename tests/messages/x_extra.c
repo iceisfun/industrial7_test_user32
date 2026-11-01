@@ -5,7 +5,7 @@
 #define NOERR 0xdeadbeef
 #define SETE() SetLastError(NOERR)
 
-/* ---- GetMessage filter acceptance (decompiled validation: high bits only matter unless max == 0xFFFFFFFF) ---- */
+/* ---- GetMessage filter acceptance (analysed validation: high bits only matter unless max == 0xFFFFFFFF) ---- */
 TEST(messages_x_getmessage_max_all_ones_accepted) {
     HWND h; MSG m; BOOL r;
     REQUIRE(GMA); REQUIRE(GMW); REQUIRE(PMA); REQUIRE_MH();

@@ -465,7 +465,7 @@ TEST(wsprintfA_nul_terminated_exactly) {
 
 static void build_fmt(char *out, int n, char ch) { memset(out, ch, n); out[n] = 0; }
 
-/* Capacity: output is capped near 1024 characters. The decompiled Win10 code returns 1024 and terminates at index 1024;
+/* Capacity: output is capped near 1024 characters. The analysed Win10 code returns 1024 and terminates at index 1024;
  * the check below accepts either 1023 or 1024 so only the cap itself, termination and no overrun are hard requirements. */
 static void check_capped(const char *what, const char *out, int r, int expect_min) {
     int len = (int)strlen(out);

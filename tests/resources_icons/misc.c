@@ -405,7 +405,7 @@ TEST(resources_icons_ci_getcursorinfo_bad_cbsize)
         memset(&ci, 0, sizeof ci);
         ci.cbSize = sizes[i];
         SetLastError(0);
-        /* win32k-side validation, not visible in the user32 decomp: informational only */
+        /* win32k-side validation, not visible in the user32 static analysis: informational only */
         t_note("GetCursorInfo cbSize=%lu -> %d err=%lu", sizes[i], U(GetCursorInfo)(&ci), GetLastError());
     }
 }

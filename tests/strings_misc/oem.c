@@ -396,7 +396,7 @@ TEST(winmodfile_desktop_and_shell_note) {
 }
 
 TEST(winmodfile_export_aliases) {
-    /* both the unsuffixed ordinal-style alias and the A name exist in the decompiled module */
+    /* both the unsuffixed ordinal-style alias and the A name exist in the analysed module */
     CHECK(t_proc("GetWindowModuleFileNameA") != NULL);
     CHECK(t_proc("GetWindowModuleFileNameW") != NULL);
     t_note("GetWindowModuleFileName (unsuffixed) export present: %d", t_proc("GetWindowModuleFileName") != NULL);

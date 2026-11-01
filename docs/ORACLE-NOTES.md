@@ -7,7 +7,7 @@ three consecutive runs, and the audit of every expectation that was changed rela
 
 - Windows 10 Home 22H2, build 19045.2965, English (US), x64, installed unattended from the Microsoft ISO and used as a throw-away overlay:
   every run boots a fresh copy, logs on as an interactive Administrator on the console session and runs `run_all.bat`-equivalent staging from a read-only disc.
-- Hypervisor: QEMU/KVM, i440fx, SeaBIOS, `-cpu host`, 4 vCPUs, 4 GiB RAM, standard VGA, USB tablet pointer, AHCI disk, e1000 NIC without a route out, fixed RTC.
+- Hypervisor: a KVM-based hypervisor, i440fx, SeaBIOS, `-cpu host`, 4 vCPUs, 4 GiB RAM, standard VGA, USB tablet pointer, AHCI disk, e1000 NIC without a route out, fixed RTC.
 - System DLLs as installed (ntdll and kernelbase 10.0.19041.2788, no updates applied). The only output channel is the serial port; the runner prints everything there.
 - Each area exe runs under the supervisor described in the README (worker process, per-test watchdog, TSV rows). One guest run (boot, staging, all areas, shutdown) takes about 25 minutes.
 
@@ -91,7 +91,7 @@ Earlier flakes were fixed at the cause instead: a stuck-dialog watchdog timer th
 
 ## Audit of changed expectations
 
-Every test whose body differs from the first version of the corpus was listed (`git diff` of `tests/` between the first version and the final one: about 350 test bodies changed, and the extension commits added new tests). The reviewer re-read the oracle output and, where the function body is visible in user mode, the decompilation, for the 47 representative changes below and reverted or strengthened the ones that had been loosened without need.
+Every test whose body differs from the first version of the corpus was listed (`git diff` of `tests/` between the first version and the final one: about 350 test bodies changed, and the extension commits added new tests). The reviewer re-read the oracle output and, where the function body is visible in user mode, the static analysis, for the 47 representative changes below and reverted or strengthened the ones that had been loosened without need.
 
 Classes: **W** wrong expectation (the oracle differs from the documentation or from an assumption), **H** harness fault (test bug, alignment, wrong module for a call), **G** environment, **C** crash/hang containment, **S** strengthened or reverted by the audit.
 
@@ -113,7 +113,7 @@ Classes: **W** wrong expectation (the oracle differs from the documentation or f
 | `menus_item_limit_many_items` | menus | append until refusal, at least 1000 items | G | OK (menu accepted 1168 items before AppendMenu refused (err 0)) | kept: desktop heap of the guest refuses further items after ~1170; the lower bound is still asserted |
 | `menus_mii_state_invalid_bits` | menus | fresh menu per MFS_DEFAULT value | W | OK  | kept: a menu accepts MFS_DEFAULT through SetMenuItemInfo only once |
 | `menus_mii_bitmap_wrong_gdi_type` | menus | deleted bitmap handle accepted, noted | W | OK (MIIM_BITMAP with an HBRUSH accepted: 1; MIIM_BITMAP with a deleted bitmap accepted: 1 err 0) | kept: oracle stores it without validation (TRUE, error 0) |
-| `menus_x3_modifymenu_replacing_popup_destroys_old_submenu` | menus | destruction of the old submenu no longer expected for `MF_STRING` | W | OK  | kept: `SetMenuItemInfoStruct` stores hSubMenu only with `MF_POPUP` (decompiled); oracle: submenu still valid, item id -1 |
+| `menus_x3_modifymenu_replacing_popup_destroys_old_submenu` | menus | destruction of the old submenu no longer expected for `MF_STRING` | W | OK  | kept: `SetMenuItemInfoStruct` stores hSubMenu only with `MF_POPUP` (analysed); oracle: submenu still valid, item id -1 |
 | `messages_post_queue_limit` | messages | count only the test own messages | H | OK  | kept: a stray system notification was counted |
 | `messages_filter_ex_window_allow_disallow_reset` | messages | RESET results asserted as FALSE/87 | S | OK (ALLOW first: ExtStatus 0; ALLOW again: ExtStatus 1) | strengthened: noted outcomes (RESET fails with 87 with and without a struct) are now asserted |
 | `messages_focus_destroy_focus_window_sends_killfocus` | messages | weakened to "0 or 1 KILLFOCUS" | S | OK  | REVERTED to the strict check: the oracle delivered exactly one WM_KILLFOCUS before WM_DESTROY in every full run of the final stretch (the loosening had no supporting evidence) |
@@ -145,7 +145,7 @@ Classes: **W** wrong expectation (the oracle differs from the documentation or f
 | `clipboard_x3_gdiobj_range_handle_kept_on_empty` | clipboard | bitmap handle replaced by a GlobalAlloc block, freed-on-empty asserted | W | OK (GDIOBJ-range block after EmptyClipboard: GlobalSize=0) | kept: the documented contract says hMem is a global handle here; the oracle frees it on EmptyClipboard (GlobalSize 0) |
 | `ddelparam_unpack_invalid_handle` | dde_hooks_accel | only NULL probed | C | OK  | kept: bogus non-NULL lparams are dereferenced as global handles and corrupt the heap run-dependently |
 
-The decompilation of user32 shows only thin wrappers for many of these calls (`SetPropW`, `FlashWindowEx`, `ChangeWindowMessageFilterEx` and `IsCharAlphaW` jump straight into the kernel or NLS code), so for those the oracle output is the only evidence and the tests assert exactly what the oracle returned. Where user-mode code decides (`ModifyMenuW` through `SetMenuItemInfoStruct`: the submenu handle is stored only for `MF_POPUP`) the decompilation agrees with the oracle.
+The static analysis of user32 shows only thin wrappers for many of these calls (`SetPropW`, `FlashWindowEx`, `ChangeWindowMessageFilterEx` and `IsCharAlphaW` jump straight into the kernel or NLS code), so for those the oracle output is the only evidence and the tests assert exactly what the oracle returned. Where user-mode code decides (`ModifyMenuW` through `SetMenuItemInfoStruct`: the submenu handle is stored only for `MF_POPUP`) the static analysis agrees with the oracle.
 
 ## How to rerun
 

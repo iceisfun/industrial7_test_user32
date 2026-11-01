@@ -438,7 +438,7 @@ TEST(misc_ui_gwl_bad_index) {
     NEED_WND();
     HWND h = mu_top();
     CHECK(h != NULL); if (!h) return;
-    /* Win10 22H2 oracle (and GetWindowData in the user32 decomp): negative indices -1 and -2 are
+    /* Win10 22H2 oracle (and GetWindowData in the user32 static analysis): negative indices -1 and -2 are
      * internal slots that return a non-zero value (a pointer-sized field of the window) rather than
      * ERROR_INVALID_INDEX; writing 3 into the -2 slot corrupted the window and the test process
      * died with an access violation right after. They are read-only observed here, never written. */

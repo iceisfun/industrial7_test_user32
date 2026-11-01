@@ -1,6 +1,6 @@
 /* gap_03: IsWow64Message, MB_GetString, MBToWCSEx/Ext, MessageBeep,
  * MakeThreadTSFEventAware, PrivateRegisterICSProc, NotifyOverlayWindow,
- * QuerySendMessage. Behaviour taken from the user32 Win10 decompilation. */
+ * QuerySendMessage. Behaviour taken from the user32 Win10 static analysis. */
 #include "t.h"
 
 UDECL(BOOL, IsWow64Message, (void));
@@ -180,7 +180,7 @@ TEST(gap3_mbgetstring_userland_range) {
 }
 
 /* ---------------- MBToWCSEx / MBToWCSExt ---------------- */
-/* Reference model of the decompiled MBToWCSEx, used only when GAP3_MODEL is set
+/* Reference model of the analysed MBToWCSEx, used only when GAP3_MODEL is set
  * (to validate the test tables on hosts whose user32 lacks a real implementation). */
 static UINT model_Ex(WORD cp, LPCSTR s, int cch, WCHAR **pb, int bufsz, int alloc) {
     if (cch == 0 || bufsz == 0 || !s) return 0;

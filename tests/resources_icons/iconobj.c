@@ -327,7 +327,7 @@ TEST(resources_icons_obj_createcursor_basic)
 
 TEST(resources_icons_obj_createcursor_hotspot_bounds)
 {
-    /* decomp: xHot<0, xHot>width, yHot<0, yHot>height are rejected; == width/height accepted */
+    /* static analysis: xHot<0, xHot>width, yHot<0, yHot>height are rejected; == width/height accepted */
     BYTE a[128], x[128];
     HCURSOR c;
     static const int ok[][2] = {{0, 0}, {31, 31}, {32, 32}, {32, 0}, {0, 32}};
@@ -1168,7 +1168,7 @@ TEST(resources_icons_obj_draw_invalid_args)
 
 TEST(resources_icons_obj_draw_invalid_flags)
 {
-    /* decomp: diFlags & ~0x1F => ERROR_INVALID_PARAMETER before anything else is examined */
+    /* static analysis: diFlags & ~0x1F => ERROR_INVALID_PARAMETER before anything else is examined */
     static const UINT bad[] = {0x20, 0x40, 0x80, 0x100, 0x10000, 0x80000000, 0xFFFFFFE0, 0xFFFFFFFF, 0x23};
     HBITMAP old, bmp; DWORD *bits; HDC dc;
     HICON ic; int i;

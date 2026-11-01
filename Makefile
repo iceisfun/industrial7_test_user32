@@ -12,12 +12,7 @@ build/%.exe: $$(wildcard tests/$$*/*.c) $$(wildcard tests/$$*/*.h) common/t.c co
 	@mkdir -p build
 	$(CC) $(CFLAGS) -Icommon -o $@ $(wildcard tests/$*/*.c) common/t.c -static -lkernel32 -ladvapi32 -lgdi32 -lntdll
 clean: ; rm -rf build
-# Sanity-run under wine (for harness/compile validation only; the authority is real Win10).
-WINE ?= /home/iceisfun/work/wine/proton-ge-custom/build/dist/files/bin/wine
-WINEPREFIX ?= /tmp/claude-1000/-home-iceisfun-test-user32/0dbca224-e0c6-4aac-8035-d3516ec0a47c/scratchpad/wpge
-wine-run: all
-	@for e in $(EXES); do echo "== $$e"; WINEPREFIX=$(WINEPREFIX) WINEARCH=win64 WINEDEBUG=-all timeout 300 $(WINE) $$e 2>/dev/null | grep -E '^(FAIL|SKIP|SUMMARY)|^  (FAIL|NOTE)'; done
-.PHONY: all clean wine-run
+.PHONY: all clean
 # Harness self-test (deliberate failures, crashes, hangs); not part of the corpus: build/selftest/selftest.exe
 selftest: common/t.c common/t.h tools/selftest/selftest.c
 	@mkdir -p build/selftest
