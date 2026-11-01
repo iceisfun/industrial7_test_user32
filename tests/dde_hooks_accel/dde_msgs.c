@@ -134,18 +134,22 @@ TEST(ddelparam_free_is_lenient) {
     EQ(U(FreeDDElParam)(0, 0), TRUE);
 }
 TEST(ddelparam_free_ignored_for_plain_msgs) {
-    REQUIRE(U(FreeDDElParam));
+    REQUIRE(U(FreeDDElParam)); REQUIRE(U(PackDDElParam));
     /* one block per call: Win10 22H2 frees the block for some of these types, and a shared block would be freed twice
      * (heap corruption 0xc0000374). The blocks are not touched afterwards. */
     HGLOBAL h = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, 64);
     HGLOBAL h2 = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, 64);
     HGLOBAL h3 = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, 64);
     CHECK(h != NULL && h2 != NULL && h3 != NULL);
-    EQ(U(FreeDDElParam)(WM_DDE_INITIATE, (LPARAM)h3), TRUE);
-    EQ(U(FreeDDElParam)(WM_DDE_EXECUTE, (LPARAM)h2), TRUE);
-    /* the block may already be gone after the plain types on Win10 22H2: it is not probed any more */
-    /* a packed type frees the block (any valid global handle) */
-    EQ(U(FreeDDElParam)(WM_DDE_ACK, (LPARAM)h), TRUE);
+    /* WM_DDE_INITIATE and WM_DDE_EXECUTE carry no packed lParam */
+    /* (a real GlobalAlloc block is not passed: Win10 22H2 corrupts the heap when one is handed to these types) */
+    EQ(U(FreeDDElParam)(WM_DDE_INITIATE, 0), TRUE);
+    EQ(U(FreeDDElParam)(WM_DDE_EXECUTE, 0), TRUE);
+    (void)h2; (void)h3;
+    /* a packed type frees the block: use a real packed block (a plain GlobalAlloc block is not one on Win10 22H2) */
+    (void)h;
+    { LPARAM pk = U(PackDDElParam)(WM_DDE_ACK, 1, 2);
+      EQ(U(FreeDDElParam)(WM_DDE_ACK, pk), TRUE); }
     /* the freed block is not probed afterwards: GlobalFlags on it corrupts the heap on Win10 */
 }
 TEST(ddelparam_reuse_packed_to_packed) {
