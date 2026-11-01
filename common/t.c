@@ -82,7 +82,9 @@ int main(int argc, char **argv) {
         g_cur = g_t[i].n; g_cur_fail = g_cur_skip = 0;
         printf("RUN  %s\n", g_cur);
         SetLastError(0);
+        DWORD t_start = GetTickCount();
         if (!setjmp(g_jb)) { g_in_test = 1; g_t[i].f(); g_in_test = 0; }
+        { DWORD el = GetTickCount() - t_start; if (el > 3000) printf("  SLOW %lu ms\n", el); }
         ran++;
         if (g_cur_fail) tfail++;
         else if (g_cur_skip) tskip++;
