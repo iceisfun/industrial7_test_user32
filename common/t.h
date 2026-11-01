@@ -14,6 +14,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 /* Resolve an export; returns NULL (and records it) if absent. */
 FARPROC t_proc(const char *name);
@@ -52,6 +53,8 @@ void t_check(int ok, const char *file, int line, const char *expr, const char *f
 void t_note(const char *fmt, ...);
 /* Skip the rest of the current test (missing export, no desktop, ...). */
 void t_skip(const char *fmt, ...);
+/* Quarantine a flaky test: skipped unless U32_RUN_QUARANTINED is set. Every use is listed in docs/ORACLE-NOTES.md. */
+#define QUARANTINE(why) do { if (!getenv("U32_RUN_QUARANTINED")) { t_skip("quarantined (flaky on the oracle): " why); return; } } while (0)
 #define REQUIRE(ptr) do { if (!(ptr)) { t_skip("missing export: " #ptr); return; } } while (0)
 
 /* Helpers */

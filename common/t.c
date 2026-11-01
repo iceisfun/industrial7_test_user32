@@ -69,11 +69,19 @@ static void cur_set(int idx) {
     WriteFile(g_curf, b, n, &w, NULL);
 }
 
+static void wd_kill(const char *status, const char *why);
 static LONG CALLBACK veh(PEXCEPTION_POINTERS ep) {
     DWORD c = ep->ExceptionRecord->ExceptionCode;
     if (!g_in_test) return EXCEPTION_CONTINUE_SEARCH;
     if (c == 0x40010006 || c == 0x406D1388 || c == DBG_PRINTEXCEPTION_C || c == 0x4001000A) return EXCEPTION_CONTINUE_SEARCH;
     if ((c & 0xF0000000) != 0xC0000000) return EXCEPTION_CONTINUE_SEARCH;
+    /* a corrupted heap or a fast-fail cannot be recovered in this process: record the test as CRASH and let the
+     * supervisor continue in a fresh worker */
+    if (c == 0xC0000374 || c == 0xC0000409) {
+        char b[96]; snprintf(b, sizeof b, "fatal exception 0x%08lx (heap corruption / fast fail) at %p", c, ep->ExceptionRecord->ExceptionAddress);
+        wd_kill("CRASH", b);
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
     /* a fault on another thread cannot be longjmp'ed out of: let it be fatal (the supervisor records CRASH) */
     if (GetCurrentThreadId() != g_main_tid) return EXCEPTION_CONTINUE_SEARCH;
     printf("  FAIL exception 0x%08lx at %p in %s\n", c, ep->ExceptionRecord->ExceptionAddress, g_cur);
@@ -127,6 +135,13 @@ static DWORD WINAPI wd_thread(LPVOID p) {
     return 0;
 }
 
+/* A test that corrupts the process heap is the one to blame, not the later test that trips over it. */
+static int heap_ok(void) {
+    HANDLE hs[64]; DWORD n = GetProcessHeaps(64, hs);
+    if (n > 64) n = 64;
+    for (DWORD k = 0; k < n; k++) if (!HeapValidate(hs[k], 0, NULL)) return 0;
+    return 1;
+}
 static void run_test(int i) {
     DWORD ms;
     const char *st;
@@ -141,6 +156,11 @@ static void run_test(int i) {
     g_in_test = 0;
     ms = GetTickCount() - g_t_start;
     if (ms > 3000) printf("  SLOW %lu ms\n", ms);
+    if (!heap_ok()) {
+        g_cur_fail++; InterlockedIncrement(&g_fail);
+        printf("  FAIL heap corrupted by this test (HeapValidate)\n");
+        if (g_worker) { g_in_test = 1; wd_kill("CRASH", "heap corrupted by this test"); }
+    }
     st = g_cur_fail ? "FAIL" : g_cur_skip ? "SKIP" : "OK";
     if (InterlockedExchange(&g_row_claimed, 1)) { Sleep(INFINITE); } /* the watchdog is reporting this test */
     g_ran++;
