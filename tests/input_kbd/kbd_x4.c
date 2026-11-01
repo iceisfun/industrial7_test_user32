@@ -141,10 +141,13 @@ TEST(input_kbd_x4_uk_symbols) {
     if (!xl_load(&l, L"00000809", 0x0809)) return;
     want(l.h, '2', SH, L'"');
     want(l.h, '3', SH, 0xA3);
-    want(l.h, 0xDE, 0, L'\'');
-    want(l.h, 0xDE, SH, L'@');
+    want(l.h, 0xC0, 0, L'\'');      /* UK layout: the apostrophe/at key is VK_OEM_3 ... */
+    want(l.h, 0xC0, SH, L'@');
+    want(l.h, 0xDE, 0, L'#');       /* ... and VK_OEM_7 is the hash/tilde key */
+    want(l.h, 0xDE, SH, L'~');
     vks(l.h, 0xA3, '3', 1);
-    vks(l.h, L'@', 0xDE, 1);
+    vks(l.h, L'@', 0xC0, 1);
+    vks(l.h, L'#', 0xDE, 0);
     xl_free(&l);
 }
 TEST(input_kbd_x4_ru_cyrillic) {
