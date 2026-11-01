@@ -77,9 +77,14 @@ TEST(clipboard_delayed_avail_without_render) {
 }
 TEST(clipboard_delayed_synth_text_from_delayed_unicode) {
     CB_REQ_BASIC; cb_reset();
+    cb_logclear();
     HWND w = cb_win(); OPEN(w); EMPTY(); SETD(CF_UNICODETEXT, NULL); CLOSE();
     CHECK(AVAIL(CF_UNICODETEXT));
     t_note("delayed UNICODETEXT: text=%d oem=%d locale=%d", AVAIL(CF_TEXT), AVAIL(CF_OEMTEXT), AVAIL(CF_LOCALE));
+    if (cb_logcount(WM_RENDERFORMAT) > 0) {   /* class G: another process (clipboard history) rendered the delayed format before the test asked */
+        t_skip("a clipboard observer rendered the delayed format first");
+        cb_reset(); cb_destroy(w); return;
+    }
     cb_logclear(); cb_render_data = cb_wtext(L"late wide");
     OPEN(NULL);
     HANDLE h = GETD(CF_UNICODETEXT);

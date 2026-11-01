@@ -243,7 +243,9 @@ TEST(clipboard_synth_dib_8bit_gives_palette) {
     RGBQUAD *q = (RGBQUAD *)(bi + 1); for (int i = 0; i < 256; i++) q[i].rgbRed = i;
     GlobalUnlock(g);
     HWND w = cb_win(); OPEN(w); EMPTY(); CHECK(SETD(CF_DIB, g)); CLOSE();
-    CHECK(AVAIL(CF_DIB)); CHECK(AVAIL(CF_BITMAP));
+    CHECK(AVAIL(CF_DIB));
+    { int ok = 0; for (int k = 0; k < 10 && !(ok = AVAIL(CF_BITMAP)); k++) Sleep(100);   /* class G: a clipboard observer can hold the synthesis back for a moment */
+      CHECK(ok); }
     t_note("palette synthesized for 8bpp DIB: %d", AVAIL(CF_PALETTE));
     cb_reset(); cb_destroy(w);
 }
