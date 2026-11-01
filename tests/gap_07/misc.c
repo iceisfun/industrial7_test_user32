@@ -796,7 +796,11 @@ TEST(gap7_scl_style_and_background)
     CHECK(U(GetClassLongW)(w, GCL_STYLE) == st);
     DWORD br = U(GetClassLongW)(w, GCL_HBRBACKGROUND);
     HBRUSH nb = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    /* Win10 x64: the 32-bit SetClassLongW is a no-op for pointer-sized fields (a handle needs SetClassLongPtr). */
     old = U(SetClassLongW)(w, GCL_HBRBACKGROUND, (LONG)(ULONG_PTR)nb);
+    t_note("SetClassLongW(GCL_HBRBACKGROUND) -> %lx, field now %llx", old, (unsigned long long)gclp(w, GCL_HBRBACKGROUND));
+    CHECK(old == br);
+    old = (DWORD)sclp(w, GCL_HBRBACKGROUND, (ULONG_PTR)nb);
     CHECK(old == br);
     CHECK(gclp(w, GCL_HBRBACKGROUND) == (ULONG_PTR)nb);
     gcl_note(w, GCL_HBRBACKGROUND, "HBRBACKGROUND after set");
@@ -816,13 +820,16 @@ TEST(gap7_scl_icon_and_cursor_handles)
     HCURSOR cu = U(LoadCursorW)(NULL, (LPCWSTR)IDC_CROSS);
     CHECK(ic && cu);
     DWORD oi = U(SetClassLongW)(w, GCL_HICON, (LONG)(ULONG_PTR)ic);
+    t_note("SetClassLongW(GCL_HICON) -> %lx, field now %llx (32-bit setter does not store pointer-sized fields on x64)", oi, (unsigned long long)gclp(w, GCL_HICON));
     CHECK(oi == 0);
+    CHECK(sclp(w, GCL_HICON, (ULONG_PTR)ic) == 0);
     CHECK(gclp(w, GCL_HICON) == (ULONG_PTR)ic);
     gcl_note(w, GCL_HICON, "HICON after set");
     DWORD os = U(SetClassLongW)(w, GCL_HICONSM, (LONG)(ULONG_PTR)ic);
     t_note("old small icon %lx", os);
     DWORD oc = U(SetClassLongW)(w, GCL_HCURSOR, (LONG)(ULONG_PTR)cu);
     CHECK(oc == 0);
+    CHECK(sclp(w, GCL_HCURSOR, (ULONG_PTR)cu) == 0);
     CHECK(gclp(w, GCL_HCURSOR) == (ULONG_PTR)cu);
     gcl_note(w, GCL_HCURSOR, "HCURSOR after set");
     CHECK(sclp(w, GCL_HCURSOR, 0) == (ULONG_PTR)cu);
