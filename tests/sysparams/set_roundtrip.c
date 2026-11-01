@@ -166,6 +166,14 @@ TEST(spset_screensaveActive) { UINT o; REQUIRE(U(SystemParametersInfoW));
     if (o) roundtrip_u32(SPI_GETSCREENSAVEACTIVE, SPI_SETSCREENSAVEACTIVE, TRUE, 0, "ssactive off", 1); }
 TEST(spset_mouseClickLockTime) { UINT o; REQUIRE(U(SystemParametersInfoW));
     if (!sp_get_u32(SPI_GETMOUSECLICKLOCKTIME, &o)) { CHECK(0); return; }
+    /* Win10 22H2 oracle: SPI_SETMOUSECLICKLOCKTIME (fWinIni=0) fails with ERROR_INVALID_PARAMETER
+     * for every value in this guest, including re-setting the current one (1200). Probe first;
+     * only assert the round trip when the setter is accepted at all. */
+    SetLastError(0xdeadbeef);
+    if (!sW(SPI_SETMOUSECLICKLOCKTIME, o, NULL, 0)) {
+        t_note("cllocktime: set(current %u) rejected, err=%lu; setter not usable in this session", o, GetLastError());
+        return;
+    }
     roundtrip_u32(SPI_GETMOUSECLICKLOCKTIME, SPI_SETMOUSECLICKLOCKTIME, TRUE, 2000, "cllocktime", 1);
     roundtrip_u32(SPI_GETMOUSECLICKLOCKTIME, SPI_SETMOUSECLICKLOCKTIME, TRUE, o, "cllocktime same", 1); }
 TEST(spset_messageDuration) { UINT o; REQUIRE(U(SystemParametersInfoW));
