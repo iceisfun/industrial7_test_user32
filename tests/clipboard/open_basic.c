@@ -162,7 +162,9 @@ TEST(clipboard_empty_sets_owner) {
 TEST(clipboard_owner_cleared_on_destroy) {
     CB_REQ_BASIC; REQUIRE(U(GetClipboardOwner)); cb_reset();
     HWND a = cb_win();
-    CHECK(OPEN(a)); CHECK(EMPTY()); CHECK(CLOSE());
+    /* class G: a clipboard observer (history service) can hold the clipboard open for a moment right after a change */
+    { int k = 0; while (k++ < 100 && !OPEN(a)) Sleep(20); }
+    CHECK(EMPTY()); CHECK(CLOSE());
     CHECK(U(GetClipboardOwner)() == a);
     cb_destroy(a);
     CHECK(U(GetClipboardOwner)() == NULL);
