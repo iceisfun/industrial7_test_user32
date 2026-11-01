@@ -7,6 +7,15 @@
 
 #define WD_LIMIT_MS 25000
 
+/* the shared per-test watchdog timer (see dlgutil.h) */
+UINT_PTR wd_id; DWORD wd_t0;
+VOID CALLBACK wd_proc(HWND h, UINT m, UINT_PTR id, DWORD t) {
+    HWND a;
+    if (GetTickCount() - wd_t0 < 19000) return;
+    a = GetActiveWindow();
+    if (a) EndDialog(a, -999);
+}
+
 static HWND wd_cur[16]; static int wd_nc;
 static BOOL CALLBACK wd_en(HWND h, LPARAM l) {
     DWORD pid = 0; char cls[32];

@@ -236,15 +236,10 @@ typedef struct {
 } DS;
 static DS ds;
 /* watchdog: if a modal loop is still running 20s after the last ds_reset, end the active dialog */
-static UINT_PTR wd_id; static DWORD wd_t0;
-static VOID CALLBACK wd_proc(HWND h, UINT m, UINT_PTR id, DWORD t) {
-    HWND a;
-    /* a repeating timer left over from an earlier test must not end a dialog of a later one: act only when this
-     * test has really been running for the limit */
-    if (GetTickCount() - wd_t0 < 19000) return;
-    a = GetActiveWindow();
-    if (a) EndDialog(a, -999);
-}
+/* The timer state is shared by every source file of this exe (defined in wdog.c): a per-file copy left the previous
+ * file's repeating timer running, and it ended dialogs of later tests with -999. */
+extern UINT_PTR wd_id; extern DWORD wd_t0;
+VOID CALLBACK wd_proc(HWND h, UINT m, UINT_PTR id, DWORD t);
 static void ds_reset(void) {
     memset(&ds, 0, sizeof ds); ds.initret = 1; ds.idx_setfont = ds.idx_init = -1;
     if (wd_id) KillTimer(NULL, wd_id);
