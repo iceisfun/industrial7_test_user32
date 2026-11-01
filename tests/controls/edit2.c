@@ -142,7 +142,9 @@ TEST(edit_limit_large_text)
     EXPECT_EQ(SA(m, WM_GETTEXTLENGTH, 0, 0), 60000);
     EXPECT_EQ(SA(m, WM_GETTEXT, 60002, out), 60000);
     CHECK(!strcmp(out, big));
-    EXPECT_EQ(SA(m, EM_GETLINECOUNT, 0, 0), 1);
+    /* Win10 22H2 oracle: the edit control soft-breaks a 60000 char run at
+     * 1024 characters per line, giving ceil(60000/1024) = 59 lines. */
+    EXPECT_EQ(SA(m, EM_GETLINECOUNT, 0, 0), 59);
     U(DestroyWindow)(p);
 }
 
@@ -526,7 +528,7 @@ TEST(edit_scroll_codes)
 TEST(edit_scrollcaret)
 {
     REQUIRE(U(CreateWindowExA));
-    HWND p = c_parent(300, 300);
+    HWND p = c_parent_shown(300, 300);
     HWND m = mk_tall(p, 60);
     SA(m, EM_SETSEL, 0, 0);
     SA(m, EM_SCROLLCARET, 0, 0);
@@ -580,7 +582,7 @@ TEST(edit_window_scrollbar_range)
 TEST(edit_horizontal_scroll_single_line)
 {
     REQUIRE(U(CreateWindowExA));
-    HWND p = c_parent(300, 300);
+    HWND p = c_parent_shown(300, 300);
     HWND e = c_ctl(p, "Edit", "", ES_AUTOHSCROLL, 1, 0, 0, 60, 22);
     for (int i = 0; i < 40; i++) SA(e, WM_CHAR, 'M', 1);
     EXPECT_EQ(SA(e, WM_GETTEXTLENGTH, 0, 0), 40);
@@ -620,7 +622,7 @@ TEST(edit_getrect_setrect)
 TEST(edit_settabstops)
 {
     REQUIRE(U(CreateWindowExA));
-    HWND p = c_parent(300, 300);
+    HWND p = c_parent_shown(300, 300);
     HWND m = mkmedit(p, 0, 1, "a\tb\tc");
     int one = 16, many[3] = { 8, 32, 64 };
     LRESULT r0 = SA(m, EM_SETTABSTOPS, 0, 0);
@@ -634,6 +636,7 @@ TEST(edit_settabstops)
     int big = 100;
     SA(m, EM_SETTABSTOPS, 1, &big);
     int x_big = (short)LOWORD(SA(m, EM_POSFROMCHAR, 2, 0));
+    t_note("EM_POSFROMCHAR(2): tab=16 -> %d, tab=100 -> %d", x_small, x_big);
     CHECK(x_big > x_small);
     SA(m, EM_SETTABSTOPS, 0, 0);
     CHECK(c_text_is(m, "a\tb\tc"));

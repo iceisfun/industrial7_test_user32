@@ -475,7 +475,12 @@ TEST(scrollctl_enable_arrows_and_window_state)
     REQUIRE(U(CreateWindowExA)); REQUIRE(U(EnableScrollBar)); REQUIRE(U(IsWindowEnabled));
     HWND p = c_parent(300, 300);
     HWND s = mksb(p, SBS_HORZ, 1);
-    EXPECT_EQ(U(EnableScrollBar)(s, SB_CTL, ESB_DISABLE_BOTH), TRUE);
+    /* Win10 22H2 oracle: the first disable of a fresh control returns 8, not 1
+     * (a non-zero "state changed" value from the control); later transitions
+     * return TRUE. Only non-zero is required. */
+    BOOL er = U(EnableScrollBar)(s, SB_CTL, ESB_DISABLE_BOTH);
+    CHECK(er != 0);
+    t_note("EnableScrollBar(SB_CTL, DISABLE_BOTH) first call -> %d", er);
     CHECK(!U(IsWindowEnabled)(s));
     EXPECT_EQ(U(EnableScrollBar)(s, SB_CTL, ESB_ENABLE_BOTH), TRUE);
     CHECK(U(IsWindowEnabled)(s));

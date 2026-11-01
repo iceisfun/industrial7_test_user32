@@ -343,7 +343,11 @@ TEST(controls_builtin_classes_getclassinfo)
         BOOL r = U(GetClassInfoA)(NULL, k_builtin[i], &wc);
         if (i < 9) CHECKF(r, "%s err=%lu", k_builtin[i], GetLastError());
         else t_note("GetClassInfo(%s) -> %d", k_builtin[i], r);
-        if (r) CHECKF(wc.lpfnWndProc != NULL, "%s", k_builtin[i]);
+        /* Win10 22H2 oracle: the switch-window class (#32771) reports a NULL
+         * lpfnWndProc through GetClassInfo; only the first 9 classes are
+         * required to expose a procedure. */
+        if (r && i < 9) CHECKF(wc.lpfnWndProc != NULL, "%s", k_builtin[i]);
+        else if (r && !wc.lpfnWndProc) t_note("class %s: lpfnWndProc is NULL", k_builtin[i]);
         BOOL rx = U(GetClassInfoExA)(NULL, k_builtin[i], &wx);
         if (i < 9) CHECKF(rx, "%s", k_builtin[i]);
         if (rx) CHECK(wx.lpfnWndProc == wc.lpfnWndProc);
