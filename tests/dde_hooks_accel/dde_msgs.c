@@ -104,7 +104,9 @@ TEST(ddelparam_unpack_null_outputs) {
 }
 TEST(ddelparam_unpack_invalid_handle) {
     REQUIRE(U(UnpackDDElParam));
-    static const LPARAM bad[] = {0, 1, 0x1234, 0x12345678, (LPARAM)0xDEADBEEF, -1};
+    /* only NULL is probed: a bogus non-NULL block is dereferenced as a global handle, which corrupts the heap
+     * (0xc0000374) in a run-dependent way on Win10 22H2 */
+    static const LPARAM bad[] = {0};
     for (unsigned m = 0; m < 4; m++)
         for (unsigned i = 0; i < sizeof bad / sizeof bad[0]; i++) {
             UINT_PTR lo = 0x99, hi = 0x99;
