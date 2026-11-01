@@ -944,3 +944,30 @@ TEST(dialogs_childonly_nested_mb) {
     /* inner box timed out, outer box still alive and then closed; a timed-out OK-only box returns IDOK on Win10 22H2 */
     CHECKF(mb.ret_after == 32000 || mb.ret_after == IDOK, "inner timeout returned %d", mb.ret_after);
 }
+
+/* ---- x3: MB_NOFOCUS / MB_APPLMODAL ---- */
+TEST(dialogs_mb_x3_flag_values) {
+    EQ(MB_APPLMODAL, 0); EQ(MB_NOFOCUS, 0x8000); EQ(MB_MISCMASK, MB_HELP | MB_NOFOCUS);
+}
+TEST(dialogs_mb_x3_nofocus_box_closes_normally) {
+    REQUIRE(MessageBoxW);
+    mb_arm(ACT_CLICK, IDOK, 0, 0);
+    int r = MessageBoxW(NULL, L"nofocus", L"NoFocus", MB_OK | MB_NOFOCUS);
+    mb_disarm();
+    EQ(r, IDOK);
+    CHECK(mb.found);
+    t_note("MB_NOFOCUS: focus_id=%d defpush=%d", mb.focus_id, mb.defpush_id);
+}
+TEST(dialogs_mb_x3_applmodal_with_owner_disables_owner) {
+    REQUIRE(MessageBoxW); REQUIRE(DestroyWindow);
+    HWND own = t_make_window(NULL, WS_OVERLAPPEDWINDOW, 0, 0, 0, 80, 60, NULL);
+    REQUIRE(own);
+    mb_arm(ACT_CLICK, IDOK, 0, 0);
+    mb.owner_chk = own;
+    int r = MessageBoxW(own, L"applmodal", L"ApplModal", MB_OK | MB_APPLMODAL);
+    mb_disarm();
+    EQ(r, IDOK);
+    if (mb.owner_enabled_set) EQ(mb.owner_enabled, 0);
+    CHECK(IsWindowEnabled(own));                        /* re-enabled after the box closes */
+    DestroyWindow(own);
+}

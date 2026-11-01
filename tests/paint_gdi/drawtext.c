@@ -756,3 +756,45 @@ TEST(paint_gdi_tabbed_newline_is_glyph) {
     CHECK(TH(v) == c.th);     /* no line breaking in tabbed text */
     dt_done(&c);
 }
+
+/* ---- x3: DrawText flags without a prior direct test ---- */
+TEST(paint_gdi_x3_dt_editcontrol_calcrect_note) {
+    REQUIRE(DTA); SETUP();
+    RECT a = {0, 0, 10 * c.cw, 200}, b = a;
+    int h1 = calc_a(&c, "alpha beta gamma delta", -1, &a, DT_WORDBREAK);
+    int h2 = calc_a(&c, "alpha beta gamma delta", -1, &b, DT_WORDBREAK | DT_EDITCONTROL);
+    t_note("wordbreak h=%d rect %ldx%ld ; +EDITCONTROL h=%d rect %ldx%ld", h1, a.right - a.left, a.bottom - a.top,
+           h2, b.right - b.left, b.bottom - b.top);
+    CHECK(h1 > 0 && h2 > 0);
+    CHECK(a.bottom - a.top >= c.th && b.bottom - b.top >= c.th);
+    dt_done(&c);
+}
+
+TEST(paint_gdi_x3_dt_rtlreading_calcrect_matches_latin) {
+    REQUIRE(DTA); SETUP();
+    RECT a = {0, 0, 300, 100}, b = a;
+    int h1 = calc_a(&c, "hello world", -1, &a, DT_SINGLELINE);
+    int h2 = calc_a(&c, "hello world", -1, &b, DT_SINGLELINE | DT_RTLREADING);
+    EQ(h1, h2);
+    EQ(a.right - a.left, b.right - b.left);
+    dt_done(&c);
+}
+
+TEST(paint_gdi_x3_dt_internal_calcrect_uses_system_font_note) {
+    REQUIRE(DTA); SETUP();
+    RECT a = {0, 0, 300, 100}, b = a;
+    int h1 = calc_a(&c, "hello", -1, &a, DT_SINGLELINE);
+    int h2 = calc_a(&c, "hello", -1, &b, DT_SINGLELINE | DT_INTERNAL);
+    t_note("DT_INTERNAL: h %d vs %d, width %ld vs %ld (selected font is the fixed system font)", h1, h2,
+           a.right - a.left, b.right - b.left);
+    CHECK(h2 > 0);
+    dt_done(&c);
+}
+
+TEST(paint_gdi_x3_dt_nofullwidthcharbreak_accepted) {
+    REQUIRE(DTA); SETUP();
+    RECT r = {0, 0, 5 * c.cw, 200};
+    int h = calc_a(&c, "abcdefghij", -1, &r, DT_WORDBREAK | DT_NOFULLWIDTHCHARBREAK);
+    CHECK(h >= c.th);
+    dt_done(&c);
+}
