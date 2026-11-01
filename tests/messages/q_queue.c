@@ -6,7 +6,8 @@
 #define NOERR 0xdeadbeef
 #define SETE() SetLastError(NOERR)
 
-static HWND qw(void) { return mh_mk(0, 0, NULL); }
+/* a popup has no non-client area, so Win10 posts no WM_DWMNCRENDERINGCHANGED to it that could appear in the queue tests later */
+static HWND qw(void) { return mh_mk(WS_POPUP, 0, NULL); }
 
 /* watchdog: posts a thread message to a target thread after a delay */
 typedef struct { DWORD tid; DWORD delay; UINT msg; } QWD;
