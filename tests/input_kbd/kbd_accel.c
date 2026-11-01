@@ -1,4 +1,5 @@
 /* Accelerator tables and TranslateAccelerator. */
+#include <setjmp.h>
 #include "kbd.h"
 
 #define NT(a) ((int)(sizeof(a) / sizeof((a)[0])))
@@ -12,7 +13,7 @@ static int same_entry(const ACCEL *a, const ACCEL *b)
 }
 
 TEST(input_kbd_accel_create_copy_single) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100), out[4];
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100), out[4] AL8;
     HACCEL h;
     ACREQ;
     h = U(CreateAcceleratorTableW)(&in, 1);
@@ -27,7 +28,7 @@ TEST(input_kbd_accel_create_copy_single) {
     CHECK(U(DestroyAcceleratorTable)(h));
 }
 TEST(input_kbd_accel_create_copy_order_preserved) {
-    ACCEL in[6], out[8];
+    ACCEL in[6] AL8, out[8] AL8;
     HACCEL h;
     int i;
     ACREQ;
@@ -43,7 +44,7 @@ TEST(input_kbd_accel_create_copy_order_preserved) {
     CHECK(U(DestroyAcceleratorTable)(h));
 }
 TEST(input_kbd_accel_copy_partial_counts) {
-    ACCEL in[5], out[8];
+    ACCEL in[5] AL8, out[8] AL8;
     HACCEL h;
     int i, n;
     ACREQ;
@@ -61,7 +62,7 @@ TEST(input_kbd_accel_copy_partial_counts) {
     CHECK(U(DestroyAcceleratorTable)(h));
 }
 TEST(input_kbd_accel_copy_zero_count_with_buffer_observed) {
-    ACCEL in = mk(FVIRTKEY, VK_F2, 5), out[2];
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F2, 5), out[2] AL8;
     HACCEL h;
     int r;
     ACREQ;
@@ -75,7 +76,7 @@ TEST(input_kbd_accel_copy_zero_count_with_buffer_observed) {
     U(DestroyAcceleratorTable)(h);
 }
 TEST(input_kbd_accel_create_invalid_counts) {
-    ACCEL in = mk(FVIRTKEY, VK_F2, 5);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F2, 5);
     ACREQ;
     SET_ERR(0);
     CHECK(U(CreateAcceleratorTableW)(&in, 0) == NULL);
@@ -87,7 +88,7 @@ TEST(input_kbd_accel_create_invalid_counts) {
     CHECK(U(CreateAcceleratorTableA)(&in, 0) == NULL);
 }
 TEST(input_kbd_accel_handles_distinct) {
-    ACCEL in = mk(FVIRTKEY, VK_F3, 6);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F3, 6);
     HACCEL a, b;
     ACREQ;
     a = U(CreateAcceleratorTableW)(&in, 1);
@@ -98,7 +99,7 @@ TEST(input_kbd_accel_handles_distinct) {
     if (b) CHECK(U(DestroyAcceleratorTable)(b));
 }
 TEST(input_kbd_accel_destroy_twice) {
-    ACCEL in = mk(FVIRTKEY, VK_F3, 6);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F3, 6);
     HACCEL h;
     ACREQ;
     h = U(CreateAcceleratorTableW)(&in, 1);
@@ -133,7 +134,7 @@ TEST(input_kbd_accel_copy_invalid_handle) {
     NOTE_ERR(ERROR_INVALID_ACCEL_HANDLE);
 }
 TEST(input_kbd_accel_copy_destroyed_handle) {
-    ACCEL in = mk(FVIRTKEY, VK_F4, 7), out[2];
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F4, 7), out[2] AL8;
     HACCEL h;
     ACREQ;
     h = U(CreateAcceleratorTableW)(&in, 1);
@@ -165,7 +166,7 @@ TEST(input_kbd_accel_large_table) {
     free(in); free(out);
 }
 TEST(input_kbd_accel_many_create_destroy_cycles) {
-    ACCEL in = mk(FVIRTKEY | FCONTROL, 'N', 9);
+    ACCEL in AL8 = mk(FVIRTKEY | FCONTROL, 'N', 9);
     int i, bad = 0;
     ACREQ;
     for (i = 0; i < 2000; i++) {
@@ -175,7 +176,7 @@ TEST(input_kbd_accel_many_create_destroy_cycles) {
     CHECK(bad == 0);
 }
 TEST(input_kbd_accel_flag_bits_roundtrip) {
-    ACCEL in[5], out[5];
+    ACCEL in[5] AL8, out[5] AL8;
     HACCEL h;
     int i;
     ACREQ;
@@ -189,7 +190,7 @@ TEST(input_kbd_accel_flag_bits_roundtrip) {
     U(DestroyAcceleratorTable)(h);
 }
 TEST(input_kbd_accel_ansi_roundtrip_ascii) {
-    ACCEL in[3], outA[3], outW[3];
+    ACCEL in[3] AL8, outA[3] AL8, outW[3] AL8;
     HACCEL h;
     ACREQ; REQUIRE(U(CreateAcceleratorTableA)); REQUIRE(U(CopyAcceleratorTableA));
     in[0] = mk(0, 'a', 1); in[1] = mk(FVIRTKEY, 'B', 2); in[2] = mk(0, '7', 3);
@@ -204,7 +205,7 @@ TEST(input_kbd_accel_ansi_roundtrip_ascii) {
     U(DestroyAcceleratorTable)(h);
 }
 TEST(input_kbd_accel_wide_table_read_as_ansi) {
-    ACCEL in[2], out[2];
+    ACCEL in[2] AL8, out[2] AL8;
     HACCEL h;
     ACREQ; REQUIRE(U(CopyAcceleratorTableA));
     in[0] = mk(0, 'z', 11); in[1] = mk(FVIRTKEY, VK_F6, 12);
@@ -217,7 +218,7 @@ TEST(input_kbd_accel_wide_table_read_as_ansi) {
     U(DestroyAcceleratorTable)(h);
 }
 TEST(input_kbd_accel_ansi_high_char_observed) {
-    ACCEL in = mk(0, 0xE9, 1), out;
+    ACCEL in AL8 = mk(0, 0xE9, 1), out AL8;
     HACCEL h;
     ACREQ; REQUIRE(U(CreateAcceleratorTableA)); REQUIRE(U(CopyAcceleratorTableW));
     h = U(CreateAcceleratorTableA)(&in, 1);
@@ -244,11 +245,23 @@ TEST(input_kbd_accel_load_missing_resource) {
     h = U(LoadAcceleratorsW)(t_user32(), L"NO_SUCH_ACCEL");
     CHECK(h == NULL);
 }
+static jmp_buf bm_jb;
+static LONG CALLBACK bm_veh(EXCEPTION_POINTERS *ep)
+{
+    if (ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) longjmp(bm_jb, 1);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
 TEST(input_kbd_accel_load_bad_module) {
     HACCEL h;
     REQUIRE(U(LoadAcceleratorsW));
-    h = U(LoadAcceleratorsW)((HINSTANCE)(ULONG_PTR)0x10000, MAKEINTRESOURCEW(1));
-    CHECK(h == NULL);
+    /* Win10 22H2 faults (access violation) on an unmapped HMODULE instead of failing the call, so
+     * the call is made under a local guard; either NULL or a contained fault is acceptable. */
+    PVOID veh = AddVectoredExceptionHandler(1, bm_veh);
+    if (!setjmp(bm_jb)) {
+        h = U(LoadAcceleratorsW)((HINSTANCE)(ULONG_PTR)0x10000, MAKEINTRESOURCEW(1));
+        CHECK(h == NULL);
+    } else t_note("LoadAcceleratorsW(bogus module) raised an access violation");
+    RemoveVectoredExceptionHandler(veh);
 }
 
 /* ---- TranslateAccelerator ---- */
@@ -264,7 +277,7 @@ static MSG mkmsg(HWND w, UINT m, WPARAM wp, LPARAM lp) { MSG g; memset(&g, 0, si
 #define TAREQ ACREQ; REQUIRE(U(TranslateAcceleratorW)); REQUIRE(U(TranslateAcceleratorA)); REQUIRE(U(ShowWindow))
 
 TEST(input_kbd_ta_virtkey_match_sends_command) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100);
     HACCEL h;
     HWND w;
     MSG m;
@@ -284,7 +297,7 @@ TEST(input_kbd_ta_virtkey_match_sends_command) {
     ta_done(w);
 }
 TEST(input_kbd_ta_ansi_variant_matches) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 101);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 101);
     HACCEL h;
     HWND w;
     MSG m;
@@ -301,7 +314,7 @@ TEST(input_kbd_ta_ansi_variant_matches) {
     ta_done(w);
 }
 TEST(input_kbd_ta_msg_not_modified) {
-    ACCEL in[2] = { mk(FVIRTKEY, VK_F9, 100), mk(0, 'x', 102) };
+    ACCEL in[2] AL8 = { mk(FVIRTKEY, VK_F9, 100), mk(0, 'x', 102) };
     HACCEL h;
     HWND w;
     MSG m, c;
@@ -324,7 +337,7 @@ TEST(input_kbd_ta_msg_not_modified) {
     ta_done(w);
 }
 TEST(input_kbd_ta_nonmatching_key) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100);
     HACCEL h;
     HWND w;
     MSG m;
@@ -342,7 +355,7 @@ TEST(input_kbd_ta_nonmatching_key) {
     ta_done(w);
 }
 TEST(input_kbd_ta_modifier_required) {
-    ACCEL in[3] = { mk(FVIRTKEY | FCONTROL, 'A', 1), mk(FVIRTKEY | FALT, VK_F9, 2), mk(FVIRTKEY | FSHIFT, VK_F10, 3) };
+    ACCEL in[3] AL8 = { mk(FVIRTKEY | FCONTROL, 'A', 1), mk(FVIRTKEY | FALT, VK_F9, 2), mk(FVIRTKEY | FSHIFT, VK_F10, 3) };
     HACCEL h;
     HWND w;
     MSG m;
@@ -360,7 +373,7 @@ TEST(input_kbd_ta_modifier_required) {
     ta_done(w);
 }
 TEST(input_kbd_ta_ascii_entry_matches_wm_char) {
-    ACCEL in = mk(0, 'x', 103);
+    ACCEL in AL8 = mk(0, 'x', 103);
     HACCEL h;
     HWND w;
     MSG m;
@@ -383,7 +396,7 @@ TEST(input_kbd_ta_ascii_entry_matches_wm_char) {
     ta_done(w);
 }
 TEST(input_kbd_ta_only_key_down_style_messages) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100);
     HACCEL h;
     HWND w;
     MSG m;
@@ -403,7 +416,7 @@ TEST(input_kbd_ta_only_key_down_style_messages) {
     ta_done(w);
 }
 TEST(input_kbd_ta_null_window) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100);
     HACCEL h;
     MSG m;
     TAREQ;
@@ -432,7 +445,7 @@ TEST(input_kbd_ta_null_and_bogus_table) {
     ta_done(w);
 }
 TEST(input_kbd_ta_destroyed_table) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100);
     HACCEL h;
     HWND w;
     MSG m;
@@ -448,7 +461,7 @@ TEST(input_kbd_ta_destroyed_table) {
     ta_done(w);
 }
 TEST(input_kbd_ta_bogus_window) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100);
     HACCEL h;
     MSG m;
     TAREQ;
@@ -461,7 +474,7 @@ TEST(input_kbd_ta_bogus_window) {
     }
 }
 TEST(input_kbd_ta_destroyed_window) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100);
     HACCEL h;
     HWND w;
     MSG m;
@@ -480,7 +493,7 @@ TEST(input_kbd_ta_destroyed_window) {
     ta_done(w);
 }
 TEST(input_kbd_ta_repeat_flags_observed) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100);
     HACCEL h;
     HWND w;
     MSG m;
@@ -500,7 +513,7 @@ TEST(input_kbd_ta_repeat_flags_observed) {
     ta_done(w);
 }
 TEST(input_kbd_ta_first_matching_entry_wins_observed) {
-    ACCEL in[2] = { mk(FVIRTKEY, VK_F9, 201), mk(FVIRTKEY, VK_F9, 202) };
+    ACCEL in[2] AL8 = { mk(FVIRTKEY, VK_F9, 201), mk(FVIRTKEY, VK_F9, 202) };
     HACCEL h;
     HWND w;
     MSG m;
@@ -517,7 +530,7 @@ TEST(input_kbd_ta_first_matching_entry_wins_observed) {
     ta_done(w);
 }
 TEST(input_kbd_ta_many_translate_calls) {
-    ACCEL in = mk(FVIRTKEY, VK_F9, 100);
+    ACCEL in AL8 = mk(FVIRTKEY, VK_F9, 100);
     HACCEL h;
     HWND w;
     MSG m;

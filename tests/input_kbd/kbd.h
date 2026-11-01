@@ -5,6 +5,16 @@
 
 #define KCHECK_NAMELEN 9
 
+/* The common EXPECT_EQ/EXPECT_NE evaluate their arguments twice (once to compare, once for the
+ * failure text); with injection helpers such as kw_down() that sends every key twice. Use
+ * single-evaluation versions in this area. */
+#undef EXPECT_EQ
+#undef EXPECT_NE
+#define EXPECT_EQ(a, b) do { ULONG_PTR a_ = (ULONG_PTR)(a), b_ = (ULONG_PTR)(b); \
+    t_check(a_ == b_, __FILE__, __LINE__, #a " == " #b, "got 0x%llx want 0x%llx", (unsigned long long)a_, (unsigned long long)b_); } while (0)
+#define EXPECT_NE(a, b) do { ULONG_PTR a_ = (ULONG_PTR)(a), b_ = (ULONG_PTR)(b); \
+    t_check(a_ != b_, __FILE__, __LINE__, #a " != " #b, "got 0x%llx", (unsigned long long)a_); } while (0)
+
 /* Logged keyboard-ish message. */
 struct klog {
     UINT msg; WPARAM wp; LPARAM lp;
@@ -13,6 +23,13 @@ struct klog {
     LPARAM extra;
 };
 #define KLOG_MAX 512
+
+/* NtUserCreateAcceleratorTable probes its input with 4-byte alignment in a 64-bit process
+ * (ProbeForRead(Address, n * 6, 4) in win32kfull), but ACCEL is only 2-aligned, so a lone ACCEL
+ * on the stack is rejected (the call returns NULL). Win10 22H2 oracle: every cAccel==1 call on
+ * a 2-aligned local failed, arrays that happened to be 16-aligned worked. Declare ACCEL
+ * variables passed to the system with AL8 (variable alignment keeps sizeof(ACCEL) == 6). */
+#define AL8 __attribute__((aligned(8)))
 extern struct klog g_klog[KLOG_MAX];
 extern int g_nklog;
 
