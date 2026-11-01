@@ -325,8 +325,13 @@ TEST(gap4_scrollchildren_ignored_codes) {
         CHECKF(sc_pos(w, SB_VERT) == 500, "code %u pos %d", codes[i], sc_pos(w, SB_VERT));
     }
     sc_setup(w, SB_VERT, 500);
+    /* SB_ENDSCROLL does not move the thumb; it re-runs CalcClientScrolling, which
+     * on Win10 22H2 drops the scroll bar of a window with no children (GetScrollInfo
+     * then fails). Accept "unchanged" or "bar removed", never a moved position. */
     f(w, WM_VSCROLL, SB_ENDSCROLL);
-    EXPECT_EQ(sc_pos(w, SB_VERT), 500);
+    { SCROLLINFO si; int ok = sc_get(w, SB_VERT, &si);
+      if (ok) CHECKF(si.nPos == 500, "ENDSCROLL moved pos to %d", si.nPos);
+      else t_note("ScrollChildren(SB_ENDSCROLL) removed the scroll bar (CalcClientScrolling)"); }
     kill(w);
 }
 TEST(gap4_scrollchildren_only_low_word_is_code) {
