@@ -7,7 +7,11 @@
 #define ERR_INVALID_HANDLE 6
 #define ERR_INVALID_WINDOW 1400
 
-#define OPEN U(OpenClipboard)
+/* OpenClipboard that waits (up to ~2 s) while a clipboard observer outside this process holds the clipboard open
+ * (class G: the guest's clipboard history service); a clipboard held by this process fails at once, so the
+ * OpenClipboard failure tests are unaffected. */
+BOOL cb_open(HWND w);
+#define OPEN cb_open
 #define CLOSE U(CloseClipboard)
 #define EMPTY U(EmptyClipboard)
 #define SETD U(SetClipboardData)

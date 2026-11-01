@@ -87,3 +87,20 @@ int cb_run_child(const char *test, DWORD timeout_ms, DWORD *exit_code) {
     }
     return ok;
 }
+
+BOOL cb_open(HWND w) {
+    BOOL (WINAPI *op)(HWND) = (void *)t_proc("OpenClipboard");
+    HWND (WINAPI *ow)(void) = (void *)t_proc("GetOpenClipboardWindow");
+    BOOL r;
+    if (!op) return FALSE;
+    r = op(w);
+    for (int i = 0; !r && i < 100; i++) {
+        DWORD err = GetLastError(), pid = 0;
+        HWND o = ow ? ow() : NULL;
+        if (o) GetWindowThreadProcessId(o, &pid);
+        if (o && pid == GetCurrentProcessId()) { SetLastError(err); break; }
+        Sleep(20);
+        r = op(w);
+    }
+    return r;
+}
