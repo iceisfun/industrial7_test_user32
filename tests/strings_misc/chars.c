@@ -677,7 +677,8 @@ TEST(chars_cjk_alpha_wide) {
     { unsigned hira = 0, kata = 0;
       for (unsigned c = 0x3041; c < 0x3090; c++) hira += U(IsCharAlphaW)((WCHAR)c) != 0;
       for (unsigned c = 0x30A1; c < 0x30F0; c++) kata += U(IsCharAlphaW)((WCHAR)c) != 0;
-      t_note("IsCharAlphaW: hiragana %u/79, katakana %u/79 alpha", hira, kata); }
+      t_note("IsCharAlphaW: hiragana %u/79, katakana %u/79 alpha", hira, kata);
+      EXPECT_EQ(hira, 0); EXPECT_EQ(kata, 0); }
     for (unsigned c = 0xAC00; c < 0xAC40; c++) CHECKF(U(IsCharAlphaW)((WCHAR)c), "hangul U+%04X", c);
     for (unsigned c = 0x5D0; c <= 0x5EA; c++) CHECKF(U(IsCharAlphaW)((WCHAR)c), "hebrew U+%04X", c);
     for (unsigned c = 0x627; c <= 0x63A; c++) CHECKF(U(IsCharAlphaW)((WCHAR)c), "arabic U+%04X", c);
