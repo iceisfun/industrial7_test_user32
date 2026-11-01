@@ -132,23 +132,30 @@ TEST(window_class_gcl_cbextra_set_observed) {
     fx_free(&f);
 }
 
+/* Win10 22H2 _GetClassData: a negative index that is not one of the defined GCL_/GCW_ constants does
+ * not fail; it falls through to the class atom (the GCW_ATOM value) and leaves the last error alone.
+ * A non-negative index beyond the class extra bytes fails with ERROR_INVALID_INDEX. */
+static int gcl_bad_ok(ULONG_PTR r, int idx, ULONG_PTR atom, DWORD err) {
+    if (r == 0 && err == ERR_INVALID_INDEX) return 1;
+    if (idx < 0 && r == atom && err == MAGIC_ERR) return 1;
+    return 0;
+}
 TEST(window_class_gcl_invalid_indices) {
     REQUIRE(U(GetClassLongA)); REQUIRE(U(GetClassLongPtrA)); REQUIRE(U(GetClassLongW));
     struct fx f; CHECK(fx_make(&f, 0, 0, 0, NULL));
+    ULONG_PTR atom = U(GetClassLongA)(f.h, GCW_ATOM);
     static const int bad[] = { -1, -2, -3, -4, -5, -6, -7, -9, -11, -13, -15, -17, -19, -21, -22, -23, -25, -27, -28, -29, -31, -33, -35, -36, -40, -100, -1000, 1, 2, 4, 8, 100, 0x10000, 0x7fffffff, (int)0x80000000 };
     for (unsigned i = 0; i < sizeof bad / sizeof *bad; i++) {
         if (wc_is_wine() && bad[i] >= 0) continue;
         SetLastError(MAGIC_ERR);
         DWORD r = U(GetClassLongA)(f.h, bad[i]);
-        CHECKF(r == 0, "idx %d -> %lu", bad[i], r);
-        CHECKF(GetLastError() == ERR_INVALID_INDEX, "idx %d err %lu", bad[i], GetLastError());
+        CHECKF(gcl_bad_ok(r, bad[i], atom, GetLastError()), "idx %d -> %lu err %lu", bad[i], r, GetLastError());
         SetLastError(MAGIC_ERR);
         ULONG_PTR rp = U(GetClassLongPtrA)(f.h, bad[i]);
-        CHECKF(rp == 0, "ptr idx %d", bad[i]);
-        CHECKF(GetLastError() == ERR_INVALID_INDEX, "ptr idx %d err %lu", bad[i], GetLastError());
+        CHECKF(gcl_bad_ok(rp, bad[i], atom, GetLastError()), "ptr idx %d -> %llu err %lu", bad[i], (unsigned long long)rp, GetLastError());
         SetLastError(MAGIC_ERR);
-        CHECKF(U(GetClassLongW)(f.h, bad[i]) == 0, "W idx %d", bad[i]);
-        CHECKF(GetLastError() == ERR_INVALID_INDEX, "W idx %d err %lu", bad[i], GetLastError());
+        r = U(GetClassLongW)(f.h, bad[i]);
+        CHECKF(gcl_bad_ok(r, bad[i], atom, GetLastError()), "W idx %d -> %lu err %lu", bad[i], r, GetLastError());
     }
     fx_free(&f);
 }
