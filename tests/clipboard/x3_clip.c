@@ -32,28 +32,31 @@ TEST(clipboard_x3_priority_list_over_display_formats) {
     UINT l1[] = { CF_TEXT, CF_DSPTEXT, CF_DSPBITMAP };
     EXPECT_EQ(U(GetPriorityClipboardFormat)(l1, 3), CF_DSPTEXT);
     UINT l2[] = { CF_DSPBITMAP, CF_DSPENHMETAFILE };
-    EXPECT_EQ(U(GetPriorityClipboardFormat)(l2, 2), (UINT)-1);   /* documented: data present, none in list -> -1 */
+    EXPECT_EQ((int)U(GetPriorityClipboardFormat)(l2, 2), -1);    /* documented: data present, none in list -> -1 (a 32-bit int result) */
     cb_reset();
     EXPECT_EQ(U(GetPriorityClipboardFormat)(l1, 3), 0);          /* empty clipboard: 0 */
     cb_destroy(w);
 }
 
-TEST(clipboard_x3_gdiobj_range_object_released_on_empty) {
+TEST(clipboard_x3_gdiobj_range_handle_kept_on_empty) {
+    /* Documented: in the CF_GDIOBJFIRST..CF_GDIOBJLAST range hMem is NOT a GDI object but a GlobalAlloc(GMEM_MOVEABLE)
+     * handle, and it is not freed when the clipboard is emptied (the owner frees it). A GDI bitmap handle in this range
+     * is a caller error: the clipboard GlobalFrees what it was given and corrupts the heap on Win10 22H2 (0xc0000374). */
     CB_REQ_BASIC; cb_reset();
     HWND w = cb_win();
     if (!OPEN(w)) { t_skip("clipboard busy err %lu", GetLastError()); cb_destroy(w); return; }
     EMPTY();
-    HBITMAP bm = CreateBitmap(8, 8, 1, 1, NULL);
-    REQUIRE(bm);
-    HANDLE r = SETD(CF_GDIOBJFIRST + 3, bm);
-    CHECK(r == bm);
+    HGLOBAL g = GlobalAlloc(GMEM_MOVEABLE, 32);
+    REQUIRE(g);
+    HANDLE r = SETD(CF_GDIOBJFIRST + 3, g);
+    CHECK(r == g);
     CHECK(AVAIL(CF_GDIOBJFIRST + 3));
-    CHECK(GETD(CF_GDIOBJFIRST + 3) == bm);
+    CHECK(GETD(CF_GDIOBJFIRST + 3) == g);
     CHECK(EMPTY());
-    BITMAP b;
-    int alive = GetObjectW(bm, sizeof b, &b);
-    t_note("GDI-object format bitmap after EmptyClipboard: GetObject=%d", alive);
-    if (alive) DeleteObject(bm);
+    SIZE_T sz = GlobalSize(g);
+    t_note("GDIOBJ-range block after EmptyClipboard: GlobalSize=%llu", (unsigned long long)sz);
+    CHECK(sz >= 32);
+    if (sz) GlobalFree(g);
     CLOSE();
     cb_reset(); cb_destroy(w);
 }
