@@ -120,7 +120,7 @@ TEST(misc_ui_ddepack_memory_unpack_invalid_lparam) {
             CHECKF(!ok, "msg %x lparam %llx", msgs[i], (long long)bad[j]);
             CHECKF(lo == 0 && hi == 0, "outputs not zeroed msg %x lparam %llx", msgs[i], (long long)bad[j]);
             CHECK(!U(UnpackDDElParam)(msgs[i], bad[j], NULL, NULL));
-            CHECK(U(FreeDDElParam)(msgs[i], bad[j]));
+            if (!bad[j]) CHECK(U(FreeDDElParam)(msgs[i], bad[j]));   /* a bogus non-NULL block would be passed to GlobalFree: heap corruption on Win10 22H2 */
         }
 }
 TEST(misc_ui_ddepack_memory_null_outputs) {
