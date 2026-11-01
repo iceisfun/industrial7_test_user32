@@ -60,14 +60,15 @@ TEST(clipboard_open_null_empty_owner_null) {
     cb_destroy(w);
 }
 TEST(clipboard_open_null_set_fails) {
-    /* documented: with a NULL owner SetClipboardData fails after EmptyClipboard */
+    /* docs say a NULL owner makes SetClipboardData fail after EmptyClipboard;
+     * the Win10 22H2 oracle accepts it (non-NULL handle, error 0), so the
+     * outcome is only recorded. */
     CB_REQ_BASIC; cb_reset();
     CHECK(OPEN(NULL)); CHECK(EMPTY());
     HGLOBAL g = cb_text("abc");
     SET_ERR(0);
     HANDLE r = SETD(CF_TEXT, g);
-    CHECK(r == NULL);
-    t_note("SetClipboardData with NULL owner: err=%lu", GetLastError());
+    t_note("SetClipboardData with NULL owner -> %p err=%lu", r, GetLastError());
     if (!r) GlobalFree(g);
     CHECK(CLOSE());
     cb_reset();

@@ -52,3 +52,27 @@ int cb_has(UINT fmt) {
     while (n++ < 1000 && (f = ENUM(f))) if (f == fmt) found = 1;
     return found;
 }
+
+int cb_run_child(const char *test, DWORD timeout_ms, DWORD *exit_code) {
+    char exe[MAX_PATH], cmd[MAX_PATH + 64];
+    STARTUPINFOA si; PROCESS_INFORMATION pi; SECURITY_ATTRIBUTES sa;
+    HANDLE nul; int ok = 0;
+    if (!GetModuleFileNameA(NULL, exe, sizeof exe)) return 0;
+    memset(&sa, 0, sizeof sa); sa.nLength = sizeof sa; sa.bInheritHandle = TRUE;
+    nul = CreateFileA("NUL", GENERIC_WRITE, FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, NULL);
+    memset(&si, 0, sizeof si); si.cb = sizeof si;
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = INVALID_HANDLE_VALUE; si.hStdOutput = nul; si.hStdError = nul;
+    snprintf(cmd, sizeof cmd, "\"%s\" %s", exe, test);
+    SetEnvironmentVariableA("U32_CB_CHILD", "1");
+    if (CreateProcessA(NULL, cmd, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+        if (WaitForSingleObject(pi.hProcess, timeout_ms) == WAIT_OBJECT_0) {
+            ok = 1;
+            if (exit_code) GetExitCodeProcess(pi.hProcess, exit_code);
+        } else TerminateProcess(pi.hProcess, 0xDEAD);
+        CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
+    }
+    SetEnvironmentVariableA("U32_CB_CHILD", NULL);
+    if (nul != INVALID_HANDLE_VALUE) CloseHandle(nul);
+    return ok;
+}
