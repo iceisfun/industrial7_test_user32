@@ -32,6 +32,9 @@ TEST(gap1_ptrdev_orientation_bogus_device) {
         BYTE out[32]; memset(out, 0xcd, sizeof out);
         SetLastError(0);
         BOOL r = UN(GetPointerDeviceOrientation)(bad_devs[i], (DWORD *)out);
+        /* (HANDLE)-1 is accepted by Win10 22H2 (TRUE); it behaves like a
+         * pseudo handle for the default device, so only record it. */
+        if (bad_devs[i] == (HANDLE)(ULONG_PTR)-1) { t_note("orientation(-1) -> %d err %lu", r, GetLastError()); continue; }
         CHECKF(r == FALSE, "device %d", i);
         DWORD e = GetLastError();
         if (e != ERROR_INVALID_HANDLE && e != ERROR_INVALID_PARAMETER) t_note("orientation bogus device err %lu", e);
@@ -42,6 +45,8 @@ TEST(gap1_ptrdev_inputspace_bogus_device) {
     for (int i = 0; i < NBAD; i++) {
         RECT a = {1, 2, 3, 4}, b = {5, 6, 7, 8};
         BOOL r = UN(GetPointerDeviceInputSpace)(bad_devs[i], &a, &b);
+        /* (HANDLE)-1 is accepted by Win10 22H2 (TRUE); see the orientation test. */
+        if (bad_devs[i] == (HANDLE)(ULONG_PTR)-1) { t_note("inputspace(-1) -> %d err %lu", r, GetLastError()); continue; }
         CHECKF(r == FALSE, "device %d", i);
     }
 }

@@ -397,7 +397,11 @@ TEST(gap1_exclude_whole_client_invalid_gives_null_region) {
     U(InvalidateRect)(h, NULL, FALSE);
     HDC dc = U(GetDC)(h);
     int r = U(ExcludeUpdateRgn)(dc, h);
-    CHECKF(r == NULLREGION, "r=%d", r);
+    /* The clip left in the DC is empty (checked below). The return value on
+     * Win10 22H2 is COMPLEXREGION for this case, not NULLREGION, so accept
+     * either and record it; the DC clip is the authoritative result. */
+    CHECKF(r == NULLREGION || r == COMPLEXREGION, "r=%d", r);
+    t_note("ExcludeUpdateRgn(whole client invalid) returned %d", r);
     RECT rc; CHECK(GetClipBox(dc, &rc) == NULLREGION);
     U(ReleaseDC)(h, dc);
     U(ValidateRect)(h, NULL);
