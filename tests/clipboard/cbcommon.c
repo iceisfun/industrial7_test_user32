@@ -94,7 +94,7 @@ BOOL cb_open(HWND w) {
     BOOL r;
     if (!op) return FALSE;
     r = op(w);
-    for (int i = 0; !r && i < 100; i++) {
+    for (int i = 0; !r && i < 25; i++) {
         DWORD err = GetLastError(), pid = 0;
         HWND o = ow ? ow() : NULL;
         if (o) GetWindowThreadProcessId(o, &pid);
