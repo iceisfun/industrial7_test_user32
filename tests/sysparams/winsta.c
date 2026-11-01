@@ -237,7 +237,10 @@ TEST(uoi_invalid_handles) {
         SetLastError(0xdeadbeef);
         r = GUOW(hs[i], UOI_NAME, buf, sizeof buf, &n);
         CHECKF(!r, "handle %p accepted", hs[i]);
-        CHECKF(GetLastError() == ERROR_INVALID_HANDLE, "handle %p err %lu", hs[i], GetLastError());
+        /* Win10 22H2 oracle: failure is reported without a consistent last error (NULL / bogus
+         * handles leave it untouched, pseudo handles -1/-2 give ERROR_INVALID_FUNCTION), so the
+         * error code is observed, not asserted. */
+        t_note("GetUserObjectInformationW(%p) failed, err=%lu", hs[i], GetLastError());
     }
 }
 TEST(uoi_process_handle_is_not_userobject) {
@@ -247,12 +250,12 @@ TEST(uoi_process_handle_is_not_userobject) {
     SetLastError(0xdeadbeef);
     r = GUOW(GetCurrentProcess(), UOI_NAME, buf, sizeof buf, NULL);
     CHECK(!r);
-    CHECK(GetLastError() == ERROR_INVALID_HANDLE);
+    t_note("GetUserObjectInformationW(process) err=%lu", GetLastError());
     h = CreateEventA(NULL, FALSE, FALSE, NULL);
     SetLastError(0xdeadbeef);
     r = GUOW(h, UOI_NAME, buf, sizeof buf, NULL);
     CHECK(!r);
-    CHECK(GetLastError() == ERROR_INVALID_HANDLE);
+    t_note("GetUserObjectInformationW(event) err=%lu", GetLastError());
     CloseHandle(h);
 }
 TEST(uoi_invalid_index) {
@@ -379,7 +382,7 @@ TEST(setuoi_invalid_handle) {
     SetLastError(0xdeadbeef);
     r = su((HANDLE)(ULONG_PTR)0x12345678, UOI_FLAGS, v, sizeof(USEROBJECTFLAGS));
     CHECK(!r);
-    CHECK(GetLastError() == ERROR_INVALID_HANDLE);
+    t_note("SetUserObjectInformation(0x12345678) err=%lu (Win10 22H2: not ERROR_INVALID_HANDLE)", GetLastError());
     SetLastError(0xdeadbeef);
     r = su(NULL, UOI_FLAGS, v, sizeof(USEROBJECTFLAGS));
     CHECK(!r);
@@ -489,7 +492,8 @@ TEST(secdesc_get_invalid_handle) {
     CHECK(GetLastError() == ERROR_INVALID_HANDLE);
     SetLastError(0xdeadbeef);
     r = U(GetUserObjectSecurity)(GetCurrentProcess(), &si, buf, sizeof buf, &n);
-    CHECK(!r);
+    /* Win10 22H2 oracle: the call is a generic NtQuerySecurityObject, so a process handle succeeds */
+    t_note("GetUserObjectSecurity(process pseudo handle) = %d err=%lu", r, GetLastError());
 }
 TEST(secdesc_set_invalid_handle) {
     SECURITY_DESCRIPTOR sd; SECURITY_INFORMATION si = DACL_SECURITY_INFORMATION; BOOL r;
@@ -503,8 +507,9 @@ TEST(secdesc_set_invalid_handle) {
     r = U(SetUserObjectSecurity)(NULL, &si, &sd);
     CHECK(!r);
     SetLastError(0xdeadbeef);
-    r = U(SetUserObjectSecurity)(GetCurrentProcess(), &si, &sd);
-    CHECK(!r);
+    /* Win10 22H2 oracle: SetUserObjectSecurity is a generic NtSetSecurityObject and accepts a
+     * process handle, so it is deliberately NOT called on GetCurrentProcess() (it would rewrite
+     * the process DACL). Only the bogus-handle cases above are asserted. */
 }
 TEST(secdesc_roundtrip_identity_winsta) {
     /* write back exactly what was read; skip if the handle lacks WRITE_DAC */
