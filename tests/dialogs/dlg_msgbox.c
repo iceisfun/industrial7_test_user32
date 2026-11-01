@@ -901,7 +901,20 @@ TEST(dialogs_mb_box_window_gone_after_return) {
     CHECK(mb.box != NULL);
     CHECK(!IsWindow(mb.box));
 }
+/* The nested-box sequence hung the whole area on the Win10 oracle (modal
+ * box never returned), so it runs in a child process under a hard timeout;
+ * the parent reports completion and the child's verdict. */
 TEST(dialogs_mb_nested_message_boxes) {
+    REQUIRE(MessageBoxW); REQUIRE(UN(MessageBoxTimeoutW));
+    DWORD rc = 0;
+    int done = dlg_run_child("dialogs_childonly_nested_mb", 40000, &rc);
+    t_note("nested message boxes child: completed=%d exit=%lu", done, rc);
+    CHECKF(done, "nested message box sequence did not finish within 40 s");
+    if (done) CHECKF(rc == 0, "child exit %lu", rc);
+}
+TEST(dialogs_childonly_nested_mb) {
+    char v[8];
+    if (!GetEnvironmentVariableA("U32_DLG_CHILD", v, sizeof v)) return; /* child only */
     REQUIRE(MessageBoxW); REQUIRE(UN(MessageBoxTimeoutW));
     mb_arm(ACT_NESTED, IDOK, 0, 0);
     int r = MessageBoxW(NULL, L"outer", L"Outer", MB_OK);

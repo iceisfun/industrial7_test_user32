@@ -295,4 +295,6 @@ static HWND mk_std(void) {
     return CreateDialogIndirectParamW(GetModuleHandleA(NULL), (LPCDLGTEMPLATEW)d.b, NULL, gdp, 0);
 }
 static void wstr_ascii(char *dst, const WCHAR *s) { while ((*dst++ = (char)*s++)); }
+/* wdog.c */
+int dlg_run_child(const char *test, DWORD timeout_ms, DWORD *exit_code);
 #endif
