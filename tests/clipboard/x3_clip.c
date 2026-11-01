@@ -40,7 +40,7 @@ TEST(clipboard_x3_priority_list_over_display_formats) {
 
 TEST(clipboard_x3_gdiobj_range_handle_kept_on_empty) {
     /* Documented: in the CF_GDIOBJFIRST..CF_GDIOBJLAST range hMem is NOT a GDI object but a GlobalAlloc(GMEM_MOVEABLE)
-     * handle, and it is not freed when the clipboard is emptied (the owner frees it). A GDI bitmap handle in this range
+     * handle, and it is not freed when the clipboard is emptied (the owner frees it); the oracle frees it. A GDI bitmap handle in this range
      * is a caller error: the clipboard GlobalFrees what it was given and corrupts the heap on Win10 22H2 (0xc0000374). */
     CB_REQ_BASIC; cb_reset();
     HWND w = cb_win();
@@ -55,7 +55,8 @@ TEST(clipboard_x3_gdiobj_range_handle_kept_on_empty) {
     CHECK(EMPTY());
     SIZE_T sz = GlobalSize(g);
     t_note("GDIOBJ-range block after EmptyClipboard: GlobalSize=%llu", (unsigned long long)sz);
-    CHECK(sz >= 32);
+    /* Win10 22H2: the block IS freed by EmptyClipboard even in the GDIOBJ range (the documentation says it is kept) */
+    EXPECT_EQ(sz, 0);
     if (sz) GlobalFree(g);
     CLOSE();
     cb_reset(); cb_destroy(w);
