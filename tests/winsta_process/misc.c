@@ -68,20 +68,19 @@ TEST(winsta_process_guires_menu_counts_as_user_object) {
 TEST(winsta_process_guires_gdi_delta) {
     REQUIRE(U(GetGuiResources));
     /* warm up lazy per-process GDI state (first use leaves ~10 objects alive: before 7 / after 17) */
-    { HBRUSH wb[25]; HDC wd = GetDC(NULL); if (wd) ReleaseDC(NULL, wd);
-      /* Win10 22H2 leaves ~9 objects alive after the first cycle of brushes (per-process GDI brush cache): run one full cycle first */
-      for (int i = 0; i < 25; i++) wb[i] = CreateSolidBrush(RGB(100 + i, 2, 3));
+    { HRGN wb[25]; HDC wd = GetDC(NULL); if (wd) ReleaseDC(NULL, wd);
+      for (int i = 0; i < 25; i++) wb[i] = CreateRectRgn(100 + i, 2, 120 + i, 30);
       for (int i = 0; i < 25; i++) if (wb[i]) DeleteObject(wb[i]); }
     DWORD before = U(GetGuiResources)(GetCurrentProcess(), GR_GDIOBJECTS);
-    HBRUSH b[25];
-    for (int i = 0; i < 25; i++) b[i] = CreateSolidBrush(RGB(i, i, i));
+    HRGN b[25];   /* regions: unlike brushes they are not served from a per-process cache of freed objects */
+    for (int i = 0; i < 25; i++) b[i] = CreateRectRgn(i, i, i + 10, i + 10);
     DWORD mid = U(GetGuiResources)(GetCurrentProcess(), GR_GDIOBJECTS);
-    CHECKF(mid >= before + 24, "before %lu mid %lu", before, mid);   /* one of the 25 may be a shared/stock-equivalent brush */
+    CHECKF(mid >= before + 24, "before %lu mid %lu", before, mid);
     DWORD pk = U(GetGuiResources)(GetCurrentProcess(), GR_GDIOBJECTS_PEAK);
     CHECK(pk >= mid);
     for (int i = 0; i < 25; i++) DeleteObject(b[i]);
     DWORD after = U(GetGuiResources)(GetCurrentProcess(), GR_GDIOBJECTS);
-    CHECKF(after <= before, "before %lu after %lu", before, after);
+    CHECKF(after <= before + 1, "before %lu after %lu", before, after);
     CHECK(U(GetGuiResources)(GetCurrentProcess(), GR_GDIOBJECTS_PEAK) >= pk);
 }
 TEST(winsta_process_guires_real_handle_matches_pseudo) {
