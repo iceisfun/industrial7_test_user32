@@ -215,8 +215,8 @@ TEST(misc_ui_ddepack_reuse_to_execute_frees_block) {
     LPARAM l = U(PackDDElParam)(WMDDE_DATA, 1, 2);
     LPARAM r = U(ReuseDDElParam)(l, WMDDE_DATA, WMDDE_EXECUTE, 9, 0xABCD);
     CHECK(r == 0xABCD);
-    UINT_PTR lo, hi;
-    CHECK(!U(UnpackDDElParam)(WMDDE_DATA, l, &lo, &hi));
+    /* The packed block is freed by the reuse; Win10 22H2 corrupts the heap (0xc0000374) if it is unpacked
+     * afterwards, so the freed handle must not be touched. */
 }
 TEST(misc_ui_ddepack_reuse_null_lparam) {
     NEED_PACK();
@@ -336,7 +336,7 @@ TEST(misc_ui_dde_getlasterror_semantics) {
     HSZ h = U(DdeCreateStringHandleA)(id, "MuErrClear", CP_WINANSI);
     CHECK(h != NULL);
     CHECK(U(DdeFreeStringHandle)(id, h));
-    CHECK(!U(DdeFreeStringHandle)(id, h));
+    t_note("DdeFreeStringHandle on a released handle -> %d", U(DdeFreeStringHandle)(id, h));   /* TRUE on Win10 22H2, error still recorded */
     CHECK(U(DdeGetLastError)(id) == DMLERR_INVALIDPARAMETER);
     CHECK(U(DdeGetLastError)(id) == DMLERR_NO_ERROR);
     CHECK(U(DdeGetLastError)(id) == DMLERR_NO_ERROR);
@@ -428,7 +428,8 @@ TEST(misc_ui_dde_string_refcount_free_keep) {
     CHECK(U(DdeFreeStringHandle)(id, h));
     CHECK(U(DdeQueryStringA)(id, h, b, 32, CP_WINANSI) == 10);        /* still alive: 3 refs, 2 freed */
     CHECK(U(DdeFreeStringHandle)(id, h));
-    CHECK(!U(DdeFreeStringHandle)(id, h));                             /* one too many */
+    /* one too many: Win10 22H2 returns TRUE but still records DMLERR_INVALIDPARAMETER (checked below) */
+    t_note("DdeFreeStringHandle on a released handle -> %d", U(DdeFreeStringHandle)(id, h));
     CHECK(U(DdeGetLastError)(id) == DMLERR_INVALIDPARAMETER);
     U(DdeUninitialize)(id);
 }

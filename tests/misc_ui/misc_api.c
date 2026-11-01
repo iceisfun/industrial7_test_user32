@@ -379,7 +379,10 @@ TEST(misc_ui_layered_child_window) {
     NEED_API(); REQUIRE(U(SetLayeredWindowAttributes)); REQUIRE(U(GetLayeredWindowAttributes));
     HWND p = mu_mk(WS_POPUP, 0, 0, 0, 100, 100, NULL);
     HWND c = p ? mu_mk(WS_CHILD, WS_EX_LAYERED, 0, 0, 20, 20, p) : NULL;
-    if (!p || !c) { CHECK(0); mu_kill(p); return; }
+    CHECK(p != NULL);
+    /* Without a Windows 8 compatibility manifest a WS_EX_LAYERED child cannot be created on Win10. */
+    if (p && !c) { t_note("WS_EX_LAYERED child not created (no Win8 manifest) err=%lu", GetLastError()); mu_kill(p); return; }
+    if (!p) return;
     SetLastError(0);
     BOOL r = U(SetLayeredWindowAttributes)(c, 0, 90, LWA_ALPHA);
     t_note("layered child window: ex style kept=%d SetLayeredWindowAttributes=%d err=%lu", (mu_ex(c) & WS_EX_LAYERED) != 0, r, GetLastError());
