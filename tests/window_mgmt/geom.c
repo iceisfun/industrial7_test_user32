@@ -683,7 +683,9 @@ TEST(wm_move_cross_thread) {
 
 /* ---- WM_GETMINMAXINFO ---- */
 TEST(wm_minmax_default_values) {
-    HWND h = top_cap(100, 100, 300, 200);
+    /* an ordinary captioned window: a WS_EX_TOOLWINDOW gets the small-caption (16x16)
+     * minimum in the Win10 kernel proposal instead of SM_CXMINTRACK */
+    HWND h = wm_mk(WS_OVERLAPPEDWINDOW, 0, 100, 100, 300, 200, NULL);
     /* record what the system proposes by letting the message through unmodified */
     wm_minmax_on = 0; wm_mmi_count = 0;
     memset(&wm_mmi_seen, 0xAA, sizeof wm_mmi_seen);

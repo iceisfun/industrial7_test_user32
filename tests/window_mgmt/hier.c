@@ -270,8 +270,9 @@ TEST(wm_hier_message_only_window) {
     CHECK(U(IsWindow)(m));
     CHECK(!U(IsWindowVisible)(m));
     EQ(U(FindWindowExA)(HWND_MESSAGE, NULL, wm_cls(), "wm_msgonly_unique_1"), m);
-    EQ(U(FindWindowA)(wm_cls(), "wm_msgonly_unique_1"), NULL);
-    EQ(U(FindWindowExA)(NULL, NULL, wm_cls(), "wm_msgonly_unique_1"), NULL);
+    /* Win10: FindWindow / FindWindowEx with a NULL parent search the message-only windows too */
+    EQ(U(FindWindowA)(wm_cls(), "wm_msgonly_unique_1"), m);
+    EQ(U(FindWindowExA)(NULL, NULL, wm_cls(), "wm_msgonly_unique_1"), m);
     HWND par = U(GetAncestor)(m, GA_PARENT);
     CHECK(par != NULL);
     CHECK(par != U(GetDesktopWindow)());
@@ -522,7 +523,11 @@ TEST(wm_find_by_class_and_title) {
 TEST(wm_find_both_null) {
     HWND r = U(FindWindowA)(NULL, NULL);
     CHECK(r != NULL);
-    EQ(r, U(GetTopWindow)(NULL));
+    /* Win10: FindWindow(NULL, NULL) returns a top-level window but not necessarily the
+     * z-order top (observed 0x10112 vs GetTopWindow 0x10166) */
+    t_note("FindWindow(NULL,NULL)=%p GetTopWindow(NULL)=%p", r, U(GetTopWindow)(NULL));
+    CHECK(U(IsWindow)(r));
+    CHECK(U(GetAncestor)(r, GA_PARENT) == U(GetDesktopWindow)());
 }
 
 TEST(wm_find_unregistered_class) {

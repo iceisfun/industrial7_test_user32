@@ -220,7 +220,8 @@ TEST(wm_create_createstruct_fields) {
     EQ(wm_cs_cr.hwndParent, NULL);
     EXPECT_STR(wm_name_cr, "cstitle");
     EXPECT_STR(wm_name_nc, "cstitle");
-    EXPECT_STR((const char *)wm_cs_cr.lpszClass, wm_cls());
+    /* the lpszClass pointer is only valid during the message; compare the copy taken then */
+    EXPECT_STR(wm_cls_cr, wm_cls());
     wm_destroy(h);
 }
 

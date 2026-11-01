@@ -137,7 +137,11 @@ TEST(wm_msgfilter_process_wide) {
     CHECK(U(ChangeWindowMessageFilter)(TEST_MSG, MSGFLT_ADD));
     CHECK(U(ChangeWindowMessageFilter)(TEST_MSG, MSGFLT_ADD));
     CHECK(U(ChangeWindowMessageFilter)(TEST_MSG, MSGFLT_REMOVE));
-    CHECK(U(ChangeWindowMessageFilter)(TEST_MSG, MSGFLT_REMOVE));
+    /* Win10: removing a message that is no longer in the process table fails */
+    SetLastError(0);
+    BOOL r2 = U(ChangeWindowMessageFilter)(TEST_MSG, MSGFLT_REMOVE);
+    t_note("second MSGFLT_REMOVE = %d err=%lu", r2, GetLastError());
+    CHECK(!r2);
 }
 
 TEST(wm_msgfilter_process_wide_invalid) {
@@ -169,10 +173,17 @@ TEST(wm_msgfilterex_window) {
     t_note("DISALLOW: ExtStatus=%lu", cf.ExtStatus);
     CHECK(U(ChangeWindowMessageFilterEx)(h, TEST_MSG, MSGFLT_DISALLOW, &cf));
     t_note("DISALLOW again: ExtStatus=%lu", cf.ExtStatus);
-    CHECK(U(ChangeWindowMessageFilterEx)(h, TEST_MSG, MSGFLT_RESET, &cf));
-    t_note("RESET: ExtStatus=%lu", cf.ExtStatus);
+    /* Win10: MSGFLT_RESET on a window filter fails (observed both after DISALLOW and after
+     * ALLOW, with and without the status struct) */
+    SetLastError(0);
+    BOOL rr = U(ChangeWindowMessageFilterEx)(h, TEST_MSG, MSGFLT_RESET, &cf);
+    t_note("RESET: ret=%d err=%lu ExtStatus=%lu", rr, GetLastError(), cf.ExtStatus);
+    CHECK(!rr);
     CHECK(U(ChangeWindowMessageFilterEx)(h, TEST_MSG, MSGFLT_ALLOW, NULL));
-    CHECK(U(ChangeWindowMessageFilterEx)(h, TEST_MSG, MSGFLT_RESET, NULL));
+    SetLastError(0);
+    rr = U(ChangeWindowMessageFilterEx)(h, TEST_MSG, MSGFLT_RESET, NULL);
+    t_note("RESET(NULL): ret=%d err=%lu", rr, GetLastError());
+    CHECK(!rr);
     wm_destroy(h);
 }
 

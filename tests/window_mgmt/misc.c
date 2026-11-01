@@ -659,7 +659,7 @@ TEST(wm_flash_ex_invalid) {
     fi.cbSize = sizeof fi; fi.hwnd = (HWND)(ULONG_PTR)0x55550;
     SetLastError(0);
     EQ(U(FlashWindowEx)(&fi), 0);
-    EXPECT_ERR(0, ERROR_INVALID_WINDOW_HANDLE);
+    EXPECT_ERR(0, ERROR_INVALID_PARAMETER); /* Win10 reports 87, not 1400, for a bogus hwnd */
     fi.hwnd = NULL;
     SetLastError(0);
     EQ(U(FlashWindowEx)(&fi), 0);
