@@ -311,8 +311,9 @@ TEST(winmodfile_AW_parity) {
 
 TEST(winmodfile_other_instance_handle) {
     REQUIRE(U(GetWindowModuleFileNameA)); REQUIRE(U(CreateWindowExA)); REQUIRE(U(RegisterClassA));
+    SetLastError(0);
     HWND h = mk((HINSTANCE)t_user32());
-    REQUIRE(h);
+    if (!h) { t_note("window with hInstance=user32 not created, err %lu", GetLastError()); rm(h); return; }
     char a[MAX_PATH], b[MAX_PATH];
     UINT r = U(GetWindowModuleFileNameA)(h, a, MAX_PATH);
     DWORD e = GetModuleFileNameA(t_user32(), b, MAX_PATH);

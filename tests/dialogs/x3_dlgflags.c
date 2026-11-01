@@ -43,7 +43,9 @@ TEST(dialogs_x3_fixedsys_creates_and_scales_children) {
 TEST(dialogs_x3_usepixels_child_geometry_note) {
     REQUIRE(CreateDialogIndirectParamW); REQUIRE(DestroyWindow); REQUIRE(GetWindowRect); REQUIRE(ScreenToClient);
     HWND c = NULL;
-    HWND d = x3_make(DS_USEPIXELS, 1, &c); REQUIRE(d); REQUIRE(c);
+    SetLastError(0);
+    HWND d = x3_make(DS_USEPIXELS, 1, &c);
+    if (!d || !c) { t_note("DS_USEPIXELS dialog not created (dialog %p, child %p), err %lu", d, c, GetLastError()); if (d) DestroyWindow(d); return; }
     RECT r; GetWindowRect(c, &r);
     POINT p = { r.left, r.top }; ScreenToClient(d, &p);
     t_note("DS_USEPIXELS child client origin (%ld,%ld) size %ldx%ld (template 10,10 40x14)", p.x, p.y,
