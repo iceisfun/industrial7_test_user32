@@ -111,10 +111,11 @@ TEST(misc_ui_ddepack_memory_free_invalidates) {
 }
 TEST(misc_ui_ddepack_memory_unpack_invalid_lparam) {
     NEED_PACK();
-    static const LPARAM bad[] = { 0, 1, 0x1234, 0xFFFF, (LPARAM)-1 };
+    /* Only NULL is probed: unpacking a non-NULL bogus lparam corrupts the process heap on Win10 22H2 (0xc0000374). */
+    static const LPARAM bad[] = { 0 };
     static const UINT msgs[] = { WMDDE_ADVISE, WMDDE_ACK, WMDDE_DATA, WMDDE_POKE };
     for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 1; j++) {
             UINT_PTR lo = 0x77, hi = 0x88;
             BOOL ok = U(UnpackDDElParam)(msgs[i], bad[j], &lo, &hi);
             CHECKF(!ok, "msg %x lparam %llx", msgs[i], (long long)bad[j]);
