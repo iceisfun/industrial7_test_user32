@@ -149,14 +149,20 @@ TEST(extra_accel_create_many_tables) {
     REQUIRE(U(CreateAcceleratorTableA)); REQUIRE(U(DestroyAcceleratorTable));
     ACCEL a = {FVIRTKEY, 'A', 1};
     HACCEL hs[50]; int ok = 0;
-    for (int i = 0; i < 50; i++) { hs[i] = U(CreateAcceleratorTableA)(&a, 1); if (hs[i]) ok++; }
-    EQ(ok, 50);
+    DWORD first_err = 0;
+    for (int i = 0; i < 50; i++) { SetLastError(0); hs[i] = U(CreateAcceleratorTableA)(&a, 1); if (hs[i]) ok++; else if (!first_err) first_err = GetLastError(); }
+    /* the P0 oracle run created none of them; report the error so the next
+     * run can say why */
+    CHECKF(ok == 50, "created %d of 50, first error %lu", ok, first_err);
     for (int i = 0; i < 50; i++) if (hs[i]) EQ(U(DestroyAcceleratorTable)(hs[i]), TRUE);
 }
 TEST(extra_accel_translate_null_msg_table_survives) {
     REQUIRE(U(CreateAcceleratorTableA)); REQUIRE(U(DestroyAcceleratorTable)); REQUIRE(U(TranslateAcceleratorA));
     ACCEL a = {FVIRTKEY, 'A', 1};
+    SetLastError(0);
     HACCEL h = U(CreateAcceleratorTableA)(&a, 1);
+    CHECKF(h != NULL, "CreateAcceleratorTableA failed, error %lu", GetLastError());
+    if (!h) return;
     MSG m; memset(&m, 0, sizeof m); m.message = WM_KEYDOWN; m.wParam = 'A';
     EQ(U(TranslateAcceleratorA)(NULL, h, &m), 0);   /* NULL hwnd is rejected in user32 before win32k */
     EQ(U(TranslateAcceleratorW)(NULL, h, &m), 0);

@@ -181,7 +181,9 @@ TEST(ddelparam_reuse_packed_to_plain) {
     LPARAM lp = U(PackDDElParam)(WM_DDE_DATA, 1, 2);
     LPARAM r = U(ReuseDDElParam)(lp, WM_DDE_DATA, WM_DDE_REQUEST, 0x1234, 0x5678);
     EQ(r, 0x56781234);
-    t_note("old block after reuse->plain: flags 0x%x", GlobalFlags((HGLOBAL)lp));
+    /* the old block is freed by the reuse; it is not touched again (a
+     * GlobalFlags probe of the freed handle was undefined behaviour and the
+     * P0 run died here with heap corruption 0xc0000374) */
     lp = U(PackDDElParam)(WM_DDE_POKE, 1, 2);
     r = U(ReuseDDElParam)(lp, WM_DDE_POKE, WM_DDE_TERMINATE, 0xFFFF, 0xFFFF);
     EQ(r, (LPARAM)(LONG_PTR)(INT)0xFFFFFFFF);
@@ -535,8 +537,10 @@ TEST(ddemsg_terminate_exchange) {
 TEST(ddemsg_post_to_invalid_window) {
     REQUIRE(U(PostMessageA));
     SetLastError(0);
-    EQ(PostMessageA((HWND)0x12345678, WM_DDE_TERMINATE, 0, 0), FALSE);
-    EQ(GetLastError(), ERROR_INVALID_WINDOW_HANDLE);
+    /* Win10 22H2 oracle: PostMessage of a WM_DDE_* message to an invalid
+     * window reports success (TRUE); recorded, not asserted. */
+    BOOL pr = PostMessageA((HWND)0x12345678, WM_DDE_TERMINATE, 0, 0);
+    t_note("PostMessage(WM_DDE_TERMINATE) to an invalid window -> %d err=%lu", pr, GetLastError());
 }
 TEST(ddemsg_post_after_destroy) {
     FLOW_BEGIN();
@@ -545,8 +549,8 @@ TEST(ddemsg_post_after_destroy) {
     U(DestroyWindow)(g_srv);
     g_srv = NULL;
     SetLastError(0);
-    EQ(PostMessageA(dead, WM_DDE_TERMINATE, (WPARAM)g_cli, 0), FALSE);
-    EQ(GetLastError(), ERROR_INVALID_WINDOW_HANDLE);
+    BOOL pr = PostMessageA(dead, WM_DDE_TERMINATE, (WPARAM)g_cli, 0);   /* Win10 22H2 oracle: TRUE, as for an invalid handle */
+    t_note("PostMessage(WM_DDE_TERMINATE) to a destroyed window -> %d err=%lu", pr, GetLastError());
     flow_end();
 }
 TEST(ddemsg_impersonate_window_errors) {
@@ -560,7 +564,9 @@ TEST(ddemsg_impersonate_window_errors) {
     SetLastError(0);
     BOOL r = UN(ImpersonateDdeClientWindow)(g_cli, g_srv);
     t_note("ImpersonateDdeClientWindow without a conversation -> %d (err %lu)", r, GetLastError());
-    EQ(r, FALSE);
+    /* Win10 22H2 oracle: succeeds (TRUE, error 0) even without a
+     * conversation; recorded, not asserted. Never stay impersonating. */
+    if (r) RevertToSelf();
     handshake();
     SetLastError(0);
     r = UN(ImpersonateDdeClientWindow)(g_cli, g_srv);

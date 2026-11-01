@@ -581,7 +581,11 @@ TEST(hook_msgfilter_codes_passed) {
     for (unsigned i = 0; i < sizeof codes / sizeof codes[0]; i++) {
         mf_calls = 0; mf_code = -77;
         U(CallMsgFilterA)(&m, codes[i]);
-        CHECKF(mf_calls == 1 && mf_code == codes[i], "code %d calls %d seen %d", codes[i], mf_calls, mf_code);
+        /* Win10 22H2 oracle: nCode reaches the hook truncated to 16 bits
+         * (0x7FFFFFFF arrives as 65535). */
+        int want = codes[i] > 0xFFFF ? (codes[i] & 0xFFFF) : codes[i];
+        if (want != codes[i]) t_note("CallMsgFilter code %d reached the hook as %d", codes[i], mf_code);
+        CHECKF(mf_calls == 1 && mf_code == want, "code %d calls %d seen %d", codes[i], mf_calls, mf_code);
     }
     U(UnhookWindowsHookEx)(h);
 }
@@ -628,10 +632,10 @@ TEST(hook_callmsgfilter_no_hook) {
 }
 
 /* ---------- WH_DEBUG ---------- */
-static volatile int dbg_calls, dbg_veto; static volatile int dbg_code; static DEBUGHOOKINFO dbg_info;
+static volatile int dbg_calls, dbg_veto; static volatile int dbg_code; static volatile WPARAM dbg_wp; static DEBUGHOOKINFO dbg_info;
 static volatile int dbg_gm_calls;
 static LRESULT CALLBACK dbg_proc(int c, WPARAM w, LPARAM l) {
-    dbg_calls++; dbg_code = c; if (l) dbg_info = *(DEBUGHOOKINFO *)l;
+    dbg_calls++; dbg_code = c; dbg_wp = w; if (l) dbg_info = *(DEBUGHOOKINFO *)l;
     if (dbg_veto) return 1;
     return U(CallNextHookEx)(NULL, c, w, l);
 }
@@ -649,7 +653,10 @@ TEST(hook_debug_sees_other_hooks) {
     t_note("WH_DEBUG saw code %d (%d calls), GETMESSAGE hook calls %d", dbg_code, dbg_calls, dbg_gm_calls);
     CHECK(dbg_calls >= 1);
     CHECK(dbg_gm_calls >= 1);
-    if (dbg_calls) { EQ(dbg_code, WH_GETMESSAGE); EQ(dbg_info.idThread, GetCurrentThreadId()); }
+    /* DebugProc(nCode = HC_ACTION, wParam = type of the hook about to run,
+     * lParam = DEBUGHOOKINFO): the hook type is wParam, not nCode (Win10 22H2
+     * oracle: nCode 0). */
+    if (dbg_calls) { EQ(dbg_code, HC_ACTION); EQ(dbg_wp, WH_GETMESSAGE); EQ(dbg_info.idThread, GetCurrentThreadId()); }
     U(UnhookWindowsHookEx)(hd); U(UnhookWindowsHookEx)(hg);
     hkillwnd(w);
 }
