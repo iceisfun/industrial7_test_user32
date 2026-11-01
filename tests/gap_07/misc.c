@@ -794,7 +794,7 @@ TEST(gap7_scl_style_and_background)
     CHECK(U(GetClassLongW)(w, GCL_STYLE) == (st | CS_DBLCLKS));
     CHECK(U(SetClassLongW)(w, GCL_STYLE, st) == (st | CS_DBLCLKS));
     CHECK(U(GetClassLongW)(w, GCL_STYLE) == st);
-    DWORD br = U(GetClassLongW)(w, GCL_HBRBACKGROUND);
+    ULONG_PTR br = gclp(w, GCL_HBRBACKGROUND);
     HBRUSH nb = (HBRUSH)GetStockObject(BLACK_BRUSH);
     /* Win10 x64: the 32-bit SetClassLongW is a no-op for pointer-sized fields (a handle needs SetClassLongPtr). */
     old = U(SetClassLongW)(w, GCL_HBRBACKGROUND, (LONG)(ULONG_PTR)nb);
@@ -803,8 +803,8 @@ TEST(gap7_scl_style_and_background)
     CHECK(old == br);
     CHECK(gclp(w, GCL_HBRBACKGROUND) == (ULONG_PTR)nb);
     gcl_note(w, GCL_HBRBACKGROUND, "HBRBACKGROUND after set");
-    U(SetClassLongW)(w, GCL_HBRBACKGROUND, br);
-    CHECK(U(GetClassLongW)(w, GCL_HBRBACKGROUND) == br);
+    sclp(w, GCL_HBRBACKGROUND, br);
+    CHECK(gclp(w, GCL_HBRBACKGROUND) == br);
     U(DestroyWindow)(w);
     U(UnregisterClassW)(cls7, GetModuleHandleA(NULL));
 }
