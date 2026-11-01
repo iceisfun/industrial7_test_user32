@@ -522,7 +522,13 @@ TEST(wsprintfA_limit_1024_number_near_end) {
         int r = pA(out, fmt, 1234567890);
         int len = (int)strlen(out);
         CHECKF(r <= 1024 && r >= (pre < 1023 ? pre : 1023), "pre=%d ret %d", pre, r);
-        CHECKF(len == r || len == r - 1, "pre=%d strlen %d ret %d", pre, len, r);
+        /* Win10 22H2: when the number does not fit before the 1024 cap the digits
+         * are dropped entirely, strlen == pre, and the return value is still the
+         * capped would-be length (1024). Observed on the oracle. */
+        if (len != r && len != r - 1 && r == 1024 && len == pre)
+            t_note("pre=%d number dropped at the cap: strlen %d ret %d", pre, len, r);
+        else
+            CHECKF(len == r || len == r - 1, "pre=%d strlen %d ret %d", pre, len, r);
         CHECKF((unsigned char)out[1026] == 0x55, "pre=%d overflow", pre);
         if (pre + 10 <= 1022) CHECKF(r == pre + 10 && !strcmp(out + pre, "1234567890"), "pre=%d full number [%s]", pre, out + pre);
     }
