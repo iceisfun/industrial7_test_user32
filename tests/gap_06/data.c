@@ -20,10 +20,24 @@ typedef struct { void *phead; void *pOwner; BYTE bType; BYTE bFlags; WORD wUniq;
  * awmControl[31]. Win10 22H2 reports HeEntrySize 0x20 (entries are wider than HE64),
  * so the handle table must be indexed by HeEntrySize, never sizeof(HE64). */
 typedef struct { void *psi; HE64 *aheList; ULONG HeEntrySize; ULONG pad; ULONG_PTR pDispInfo; ULONG_PTR delta; } SHAREDINFO_HEAD;
+/* Win10 22H2 (HeEntrySize 0x20, per ValidateHwnd): +0 phead (an offset into the desktop heap),
+ * +0x10 pOwner, +0x18 bType, +0x19 bFlags, +0x1a wUniq. The classic 0x18-byte layout has
+ * pOwner at +8 and bType at +0x10. he_at() returns a normalised copy (NULL if unreadable). */
 static HE64 *he_at(const SHAREDINFO_HEAD *s, UINT idx) {
+    static HE64 norm;
     ULONG sz = s->HeEntrySize;
     if (sz < sizeof(HE64) || sz > 256 || (sz & 7)) sz = sizeof(HE64);
-    return (HE64 *)((char *)s->aheList + (size_t)idx * sz);
+    const unsigned char *raw = (const unsigned char *)s->aheList + (size_t)idx * sz;
+    if (!readable(raw, sz)) return NULL;
+    norm.phead = *(void *const *)raw;
+    if (sz >= 0x20) {
+        norm.pOwner = *(void *const *)(raw + 0x10);
+        norm.bType = raw[0x18]; norm.bFlags = raw[0x19]; norm.wUniq = *(const WORD *)(raw + 0x1a);
+    } else {
+        norm.pOwner = *(void *const *)(raw + 8);
+        norm.bType = raw[0x10]; norm.bFlags = raw[0x11]; norm.wUniq = *(const WORD *)(raw + 0x12);
+    }
+    return &norm;
 }
 
 TEST(gap6_sharedinfo_resolve) {
@@ -71,7 +85,7 @@ TEST(gap6_sharedinfo_handle_entry_window) {
     CHECK(e->bType == 1);
     CHECK(e->wUniq == (WORD)(((ULONG_PTR)w >> 16) & 0xffff));
     CHECK(e->phead != NULL);
-    if (e->phead && readable(e->phead, sizeof(void *) + 4))
+    if (s->HeEntrySize < 0x20 && e->phead && readable(e->phead, sizeof(void *) + 4))
         CHECK(*(HWND *)e->phead == w);
     DestroyWindow(w);
     e = he_at(s, idx);
