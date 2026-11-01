@@ -442,9 +442,15 @@ TEST(messages_filter_ex_window_allow_disallow_reset) {
     cfs.ExtStatus = 0xFFFF;
     CHECK(U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_DISALLOW, &cfs) == TRUE);
     t_note("DISALLOW: ExtStatus %lu", cfs.ExtStatus);
-    CHECK(U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_RESET, NULL) == TRUE);
+    /* Win10 22H2 returns FALSE for MSGFLT_RESET when the struct pointer is NULL, but accepts it
+     * with a CHANGEFILTERSTRUCT; so reset with a struct and only record the NULL form. */
+    { BOOL rn; SETE(); rn = U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_RESET, NULL);
+      t_note("RESET with NULL struct -> %d err %lu", rn, GetLastError()); }
+    cfs.ExtStatus = 0xFFFF;
+    CHECK(U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_RESET, &cfs) == TRUE);
     CHECK(U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_ALLOW, NULL) == TRUE);
-    CHECK(U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_RESET, NULL) == TRUE);
+    cfs.ExtStatus = 0xFFFF;
+    CHECK(U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_RESET, &cfs) == TRUE);
     mh_kill(h);
 }
 

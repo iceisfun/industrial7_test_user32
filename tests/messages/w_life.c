@@ -587,7 +587,10 @@ TEST(messages_show_repeat_show_no_message) {
     U(ShowWindow)(h, SW_SHOWNA);
     mh_rec = 1; mh_clear();
     EXPECT_NE(U(ShowWindow)(h, SW_SHOWNA), 0);
-    EXPECT_EQ(mh_count(WM_SHOWWINDOW), 0);
+    /* docs: no change of visibility, so no WM_SHOWWINDOW; Win10 22H2 delivered one for a repeated
+     * SW_SHOWNA on this no-activate popup (oracle run). Record rather than assert. */
+    t_note("repeat SW_SHOWNA delivered %d WM_SHOWWINDOW", mh_count(WM_SHOWWINDOW));
+    CHECK(mh_count(WM_SHOWWINDOW) <= 1);
     mh_rec = 0;
     mh_kill(h);
 }
@@ -776,9 +779,11 @@ TEST(messages_pos_child_move_is_parent_relative) {
 }
 
 static LRESULT hk_nccalc_shrink(HWND h, UINT m, WPARAM w, LPARAM l, int *hd) {
-    if (m == WM_NCCALCSIZE && w) {
-        NCCALCSIZE_PARAMS *p = (NCCALCSIZE_PARAMS *)l;
-        p->rgrc[0].left += 7; p->rgrc[0].top += 5; p->rgrc[0].right -= 3; p->rgrc[0].bottom -= 2;
+    if (m == WM_NCCALCSIZE) {
+        /* Win10 22H2 sends the creation-time WM_NCCALCSIZE with wParam FALSE (lParam is a RECT *),
+         * so handle both forms. */
+        RECT *r = w ? &((NCCALCSIZE_PARAMS *)l)->rgrc[0] : (RECT *)l;
+        r->left += 7; r->top += 5; r->right -= 3; r->bottom -= 2;
         *hd = 1; return 0;
     }
     return 0;
@@ -800,7 +805,7 @@ TEST(messages_nccalcsize_custom_client_area) {
 
 static RECT nc_in; static WPARAM nc_w;
 static LRESULT hk_nccalc_spy(HWND h, UINT m, WPARAM w, LPARAM l, int *hd) {
-    if (m == WM_NCCALCSIZE && !nc_w) { nc_w = w + 1; if (w) nc_in = ((NCCALCSIZE_PARAMS *)l)->rgrc[0]; }
+    if (m == WM_NCCALCSIZE && !nc_w) { nc_w = w + 1; nc_in = w ? ((NCCALCSIZE_PARAMS *)l)->rgrc[0] : *(RECT *)l; }
     return 0;
 }
 TEST(messages_nccalcsize_input_rect_is_window_rect) {
@@ -810,7 +815,9 @@ TEST(messages_nccalcsize_input_rect_is_window_rect) {
     h = CWEA(WS_EX_TOOLWINDOW, MH_CLSA, "n", WS_POPUP, 31, 41, 110, 66, NULL, NULL, GetModuleHandleA(NULL), NULL);
     mh_hook = NULL;
     REQUIRE(h);
-    EXPECT_EQ(nc_w, 2);    /* wParam was TRUE */
+    /* first WM_NCCALCSIZE of a creation: TRUE on older systems, FALSE (plain RECT) on Win10 22H2 */
+    t_note("first WM_NCCALCSIZE wParam=%d", (int)(nc_w - 1));
+    CHECK(nc_w == 1 || nc_w == 2);
     EXPECT_EQ(nc_in.left, 31); EXPECT_EQ(nc_in.top, 41);
     EXPECT_EQ(nc_in.right, 141); EXPECT_EQ(nc_in.bottom, 107);
     mh_kill(h);
@@ -1129,8 +1136,12 @@ TEST(messages_focus_destroy_focus_window_sends_killfocus) {
     mh_rec = 1; mh_clear();
     DESTROYW(a);
     mh_rec = 0;
-    EXPECT_EQ(mh_count(WM_KILLFOCUS), 1);
-    CHECK(before(WM_KILLFOCUS, WM_DESTROY));
+    /* Win10 22H2 delivered no WM_KILLFOCUS to the window being destroyed (oracle run): focus is
+     * dropped without a notification once destruction has begun. Record, assert only sanity. */
+    t_note("destroy focus window: WM_KILLFOCUS count %d", mh_count(WM_KILLFOCUS));
+    CHECK(mh_count(WM_KILLFOCUS) <= 1);
+    if (mh_count(WM_KILLFOCUS) == 1) CHECK(before(WM_KILLFOCUS, WM_DESTROY));
+    CHECK(U(GetFocus)() != a);
 }
 
 TEST(messages_activate_setactivewindow_messages) {
