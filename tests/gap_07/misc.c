@@ -799,7 +799,6 @@ TEST(gap7_scl_style_and_background)
     /* Win10 x64: the 32-bit SetClassLongW is a no-op for pointer-sized fields (a handle needs SetClassLongPtr). */
     old = U(SetClassLongW)(w, GCL_HBRBACKGROUND, (LONG)(ULONG_PTR)nb);
     t_note("SetClassLongW(GCL_HBRBACKGROUND) -> %lx, field now %llx", old, (unsigned long long)gclp(w, GCL_HBRBACKGROUND));
-    CHECK(old == br);
     old = (DWORD)sclp(w, GCL_HBRBACKGROUND, (ULONG_PTR)nb);
     CHECK(old == br);
     CHECK(gclp(w, GCL_HBRBACKGROUND) == (ULONG_PTR)nb);

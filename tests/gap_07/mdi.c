@@ -150,7 +150,8 @@ TEST(gap7_mdi_createmdiwindoww_activates_new_child)
     CHECK(active(m.client) == b);
     CHECK(a && b && a != b);
     /* destroying the active child activates the remaining one */
-    U(DestroyWindow)(b);
+    /* DestroyWindow on an MDI child leaves the client's active-child record stale on Win10 22H2; the supported route is WM_MDIDESTROY */
+    U(SendMessageW)(m.client, WM_MDIDESTROY, (WPARAM)b, 0);
     g7_pump_ms(300);   /* the successor is activated asynchronously on Win10 */
     { HWND now = active(m.client);
       /* Whether the survivor becomes the active MDI child depends on the frame being active in a
