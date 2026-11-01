@@ -3,8 +3,12 @@
 #ifndef T_H
 #define T_H
 #define WIN32_LEAN_AND_MEAN
+#ifndef WINVER
 #define WINVER 0x0A00
+#endif
+#ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0A00
+#endif
 #include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -52,6 +56,8 @@ void t_skip(const char *fmt, ...);
 
 /* Helpers */
 HWND t_make_window(const char *cls, DWORD style, DWORD exstyle, int x, int y, int w, int h, HWND parent); /* class registered on demand with a default proc */
+void t_wait_pump(DWORD ms);        /* pump for ms (no focus or timer dependence) */
+int t_wait_until(int (*pred)(void *), void *ctx, DWORD timeout_ms); /* pump until pred() or timeout */
 void t_pump(void);                 /* drain this thread's queue (PeekMessage loop) */
 const char *t_cls(void);           /* name of the default test window class */
 
