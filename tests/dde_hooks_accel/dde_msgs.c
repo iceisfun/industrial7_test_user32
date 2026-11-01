@@ -125,10 +125,8 @@ TEST(ddelparam_free_is_lenient) {
     REQUIRE(U(PackDDElParam)); REQUIRE(U(FreeDDElParam));
     LPARAM lp = U(PackDDElParam)(WM_DDE_ADVISE, 1, 1);
     EQ(U(FreeDDElParam)(WM_DDE_ADVISE, lp), TRUE);
-    EQ(U(FreeDDElParam)(WM_DDE_ADVISE, lp), TRUE);      /* double free is a no-op */
+    /* a second free of the block and frees of bogus non-NULL blocks are not probed: they corrupt the heap on Win10 22H2 (0xc0000374) */
     EQ(U(FreeDDElParam)(WM_DDE_ACK, 0), TRUE);
-    EQ(U(FreeDDElParam)(WM_DDE_ACK, 0x1234), TRUE);
-    EQ(U(FreeDDElParam)(WM_DDE_DATA, (LPARAM)0xDEADBEEF), TRUE);
     EQ(U(FreeDDElParam)(WM_DDE_INITIATE, 0x10001), TRUE);
     EQ(U(FreeDDElParam)(WM_DDE_EXECUTE, 0x10001), TRUE);
     EQ(U(FreeDDElParam)(0, 0), TRUE);
