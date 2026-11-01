@@ -21,7 +21,7 @@ static HWND tile_parent(void) {
     return p;
 }
 static HWND tile_kid(HWND p, DWORD extra) {
-    return t_make_window(NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | extra, 0, 1, 1, 50, 40, p);
+    return t_make_window(NULL, WS_CHILD | WS_VISIBLE | WS_CAPTION | extra, 0, 1, 1, 50, 40, p);
 }
 static int rects_overlap(const RECT *a, const RECT *b) {
     return a->left < b->right && b->left < a->right && a->top < b->bottom && b->top < a->bottom;
