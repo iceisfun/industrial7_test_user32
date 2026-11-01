@@ -18,6 +18,7 @@ HWND g7_mkwinA(DWORD style, DWORD ex, HWND parent);
 void g7_reset(UINT lo, UINT hi, LRESULT ret);
 int  g7_count(HWND h, UINT m);
 void g7_pump_ms(int ms);                    /* pump messages for up to ms (bounded) */
+void g7_drain(void);                        /* drop queued system messages for this thread */
 int g7_is_wine(void);                       /* the Wine stubs for some undocumented exports abort the process */
 /* Run fn on a new thread with its own queue; returns thread id via *tid. */
 #endif

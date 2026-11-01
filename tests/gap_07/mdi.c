@@ -151,7 +151,7 @@ TEST(gap7_mdi_createmdiwindoww_activates_new_child)
     CHECK(a && b && a != b);
     /* destroying the active child activates the remaining one */
     U(DestroyWindow)(b);
-    t_pump();
+    g7_pump_ms(50);   /* the successor is activated asynchronously on Win10 */
     CHECK(active(m.client) == a);
     fin(&m);
 }

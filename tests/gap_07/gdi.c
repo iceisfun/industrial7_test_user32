@@ -6,6 +6,7 @@
 
 typedef struct { HDC dc; HBITMAP bmp, old; int w, h; DWORD *bits; } surf_t;
 
+static void surf_clear(surf_t *s);
 static int surf_make(surf_t *s, int w, int h)
 {
     memset(s, 0, sizeof *s);
@@ -20,6 +21,8 @@ static int surf_make(surf_t *s, int w, int h)
     if (!s->dc || !s->bmp) return 0;
     s->old = SelectObject(s->dc, s->bmp);
     SetBkColor(s->dc, RGB(255, 255, 255)); SetTextColor(s->dc, RGB(0, 0, 0));
+    /* A new DIB section is zero-filled (black) on Windows; the ink counters treat white as blank. */
+    surf_clear(s);
     return 1;
 }
 static void surf_clear(surf_t *s)
@@ -580,8 +583,12 @@ TEST(gap7_tabbedtextout_invalid_arguments)
     CHECK(U(TabbedTextOutW)(s.dc, 0, 0, L"abc", INT_MIN, 0, NULL, 0) == 0);
     CHECK(U(TabbedTextOutW)(s.dc, 0, 0, L"abc", 3, -1, NULL, 0) == 0);
     CHECK(U(TabbedTextOutW)(s.dc, 0, 0, L"abc", 3, INT_MIN, NULL, 0) == 0);
-    CHECK(U(TabbedTextOutA)(s.dc, 0, 0, NULL, -1, 0, NULL, 0) == 0);
-    CHECK(U(TabbedTextOutA)(s.dc, 0, 0, "abc", -2, 0, NULL, 0) == 0);
+    /* The ANSI entry maps a count of -1 (and -2) to an empty converted string and still calls the
+     * worker, so it returns the text extent of "" (non-zero height) instead of failing; Win10 22H2. */
+    { LONG ra = U(TabbedTextOutA)(s.dc, 0, 0, NULL, -1, 0, NULL, 0);
+      LONG rb = U(TabbedTextOutA)(s.dc, 0, 0, "abc", -2, 0, NULL, 0);
+      t_note("TabbedTextOutA(NULL,-1)=%lx (\"abc\",-2)=%lx", ra, rb);
+      CHECK(LOWORD(ra) == 0 && LOWORD(rb) == 0); }
     CHECK(U(TabbedTextOutA)(s.dc, 0, 0, "abc", 3, -1, NULL, 0) == 0);
     CHECK(ink_total(&s) == 0);
     surf_free(&s);

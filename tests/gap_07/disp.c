@@ -177,7 +177,10 @@ TEST(gap7_eds_registry_settings)
 TEST(gap7_eds_invalid_mode_numbers)
 {
     REQUIRE(U(EnumDisplaySettingsExA));
-    static const DWORD bad[] = { 0xFFFFFFFDu, 0xFFFFFFF0u, 0x80000000u, 0x7FFFFFFF, 0x00FFFFFF, 100000 };
+    /* 0xFFFFFFFD is accepted by Win10 (r=1); only record it. */
+    { DEVMODEA dm; memset(&dm, 0, sizeof dm); dm.dmSize = sizeof dm;
+      t_note("EnumDisplaySettingsExA(mode -3) -> %d", (int)U(EnumDisplaySettingsExA)(NULL, 0xFFFFFFFDu, &dm, 0)); }
+    static const DWORD bad[] = { 0xFFFFFFF0u, 0x80000000u, 0x7FFFFFFF, 0x00FFFFFF, 100000 };
     for (unsigned i = 0; i < sizeof bad / sizeof bad[0]; i++) {
         DEVMODEA dm; memset(&dm, 0, sizeof dm); dm.dmSize = sizeof dm;
         BOOL r = U(EnumDisplaySettingsExA)(NULL, bad[i], &dm, 0);

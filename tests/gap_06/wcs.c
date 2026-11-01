@@ -69,7 +69,6 @@ TEST(gap6_wcs_utf8_nonascii) {
 }
 TEST(gap6_wcs_cp1252_nonascii) {
     F();
-    if (GetACP() == 1252) { t_skip("ACP 1252: NLS path"); return; }
     char buf[16] = {0}; char *p = buf;
     int r = f(1252, L"\x00e9\x20ac", 2, &p, 16, 0);
     CHECK(r == 2);
@@ -142,7 +141,8 @@ TEST(gap6_wcs_exact_and_minus_one_buffer) {
 }
 TEST(gap6_wcs_invalid_codepage) {
     F();
-    WORD bad[] = { 99, 1, 2, 3, 4000, 12345, 0xffff, 50000 };
+    /* 1/2/3 are CP_OEMCP/CP_MACCP/CP_THREAD_ACP: valid pseudo code pages on Win10. */
+    WORD bad[] = { 99, 4000, 12345, 0xffff, 50000 };
     for (unsigned i = 0; i < sizeof bad / sizeof *bad; i++) {
         if (bad[i] == GetACP()) continue;
         char buf[16]; char *p = buf;

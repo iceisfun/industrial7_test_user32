@@ -202,15 +202,22 @@ TEST(gap5_tmex_high_message_flags_ignored) {
     }
 }
 TEST(gap5_tmex_boundary_0xff_and_0x106) {
-    REQUIRE(UN(TranslateMessageEx));
+    REQUIRE(UN(TranslateMessageEx)); REQUIRE(U(PeekMessageA));
+    /* Key messages report "translated" only when they carry a real window: with a
+     * NULL hwnd Win10's NtUserTranslateMessage returns 0 for them. */
+    HWND h = g5_top(WS_OVERLAPPEDWINDOW, 0);
+    CHECK(h != NULL);
     for (UINT msg = 0xf8; msg <= 0x10f; msg++) {
-        MSG m = mk(NULL, msg, VK_F5, 0);
+        MSG m = mk(h, msg, VK_F5, 1);
         BOOL r = UN(TranslateMessageEx)(&m, 0);
         if (msg == WM_KEYDOWN || msg == WM_KEYUP || msg == WM_SYSKEYDOWN || msg == WM_SYSKEYUP)
             CHECKF(r != 0, "msg 0x%x should translate", msg);
         else
             CHECKF(r == 0, "msg 0x%x should not translate", msg);
     }
+    MSG q;
+    while (U(PeekMessageA)(&q, h, 0, 0, PM_REMOVE)) {}
+    g5_destroy(h);
 }
 TEST(gap5_tmex_boundary_2_17_bits) {
     REQUIRE(UN(TranslateMessageEx));
@@ -574,7 +581,9 @@ TEST(gap5_sct_temp_cycle_twice) {
         ULONG_PTR r = UN(SetSysColorsTemp)(cur, NULL, 3);
         if (!r) { t_note("refused round %d err %lu", k, GetLastError()); return; }
         CHECK(((COLORREF *)r)[0] == cur[0]);
-        EXPECT_EQ(UN(SetSysColorsTemp)(NULL, NULL, 0), 1);
+        /* EXPECT_EQ evaluates its arguments twice: keep the stateful call out of it. */
+        ULONG_PTR rr = UN(SetSysColorsTemp)(NULL, NULL, 0);
+        EXPECT_EQ(rr, 1);
     }
 }
 

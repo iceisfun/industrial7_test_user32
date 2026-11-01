@@ -120,13 +120,16 @@ TEST(gap7_clipname_buffer_sizes)
         int want = cch <= 0 ? 0 : (cch - 1 < 16 ? cch - 1 : 16);
         if (cch == 0) { CHECKF(n == 0, "W cch=0 n=%d", n); CHECK(b[0] == 0x7777); continue; }
         CHECKF(n == want, "W cch=%d n=%d want %d", cch, n, want);
-        CHECKF(b[n] == 0, "W cch=%d not terminated", cch);
+        /* cch == 1 writes no terminator on Win10 (nothing is copied) */
+        if (cch >= 2) CHECKF(b[n] == 0, "W cch=%d not terminated", cch);
+        else if (b[0] != 0) t_note("GetClipboardFormatNameW cch=1: buffer left unterminated (b[0]=%x)", b[0]);
         CHECKF(!wcsncmp(b, L"gap7_fmt_buffers", n), "W cch=%d content", cch);
         CHECKF(b[cch] == 0x7777, "W cch=%d overran", cch);
         char a[40]; memset(a, 0x55, sizeof a);
         n = U(GetClipboardFormatNameA)(id, a, cch);
         CHECKF(n == want, "A cch=%d n=%d want %d", cch, n, want);
-        CHECKF(a[n] == 0, "A cch=%d not terminated", cch);
+        if (cch >= 2) CHECKF(a[n] == 0, "A cch=%d not terminated", cch);
+        else if (a[0] != 0) t_note("GetClipboardFormatNameA cch=1: buffer left unterminated (a[0]=%x)", a[0]);
         CHECKF(a[cch] == 0x55, "A cch=%d overran", cch);
     }
 }

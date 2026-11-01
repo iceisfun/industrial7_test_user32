@@ -411,7 +411,12 @@ TEST(gap6_uttfi_bogus_tokens) {
     for (unsigned i = 0; i < sizeof v / sizeof *v; i++) {
         LUID l = { 1, 2 };
         LONG r = f((HANDLE)v[i], &l);
-        CHECKF((ULONG)r == STATUS_INVALID_HANDLE_, "h=%llx r=%lx", (unsigned long long)v[i], (ULONG)r);
+        /* Handles 4 and 8 are usually live kernel objects of this process on Win10, so the
+         * type check fires first (STATUS_OBJECT_TYPE_MISMATCH); only unmapped values are invalid. */
+        if (v[i] <= 8)
+            CHECKF((ULONG)r == STATUS_INVALID_HANDLE_ || (ULONG)r == STATUS_TYPE_MISMATCH_, "h=%llx r=%lx", (unsigned long long)v[i], (ULONG)r);
+        else
+            CHECKF((ULONG)r == STATUS_INVALID_HANDLE_, "h=%llx r=%lx", (unsigned long long)v[i], (ULONG)r);
         CHECK(l.LowPart == 1 && l.HighPart == 2);
     }
 }
