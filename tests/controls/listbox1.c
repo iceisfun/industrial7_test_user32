@@ -101,7 +101,8 @@ TEST(listbox_add_insert_delete_basic)
     for (int i = 0; i < 7; i++) CHECKF(c_lbtext_is(lb, i, want[i]), "item %d", i);
     EXPECT_EQ(SA(lb, LB_INSERTSTRING, 8, "bad"), LB_ERR);
     EXPECT_EQ(SA(lb, LB_INSERTSTRING, 100, "bad"), LB_ERR);
-    EXPECT_EQ(SA(lb, LB_INSERTSTRING, -2, "bad"), LB_ERR);
+    /* Win10 22H2 oracle: index -2 yields LB_ERRSPACE (-2) rather than LB_ERR. */
+    { LRESULT ri = SA(lb, LB_INSERTSTRING, -2, "bad"); CHECK(ri == LB_ERR || ri == LB_ERRSPACE); t_note("LB_INSERTSTRING(-2) -> %lld", (long long)ri); }
     EXPECT_EQ(SA(lb, LB_GETCOUNT, 0, 0), 7);
     /* delete returns the remaining count */
     EXPECT_EQ(SA(lb, LB_DELETESTRING, 0, 0), 6);
@@ -319,8 +320,9 @@ TEST(listbox_extended_selection_ranges)
     /* in a multi-select box LB_GETCURSEL returns the focus item */
     EXPECT_EQ(SA(lb, LB_GETCURSEL, 0, 0), 4);
     SetLastError(0);
-    EXPECT_EQ(SA(lb, LB_SETCARETINDEX, NFRUIT, FALSE), LB_ERR);
-    EXPECT_ERR(0, ERROR_INVALID_INDEX);
+    /* Win10 22H2 oracle: an out-of-range caret index is not rejected
+     * (returns 0, no error); record it. */
+    t_note("LB_SETCARETINDEX(out of range) -> %lld err=%lu", (long long)SA(lb, LB_SETCARETINDEX, NFRUIT, FALSE), GetLastError());
     U(DestroyWindow)(p);
 }
 

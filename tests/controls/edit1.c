@@ -398,7 +398,11 @@ TEST(edit_multiline_getline_table)
         CHECKF(!memcmp(buf, want[i], k_doc_len[i]), "line %d content", i);
         /* not NUL terminated */
         /* the copy never writes a terminator */
-        CHECKF(buf[n] == 'x', "line %d: byte after copy is 0x%02x", i, (unsigned char)buf[n]);
+        /* buf[0..1] hold the WORD capacity (30) and are only overwritten by
+         * copied text, so the terminator probe is meaningful for n >= 2; for
+         * shorter lines the count bytes must be left untouched. */
+        if (n >= 2) CHECKF(buf[n] == 'x', "line %d: byte after copy is 0x%02x", i, (unsigned char)buf[n]);
+        else CHECKF((unsigned char)buf[n] == (n == 0 ? 30 : 0), "line %d: count byte clobbered (0x%02x)", i, (unsigned char)buf[n]);
     }
     char buf[32];
     /* invalid line number */
@@ -413,13 +417,13 @@ TEST(edit_multiline_getline_table)
     CHECK(buf[0] == 'l' && buf[1] == 'a' && buf[2] == 'x');
     memset(buf, 'x', sizeof buf); *(WORD *)buf = 1;
     EXPECT_EQ(SA(e, EM_GETLINE, 4, buf), 1);
-    CHECK(buf[0] == 'l' && buf[1] == 'x');
+    CHECK(buf[0] == 'l' && buf[1] == 0);   /* buf[1] is the untouched high byte of the WORD capacity */
     memset(buf, 'x', sizeof buf); *(WORD *)buf = 4;
     EXPECT_EQ(SA(e, EM_GETLINE, 4, buf), 4);
     CHECK(!memcmp(buf, "last", 4));
     memset(buf, 'x', sizeof buf); *(WORD *)buf = 0;
     EXPECT_EQ(SA(e, EM_GETLINE, 4, buf), 0);
-    EXPECT_EQ(buf[0], 'x');
+    EXPECT_EQ(buf[0], 0);   /* untouched low byte of the WORD capacity (0) */
     U(DestroyWindow)(p);
 }
 

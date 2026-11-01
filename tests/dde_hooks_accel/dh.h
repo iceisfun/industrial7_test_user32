@@ -117,4 +117,6 @@ static void dh_destroy_window(HWND h, const char *cls) {
     if (h) U(DestroyWindow)(h);
     if (cls) U(UnregisterClassA)(cls, GetModuleHandleA(NULL));
 }
+/* dhchild.c: run a named test of this exe in a child process (output replayed, hard timeout) */
+int dh_run_child(const char *test, DWORD timeout_ms, DWORD *exit_code);
 #endif

@@ -34,5 +34,9 @@ void cb_reset(void);          /* leave clipboard closed and empty */
 HGLOBAL cb_mem(const void *p, size_t n);
 HGLOBAL cb_text(const char *s);
 HGLOBAL cb_wtext(const WCHAR *s);
+/* run one named test of this exe in a child process (stdout to NUL, hard
+ * timeout, child killed on expiry); returns 1 if it ran to completion or
+ * died, 0 if it could not be launched or timed out. */
+int cb_run_child(const char *test, DWORD timeout_ms, DWORD *exit_code);
 int cb_has(UINT fmt);         /* format present in enumeration */
 #endif

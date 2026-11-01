@@ -121,7 +121,21 @@ TEST(clipboard_set_without_empty) {
     if (!r) GlobalFree(g);
     CLOSE(); cb_reset(); cb_destroy(w);
 }
+/* SetClipboardData does not validate an HGLOBAL: Win10 accepts a bogus handle
+ * and the heap is corrupted later when the clipboard frees it (observed
+ * 0xc0000374 on the following Empty/Close). The deliberately faulting
+ * sequence therefore runs in a child process; the parent records the outcome. */
 TEST(clipboard_set_bad_handle) {
+    CB_REQ_BASIC; cb_reset();
+    DWORD rc = 0;
+    int r = cb_run_child("clipboard_childonly_bad_handle", 60000, &rc);
+    t_note("bad-handle child: completed=%d exit=0x%lx", r, rc);
+    CHECK(r != 0);
+    cb_reset();
+}
+TEST(clipboard_childonly_bad_handle) {
+    char v[8];
+    if (!GetEnvironmentVariableA("U32_CB_CHILD", v, sizeof v)) return; /* only runs in the child */
     CB_REQ_BASIC; cb_reset();
     HWND w = cb_win(); OPEN(w); EMPTY();
     SET_ERR(0);

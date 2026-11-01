@@ -906,7 +906,21 @@ TEST(ddeconv_two_conversations) {
     if (c2) U(DdeDisconnect)(c2);
     teardown();
 }
+/* On the Win10 oracle DdeUninitialize of the client instance with a live
+ * conversation (client and server instances on the same thread) never
+ * returned and the exe was killed at the area timeout, hiding every later
+ * test. The sequence runs in a child process under a hard timeout; the
+ * parent reports completion and the child's verdict. */
 TEST(ddeconv_uninitialize_with_open_conv) {
+    DWORD rc = 0;
+    int done = dh_run_child("ddeconv_childonly_uninit_open_conv", 40000, &rc);
+    t_note("uninitialize-with-open-conversation child: completed=%d exit=0x%lx", done, rc);
+    CHECKF(done, "DdeUninitialize with an open conversation did not finish within 40 s");
+    if (done) CHECKF(rc == 0, "child exit 0x%lx", rc);
+}
+TEST(ddeconv_childonly_uninit_open_conv) {
+    char v[8];
+    if (!GetEnvironmentVariableA("U32_DH_CHILD", v, sizeof v)) return; /* child only */
     SETUP(0, 0, 1);
     HCONV c = g_conv; g_conv = NULL;
     DWORD cli = g_cli;

@@ -68,7 +68,17 @@ TEST(clipboard_synth_get_handle_stable) {
     CB_REQ_BASIC; cb_reset();
     HWND w = cb_win(); OPEN(w); EMPTY(); SETD(CF_TEXT, cb_text("stable")); CLOSE(); OPEN(w);
     HANDLE a = GETD(CF_UNICODETEXT), b = GETD(CF_UNICODETEXT);
-    CHECK(a != NULL); CHECK(a == b);
+    CHECK(a != NULL); CHECK(b != NULL);
+    /* Win10 22H2 oracle: a repeated GetClipboardData of a synthesized format
+     * does not return the identical handle. Handle identity is not a contract;
+     * the content must be stable. */
+    if (a && b) {
+        WCHAR *pa = GlobalLock(a), *pb = GlobalLock(b);
+        CHECK(pa && pb && !lstrcmpW(pa, pb) && !lstrcmpW(pa, L"stable"));
+        if (pa) GlobalUnlock(a);
+        if (pb) GlobalUnlock(b);
+    }
+    t_note("synthesized handle identical across two gets: %d", a == b);
     CLOSE(); cb_reset(); cb_destroy(w);
 }
 TEST(clipboard_synth_get_before_close) {
