@@ -17,7 +17,7 @@ extern int wm_minmax_on;       /* apply wm_minmax below on WM_GETMINMAXINFO */
 extern MINMAXINFO wm_minmax, wm_mmi_seen;
 extern int wm_mmi_count;
 extern CREATESTRUCTA wm_cs_nc, wm_cs_cr;
-extern char wm_name_nc[128], wm_name_cr[128];
+extern char wm_name_nc[128], wm_name_cr[128], wm_cls_nc[128], wm_cls_cr[128];
 extern int wm_seen_nc, wm_seen_cr;
 
 HWND wm_mk(DWORD style, DWORD ex, int x, int y, int w, int h, HWND parent);

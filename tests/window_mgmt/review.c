@@ -271,8 +271,9 @@ TEST(wm_rev_showwindow_return_values) {
     HWND h = wm_mk(WS_POPUP, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, 0, 0, 40, 40, NULL);
     EQ(U(ShowWindow)(h, SW_HIDE), FALSE);       /* previously hidden */
     EQ(U(ShowWindow)(h, SW_SHOWNA), FALSE);
-    EQ(U(ShowWindow)(h, SW_SHOWNA), TRUE);      /* previously visible */
-    EQ(U(ShowWindow)(h, SW_HIDE), TRUE);
+    /* previously visible: Win10 returns a nonzero value that is not normalised to TRUE (0x18 seen) */
+    { BOOL r1 = U(ShowWindow)(h, SW_SHOWNA); t_note("ShowWindow(SHOWNA) on visible = 0x%x", r1); CHECK(r1 != FALSE); }
+    { BOOL r2 = U(ShowWindow)(h, SW_HIDE);   t_note("ShowWindow(HIDE) on visible = 0x%x", r2); CHECK(r2 != FALSE); }
     CHECK(!U(IsWindowVisible)(h));
     wm_destroy(h);
 }

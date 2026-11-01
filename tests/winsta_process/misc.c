@@ -67,6 +67,8 @@ TEST(winsta_process_guires_menu_counts_as_user_object) {
 }
 TEST(winsta_process_guires_gdi_delta) {
     REQUIRE(U(GetGuiResources));
+    /* warm up lazy per-process GDI state (first use leaves ~10 objects alive: before 7 / after 17) */
+    { HBRUSH wb = CreateSolidBrush(RGB(1, 2, 3)); HDC wd = GetDC(NULL); if (wd) ReleaseDC(NULL, wd); if (wb) DeleteObject(wb); }
     DWORD before = U(GetGuiResources)(GetCurrentProcess(), GR_GDIOBJECTS);
     HBRUSH b[25];
     for (int i = 0; i < 25; i++) b[i] = CreateSolidBrush(RGB(i, i, i));
@@ -94,22 +96,26 @@ TEST(winsta_process_guires_invalid_flags) {
         SetLastError(0);
         DWORD r = U(GetGuiResources)(GetCurrentProcess(), bad[i]);
         CHECKF(r == 0, "flags %lu got %lu", (unsigned long)bad[i], r);
-        EXPECT_ERR(0, ERROR_INVALID_PARAMETER);
+        /* Win10: 87 for most invalid flag values, but at least one value (not identified in the
+         * baseline log) returns 0 with the last error left at 0; report instead of asserting */
+        if (GetLastError() != ERROR_INVALID_PARAMETER) t_note("GetGuiResources flags 0x%lx err %lu", (unsigned long)bad[i], GetLastError());
+        CHECKF(GetLastError() == ERROR_INVALID_PARAMETER || GetLastError() == 0, "flags 0x%lx err %lu", (unsigned long)bad[i], GetLastError());
     }
 }
 TEST(winsta_process_guires_invalid_handle) {
     REQUIRE(U(GetGuiResources));
     SetLastError(0);
+    /* Win10: invalid, bogus and wrong-type handles all give ERROR_INVALID_PARAMETER (87) */
     CHECK(U(GetGuiResources)(NULL, GR_USEROBJECTS) == 0);
-    EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+    EXPECT_ERR(0, ERROR_INVALID_PARAMETER);
     SetLastError(0);
     CHECK(U(GetGuiResources)((HANDLE)(ULONG_PTR)0x7ffc, GR_GDIOBJECTS) == 0);
-    EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+    EXPECT_ERR(0, ERROR_INVALID_PARAMETER);
     SetLastError(0);
     HANDLE ev = CreateEventA(NULL, TRUE, FALSE, NULL);
     SetLastError(0);
     CHECK(U(GetGuiResources)(ev, GR_USEROBJECTS) == 0);
-    EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+    EXPECT_ERR(0, ERROR_INVALID_PARAMETER);
     CloseHandle(ev);
 }
 TEST(winsta_process_guires_pseudo_handle_minus_one) {
@@ -123,7 +129,7 @@ TEST(winsta_process_guires_no_query_rights) {
     SetLastError(0);
     DWORD r = U(GetGuiResources)(h, GR_USEROBJECTS);
     CHECK(r == 0);
-    EXPECT_ERR(0, ERROR_ACCESS_DENIED);
+    EXPECT_ERR(0, ERROR_INVALID_PARAMETER);   /* Win10: 87, not 5, for a handle without query rights */
     CloseHandle(h);
 }
 TEST(winsta_process_guires_limited_rights) {
@@ -271,12 +277,16 @@ TEST(winsta_process_shutdown_reason_query_sizing) {
     if (!U(ShutdownBlockReasonCreate)(w, L"abcdef")) { t_skip("cannot create reason"); U(DestroyWindow)(w); return; }
     WCHAR buf[32]; DWORD n = 0;
     SetLastError(0);
-    CHECK(!UN(ShutdownBlockReasonQuery)(w, NULL, &n));
-    EXPECT_ERR(0, ERROR_INSUFFICIENT_BUFFER);
+    /* Win10: a query with a NULL or too-small buffer succeeds (no last error) and reports the
+     * needed count in n (7 incl. terminator) */
+    BOOL qr = UN(ShutdownBlockReasonQuery)(w, NULL, &n);
+    t_note("Query(NULL buf) = %d n=%lu err=%lu", qr, (unsigned long)n, GetLastError());
+    CHECK(qr);
     EXPECT_EQ(n, 7);
     n = 6; SetLastError(0);
-    CHECK(!UN(ShutdownBlockReasonQuery)(w, buf, &n));
-    EXPECT_ERR(0, ERROR_INSUFFICIENT_BUFFER);
+    qr = UN(ShutdownBlockReasonQuery)(w, buf, &n);
+    t_note("Query(small buf) = %d n=%lu err=%lu", qr, (unsigned long)n, GetLastError());
+    CHECK(qr);
     EXPECT_EQ(n, 7);
     n = 7; memset(buf, 0, sizeof buf);
     CHECK(UN(ShutdownBlockReasonQuery)(w, buf, &n));
@@ -479,7 +489,8 @@ TEST(winsta_process_shellhook_deregister_unregistered) {
     REQUIRE(UN(DeregisterShellHookWindow));
     HWND w = mkw(WS_POPUP);
     SetLastError(0);
-    CHECK(!UN(DeregisterShellHookWindow)(w));
+    /* Win10: deregistering a window that was never registered returns TRUE */
+    CHECK(UN(DeregisterShellHookWindow)(w));
     t_note("Deregister of never-registered window err %lu", GetLastError());
     U(DestroyWindow)(w);
 }
@@ -775,6 +786,9 @@ TEST(winsta_process_disable_ghosting) {
     HWND w = mkw(WS_POPUP);
     CHECK(w != NULL);
     CHECK(U(SendMessageA)(w, WM_NULL, 0, 0) == 0);
+    /* this thread has not touched its queue for a long time (earlier tests); IsHungAppWindow
+     * is true after 5 s without queue activity, so service the queue first */
+    t_pump();
     CHECK(U(IsHungAppWindow) ? !U(IsHungAppWindow)(w) : 1);
     if (w) U(DestroyWindow)(w);
 }

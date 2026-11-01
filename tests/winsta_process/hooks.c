@@ -368,7 +368,7 @@ TEST(winsta_process_hook_callwndproc_sendmessage) {
     hev *e = NULL;
     for (int i = 0; i < hk_count(K_CWP); i++) { hev *x = hk_find(K_CWP, i); if (x->a == WM_USER + 1) { e = x; break; } }
     CHECK(e != NULL);
-    if (e) { EXPECT_EQ(e->code, HC_ACTION); EXPECT_NE(e->wp, 0); EXPECT_EQ(e->b, (LONG_PTR)w); EXPECT_EQ(e->c, 5); }
+    if (e) { EXPECT_EQ(e->code, HC_ACTION); EXPECT_EQ(e->wp, 0); /* Win10: 0 for a message sent by the hooked thread itself (opposite of the MSDN text) */ EXPECT_EQ(e->b, (LONG_PTR)w); EXPECT_EQ(e->c, 5); }
     int i_hook = -1, i_wnd = -1;
     for (LONG i = 0; i < g_n; i++) {
         if (g_log[i].kind == K_CWP && g_log[i].a == WM_USER + 1) i_hook = (int)i;
@@ -388,7 +388,7 @@ TEST(winsta_process_hook_callwndprocret_result) {
     hev *e = NULL;
     for (int i = 0; i < hk_count(K_CWPRET); i++) { hev *x = hk_find(K_CWPRET, i); if (x->a == WM_USER + 1) { e = x; break; } }
     CHECK(e != NULL);
-    if (e) { EXPECT_EQ(e->code, HC_ACTION); EXPECT_NE(e->wp, 0); EXPECT_EQ(e->b, (LONG_PTR)w); EXPECT_EQ(e->c, 0x1234); }
+    if (e) { EXPECT_EQ(e->code, HC_ACTION); EXPECT_EQ(e->wp, 0); /* Win10: 0 for a same-thread send */ EXPECT_EQ(e->b, (LONG_PTR)w); EXPECT_EQ(e->c, 0x1234); }
     int i_hook = -1, i_wnd = -1;
     for (LONG i = 0; i < g_n; i++) {
         if (g_log[i].kind == K_CWPRET && g_log[i].a == WM_USER + 1) i_hook = (int)i;
@@ -748,7 +748,8 @@ TEST(winsta_process_hook_on_other_thread_runs_in_that_thread) {
         (void)r;
         hev *e = hk_find(K_CWP, 0);
         CHECK(e != NULL);
-        if (e) { EXPECT_EQ(e->tid, w->tid); EXPECT_EQ(e->wp, 0); }
+        /* Win10: wParam is nonzero (1) when the message came from another thread */
+        if (e) { EXPECT_EQ(e->tid, w->tid); EXPECT_NE(e->wp, 0); }
         CHECK(U(UnhookWindowsHookEx)(h));
     }
     hkw_stop(w);
@@ -760,7 +761,7 @@ TEST(winsta_process_hook_cross_thread_sendmessage_wparam_zero) {
     U(SendMessageA)(w->hwnd, WM_USER + 21, 0, 0);
     hev *e = hk_find(K_CWP, 0);
     CHECK(e != NULL);
-    if (e) { EXPECT_EQ(e->tid, w->tid); EXPECT_EQ(e->wp, 0); }
+    if (e) { EXPECT_EQ(e->tid, w->tid); EXPECT_NE(e->wp, 0); }   /* Win10: nonzero (1) for a cross-thread send */
     hkw_stop(w);
 }
 TEST(winsta_process_hook_dies_with_thread) {

@@ -41,7 +41,7 @@ TEST(winsta_process_winevent_null_proc) {
     HWINEVENTHOOK h = U(SetWinEventHook)(EVENT_OBJECT_CREATE, EVENT_OBJECT_DESTROY, NULL, NULL, 0, 0, WINEVENT_OUTOFCONTEXT);
     CHECK(h == NULL);
     t_note("SetWinEventHook(NULL proc) err %lu", GetLastError());
-    EXPECT_ERR(0, ERROR_INVALID_PARAMETER);
+    EXPECT_ERR(0, ERROR_INVALID_FILTER_PROC);   /* Win10: 1427, not 87 */
     if (h) U(UnhookWinEvent)(h);
 }
 TEST(winsta_process_winevent_min_greater_than_max) {
@@ -409,7 +409,7 @@ TEST(winsta_process_winevent_delivered_to_installing_thread) {
     U(NotifyWinEvent)(0xA001, x.w, OBJID_CLIENT, 9);
     for (int i = 0; i < 400 && !g_nev; i++) Sleep(5);
     EXPECT_EQ(g_nev, 1);
-    if (g_nev > 0) { EXPECT_EQ(g_ev[0].tid, x.tid); EXPECT_EQ(g_ev[0].child, 9); EXPECT_EQ(g_ev[0].thr, GetCurrentThreadId()); }
+    if (g_nev > 0) { EXPECT_EQ(g_ev[0].tid, x.tid); EXPECT_EQ(g_ev[0].child, 9); EXPECT_EQ(g_ev[0].thr, x.tid); }   /* out-of-context events run on the installing thread (x.tid), not the notifier */
     SetEvent(x.go);
     WaitForSingleObject(x.th, 8000);
     CloseHandle(x.th); CloseHandle(x.ready); CloseHandle(x.go);

@@ -8,7 +8,7 @@ int wm_fail_nccreate, wm_fail_create, wm_minmax_on;
 MINMAXINFO wm_minmax, wm_mmi_seen;
 int wm_mmi_count;
 CREATESTRUCTA wm_cs_nc, wm_cs_cr;
-char wm_name_nc[128], wm_name_cr[128];
+char wm_name_nc[128], wm_name_cr[128], wm_cls_nc[128], wm_cls_cr[128];
 int wm_seen_nc, wm_seen_cr;
 
 void wm_logclear(void) { g_nlog = 0; }
@@ -42,8 +42,8 @@ static LRESULT CALLBACK wm_proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             }
             g_log[g_nlog].m = m; g_log[g_nlog].h = h; g_log[g_nlog].w = w; g_log[g_nlog].l = l; g_nlog++; }
     }
-    if (m == WM_NCCREATE) { CREATESTRUCTA *c = (CREATESTRUCTA *)l; wm_cs_nc = *c; wm_seen_nc++; wm_name_nc[0] = 0; if (c->lpszName && !IS_INTRESOURCE(c->lpszName)) lstrcpynA(wm_name_nc, c->lpszName, 128); }
-    if (m == WM_CREATE) { CREATESTRUCTA *c = (CREATESTRUCTA *)l; wm_cs_cr = *c; wm_seen_cr++; wm_name_cr[0] = 0; if (c->lpszName && !IS_INTRESOURCE(c->lpszName)) lstrcpynA(wm_name_cr, c->lpszName, 128); }
+    if (m == WM_NCCREATE) { CREATESTRUCTA *c = (CREATESTRUCTA *)l; wm_cs_nc = *c; wm_seen_nc++; wm_cls_nc[0] = 0; if (c->lpszClass && !IS_INTRESOURCE(c->lpszClass)) lstrcpynA(wm_cls_nc, c->lpszClass, 128); wm_name_nc[0] = 0; if (c->lpszName && !IS_INTRESOURCE(c->lpszName)) lstrcpynA(wm_name_nc, c->lpszName, 128); }
+    if (m == WM_CREATE) { CREATESTRUCTA *c = (CREATESTRUCTA *)l; wm_cs_cr = *c; wm_seen_cr++; wm_cls_cr[0] = 0; if (c->lpszClass && !IS_INTRESOURCE(c->lpszClass)) lstrcpynA(wm_cls_cr, c->lpszClass, 128); wm_name_cr[0] = 0; if (c->lpszName && !IS_INTRESOURCE(c->lpszName)) lstrcpynA(wm_name_cr, c->lpszName, 128); }
     if (m == WM_NCCREATE && wm_fail_nccreate) return FALSE;
     if (m == WM_CREATE && wm_fail_create) return -1;
     if (m == WM_WINDOWPOSCHANGING && wm_wpc_mode) {

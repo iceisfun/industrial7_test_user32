@@ -362,7 +362,10 @@ TEST(winsta_process_setprocwinsta_atoms_per_station) {
     CHECK(U(SetProcessWindowStation)(h));
     char buf[64] = "";
     UINT r = GlobalGetAtomNameA(a1, buf, sizeof buf);   /* atom table belongs to the winsta */
-    CHECK(r == 0 || strcmp(buf, "t32wsp_atom_probe") != 0 || a1 == 0);
+    /* Win10: the global atom table is not switched by SetProcessWindowStation; the atom
+     * still resolves from the new station (observed), so no per-station isolation here */
+    t_note("atom resolved after SetProcessWindowStation: %u '%s'", r, buf);
+    CHECK(r == 17 && !strcmp(buf, "t32wsp_atom_probe"));
     ATOM a2 = GlobalAddAtomA("t32wsp_atom_probe2");
     CHECK(a2 != 0);
     CHECK(U(SetProcessWindowStation)(orig));

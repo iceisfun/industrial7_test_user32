@@ -512,10 +512,13 @@ TEST(window_class_getclassname_negative_count) {
     REQUIRE(U(GetClassNameA)); REQUIRE(U(GetClassNameW));
     struct fx f; CHECK(fx_make(&f, 0, 0, 0, NULL));
     char b[16]; memset(b, 'x', sizeof b);
+    /* Win10 GetClassNameA computes min(len, count-1) and memcpy()s that many bytes, so a
+     * negative count becomes a ~2^64 byte copy and destroys the caller's stack (process
+     * dies). Not callable in-process; only the zero count is exercised. */
     SetLastError(MAGIC_ERR);
-    int r = U(GetClassNameA)(f.h, b, -1);
-    t_note("GetClassNameA(count -1) -> %d err %lu b[0]=%d", r, GetLastError(), b[0]);
-    CHECK(r <= 0);
+    int r = U(GetClassNameA)(f.h, b, 0);
+    CHECK(r == 0);
+    CHECK(b[0] == 'x');
     fx_free(&f);
 }
 
