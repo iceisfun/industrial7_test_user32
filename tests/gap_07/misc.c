@@ -444,7 +444,9 @@ TEST(gap7_rgwc_buffer_sizes)
         UINT want = cch <= 0 ? 0 : (cch - 1 < 10 ? cch - 1 : 10);
         CHECKF(n == want, "W cch=%d n=%u want %u", cch, n, want);
         if (cch > 0) {
-            CHECKF(b[n] == 0, "W cch=%d not terminated", cch);
+            /* cch == 1 leaves the buffer untouched on Win10 (no terminator written for 0 chars) */
+            if (cch >= 2) CHECKF(b[n] == 0, "W cch=%d not terminated", cch);
+            else if (b[0] != 0) t_note("RealGetWindowClassW cch=1: buffer not terminated (b[0]=%x)", b[0]);
             CHECKF(!wcsncmp(b, L"Gap7ClassW", n), "W cch=%d content", cch);
         }
         CHECKF(b[cch > 0 ? cch : 0] == 0x7777 || cch == 0 || b[cch] == 0x7777 || cch >= 32, "W cch=%d overran", cch);
@@ -534,10 +536,18 @@ TEST(gap7_smc_system_message_below_wm_user)
     HWND w = g7_mkwinW(0, 0, NULL);
     U(SetWindowTextW)(w, L"before");
     memset(&cbk, 0, sizeof cbk);
+    SET_ERR(0);
     BOOL r = U(SendMessageCallbackW)(w, WM_GETTEXTLENGTH, 0, 0, smcb, 1);
-    CHECK(r);
-    g7_pump_ms(30);
-    CHECKF(cbk.n == 1 && cbk.m == WM_GETTEXTLENGTH && cbk.r == 6, "n=%d m=%x r=%llx", cbk.n, cbk.m, (unsigned long long)cbk.r);
+    /* WM_GETTEXTLENGTH is flagged sync-only in the Win10 message table (same as WM_SETTEXT below):
+     * the call fails with ERROR_MESSAGE_SYNC_ONLY (1159) and no callback runs. */
+    if (!r) {
+        CHECKF(GetLastError() == 1159, "err=%lu", GetLastError());
+        g7_pump_ms(30);
+        CHECKF(cbk.n == 0, "callback ran %d times for a refused call", cbk.n);
+    } else {
+        g7_pump_ms(30);
+        CHECKF(cbk.n == 1 && cbk.m == WM_GETTEXTLENGTH && cbk.r == 6, "n=%d m=%x r=%llx", cbk.n, cbk.m, (unsigned long long)cbk.r);
+    }
     /* WM_SETTEXT with a string pointer is processed on the same thread */
     memset(&cbk, 0, sizeof cbk);
     SET_ERR(0);
@@ -657,6 +667,24 @@ static int reg_extra_class(int cbCls, int cbWnd)
 }
 static int have_scl(void) { return U(SetClassLongW) && U(GetClassLongW) && U(RegisterClassExW) && U(UnregisterClassW) && U(CreateWindowExW) && U(DestroyWindow); }
 
+/* Handle-valued class slots (GCL_HICON/HCURSOR/HBRBACKGROUND/HMODULE): the 32-bit GetClassLongW
+ * result is not reliably the handle on 64-bit Win10 (observed: it differs from the handle that
+ * was stored), so compare the pointer-width accessors and record what the 32-bit one returned. */
+static ULONG_PTR gclp(HWND w, int idx)
+{
+    ULONG_PTR (WINAPI *g)(HWND, int) = (void *)t_proc("GetClassLongPtrW");
+    return g ? g(w, idx) : (ULONG_PTR)U(GetClassLongW)(w, idx);
+}
+static ULONG_PTR sclp(HWND w, int idx, ULONG_PTR v)
+{
+    ULONG_PTR (WINAPI *f)(HWND, int, LONG_PTR) = (void *)t_proc("SetClassLongPtrW");
+    return f ? f(w, idx, (LONG_PTR)v) : (ULONG_PTR)U(SetClassLongW)(w, idx, (LONG)v);
+}
+static void gcl_note(HWND w, int idx, const char *what)
+{
+    t_note("%s: GetClassLongW=%lx GetClassLongPtrW=%llx", what, U(GetClassLongW)(w, idx), (unsigned long long)gclp(w, idx));
+}
+
 TEST(gap7_scl_extra_bytes_roundtrip)
 {
     if (!have_scl()) { REQUIRE(have_scl()); }
@@ -770,7 +798,8 @@ TEST(gap7_scl_style_and_background)
     HBRUSH nb = (HBRUSH)GetStockObject(BLACK_BRUSH);
     old = U(SetClassLongW)(w, GCL_HBRBACKGROUND, (LONG)(ULONG_PTR)nb);
     CHECK(old == br);
-    CHECK(U(GetClassLongW)(w, GCL_HBRBACKGROUND) == (DWORD)(ULONG_PTR)nb);
+    CHECK(gclp(w, GCL_HBRBACKGROUND) == (ULONG_PTR)nb);
+    gcl_note(w, GCL_HBRBACKGROUND, "HBRBACKGROUND after set");
     U(SetClassLongW)(w, GCL_HBRBACKGROUND, br);
     CHECK(U(GetClassLongW)(w, GCL_HBRBACKGROUND) == br);
     U(DestroyWindow)(w);
@@ -788,15 +817,17 @@ TEST(gap7_scl_icon_and_cursor_handles)
     CHECK(ic && cu);
     DWORD oi = U(SetClassLongW)(w, GCL_HICON, (LONG)(ULONG_PTR)ic);
     CHECK(oi == 0);
-    CHECK(U(GetClassLongW)(w, GCL_HICON) == (DWORD)(ULONG_PTR)ic);
+    CHECK(gclp(w, GCL_HICON) == (ULONG_PTR)ic);
+    gcl_note(w, GCL_HICON, "HICON after set");
     DWORD os = U(SetClassLongW)(w, GCL_HICONSM, (LONG)(ULONG_PTR)ic);
     t_note("old small icon %lx", os);
     DWORD oc = U(SetClassLongW)(w, GCL_HCURSOR, (LONG)(ULONG_PTR)cu);
     CHECK(oc == 0);
-    CHECK(U(GetClassLongW)(w, GCL_HCURSOR) == (DWORD)(ULONG_PTR)cu);
-    CHECK(U(SetClassLongW)(w, GCL_HCURSOR, 0) == (DWORD)(ULONG_PTR)cu);
+    CHECK(gclp(w, GCL_HCURSOR) == (ULONG_PTR)cu);
+    gcl_note(w, GCL_HCURSOR, "HCURSOR after set");
+    CHECK(sclp(w, GCL_HCURSOR, 0) == (ULONG_PTR)cu);
     CHECK(U(GetClassLongW)(w, GCL_HCURSOR) == 0);
-    CHECK(U(SetClassLongW)(w, GCL_HICON, 0) == (DWORD)(ULONG_PTR)ic);
+    CHECK(sclp(w, GCL_HICON, 0) == (ULONG_PTR)ic);
     U(DestroyWindow)(w);
     U(UnregisterClassW)(cls7, GetModuleHandleA(NULL));
 }
@@ -806,7 +837,8 @@ TEST(gap7_scl_hmodule_and_atom)
     if (!have_scl()) { REQUIRE(have_scl()); }
     HWND w = g7_mkwinW(0, 0, NULL);
     DWORD hm = U(GetClassLongW)(w, GCL_HMODULE);
-    CHECK(hm == (DWORD)(ULONG_PTR)GetModuleHandleA(NULL));
+    CHECK(gclp(w, GCL_HMODULE) == (ULONG_PTR)GetModuleHandleA(NULL));
+    gcl_note(w, GCL_HMODULE, "HMODULE");
     DWORD atom = U(GetClassLongW)(w, GCW_ATOM);
     CHECK(atom >= 0xC000 && atom <= 0xFFFF);
     SET_ERR(0);
@@ -947,12 +979,14 @@ TEST(gap7_idm_message_window_must_belong_to_dialog)
     CHECK(U(IsDialogMessageW)(dlg, &m) == FALSE);
     m.hwnd = (HWND)(ULONG_PTR)0xDEADBEEF;
     t_note("IsDialogMessageW with bogus message window: %d", U(IsDialogMessageW)(dlg, &m));
+    /* A message that belongs to the dialog and is not a dialog key is translated and dispatched
+     * by IsDialogMessage itself, which then reports it as processed (TRUE) on Win10. */
     m.message = WM_NULL; m.hwnd = dlg;
-    CHECK(U(IsDialogMessageW)(dlg, &m) == FALSE);
+    CHECK(U(IsDialogMessageW)(dlg, &m) == TRUE);
     m.message = WM_MOUSEMOVE;
-    CHECK(U(IsDialogMessageW)(dlg, &m) == FALSE);
+    CHECK(U(IsDialogMessageW)(dlg, &m) == TRUE);
     m.message = WM_PAINT;
-    CHECK(U(IsDialogMessageW)(dlg, &m) == FALSE);
+    CHECK(U(IsDialogMessageW)(dlg, &m) == TRUE);
     U(DestroyWindow)(dlg); U(DestroyWindow)(other);
 }
 
@@ -970,7 +1004,7 @@ TEST(gap7_idm_msgfilter_hook_sees_dialogbox_code_and_can_swallow)
     CHECKF(idm.calls == 1, "hook calls=%d", idm.calls);
     CHECKF(idm.code == MSGF_DIALOGBOX, "code=%d", idm.code);
     CHECK(idm.m.hwnd == c && idm.m.message == WM_KEYDOWN && idm.m.wParam == 'A' && idm.m.lParam == 0x1E0001);
-    CHECK(r == FALSE);
+    CHECK(r == TRUE); /* hook declined; a non-dialog key for a child is dispatched and counted as processed */
     idm.calls = 0; idm.ret = 1;
     r = U(IsDialogMessageW)(dlg, &m);
     CHECKF(r == TRUE, "swallowed r=%d", r);

@@ -79,3 +79,13 @@ int g7_is_wine(void)
     HMODULE n = GetModuleHandleA("ntdll.dll");
     return n && GetProcAddress(n, "wine_get_version") != NULL;
 }
+
+/* Discard whatever the system queued for this thread (e.g. WM_DWM* notifications Win10 posts
+ * on window creation) so message-order assertions only see the messages the test posts. */
+void g7_drain(void)
+{
+    MSG m;
+    BOOL (WINAPI *pk)(LPMSG, HWND, UINT, UINT, UINT) = (void *)t_proc("PeekMessageW");
+    if (!pk) return;
+    for (int i = 0; i < 1000 && pk(&m, NULL, 0, 0, PM_REMOVE); i++) {}
+}
