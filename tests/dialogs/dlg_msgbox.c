@@ -70,7 +70,14 @@ static void mb_observe(HWND box) {
 }
 static void mb_do(HWND box, int act, int id) {
     switch (act) {
-    case ACT_CLICK: { HWND b = GetDlgItem(box, id); if (b) SendMessageW(b, BM_CLICK, 0, 0); else PostMessageW(box, WM_COMMAND, id, 0); break; }
+    case ACT_CLICK: {
+        HWND b = GetDlgItem(box, id);
+        /* Win10 22H2: the single button of an MB_OK box has the id IDCANCEL (a click still answers IDOK); clicking IDOK
+         * by posting WM_COMMAND leaves the box open until the watchdog ends it */
+        if (!b && id == IDOK) b = GetDlgItem(box, IDCANCEL);
+        if (b) SendMessageW(b, BM_CLICK, 0, 0); else PostMessageW(box, WM_COMMAND, id, 0);
+        break;
+    }
     case ACT_CLOSE: PostMessageW(box, WM_CLOSE, 0, 0); break;
     case ACT_CMD: PostMessageW(box, WM_COMMAND, id, 0); break;
     case ACT_KEYDOWN_FOCUS: { HWND f = GetFocus(); PostMessageW(f ? f : box, WM_KEYDOWN, id, 0); break; }
