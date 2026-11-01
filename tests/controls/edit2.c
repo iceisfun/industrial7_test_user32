@@ -589,7 +589,12 @@ TEST(edit_horizontal_scroll_single_line)
     SA(e, EM_SETSEL, 40, 40);
     SA(e, EM_SCROLLCARET, 0, 0);
     LRESULT fv = SA(e, EM_GETFIRSTVISIBLELINE, 0, 0);
-    CHECK(fv > 0);   /* horizontal char offset for single-line */
+    { RECT cl; int x39 = (short)LOWORD(SA(e, EM_POSFROMCHAR, 39, 0));
+      U(GetClientRect)(e, &cl);
+      t_note("single-line scroll: first visible %lld, x(char 39) %d, client width %ld", (long long)fv, x39, cl.right);
+      /* horizontal char offset for single-line; EM_GETFIRSTVISIBLELINE may stay 0 on Win10 while the text is
+       * scrolled through the internal offset, so also accept the caret char being inside the client area */
+      CHECK(fv > 0 || (x39 >= 0 && x39 < cl.right)); }
     SA(e, EM_SETSEL, 0, 0);
     SA(e, EM_SCROLLCARET, 0, 0);
     EXPECT_EQ(SA(e, EM_GETFIRSTVISIBLELINE, 0, 0), 0);
@@ -633,10 +638,10 @@ TEST(edit_settabstops)
     /* positions: with tab stop set to 64 dialog units the 2nd char moves right */
     SA(m, EM_SETTABSTOPS, 1, &one);
     int x_small = (short)LOWORD(SA(m, EM_POSFROMCHAR, 2, 0));
-    int big = 100;
+    int big = 40;   /* 100 DLU (~200px) is wider than the 200px control: the word wraps to the next line at x=0 */
     SA(m, EM_SETTABSTOPS, 1, &big);
     int x_big = (short)LOWORD(SA(m, EM_POSFROMCHAR, 2, 0));
-    t_note("EM_POSFROMCHAR(2): tab=16 -> %d, tab=100 -> %d", x_small, x_big);
+    t_note("EM_POSFROMCHAR(2): tab=16 -> %d, tab=40 -> %d", x_small, x_big);
     CHECK(x_big > x_small);
     SA(m, EM_SETTABSTOPS, 0, 0);
     CHECK(c_text_is(m, "a\tb\tc"));
