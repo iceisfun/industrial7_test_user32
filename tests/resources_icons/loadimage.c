@@ -242,7 +242,9 @@ TEST(resources_icons_li_oem_icon_loadimage_sizes)
         CHECKF(ic != NULL, "size %d", sz[i]);
         if (!ic) continue;
         ri_iconsize(ic, &w, &h, NULL, NULL);
-        RI_EQ(w, sz[i]); RI_EQ(h, sz[i]);
+        /* Win10 22H2: the shared OEM icons come back at the system icon size (SM_CXICON) whatever size is asked. */
+        if (sh) { RI_EQ(w, GetSystemMetrics(SM_CXICON)); RI_EQ(h, GetSystemMetrics(SM_CYICON)); }
+        else { RI_EQ(w, sz[i]); RI_EQ(h, sz[i]); }
         if (!sh) CHECK(U(DestroyIcon)(ic));
     }
 }
@@ -288,7 +290,9 @@ TEST(resources_icons_li_oem_icon_size_matrix)
         CHECKF(ic != NULL, "%dx%d", sizes[i][0], sizes[i][1]);
         if (!ic) continue;
         ri_iconsize(ic, &w, &h, NULL, NULL);
-        RI_EQ(w, sizes[i][0]); RI_EQ(h, sizes[i][1]);
+        /* shared OEM icons are always the system icon size on Win10 22H2 */
+        if (sh) { RI_EQ(w, GetSystemMetrics(SM_CXICON)); RI_EQ(h, GetSystemMetrics(SM_CYICON)); }
+        else { RI_EQ(w, sizes[i][0]); RI_EQ(h, sizes[i][1]); }
         if (!sh) U(DestroyIcon)(ic);
     }
 }

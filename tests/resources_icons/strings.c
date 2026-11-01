@@ -190,8 +190,8 @@ TEST(resources_icons_ls_w_bad_module)
     REQUIRE(U(LoadStringW));
     REQUIRE_FIX(m);
     SetLastError(0);
-    RI_EQ(U(LoadStringW)((HINSTANCE)(ULONG_PTR)0x10000, SID(0), buf, 16), 0);
-    t_note("LoadStringW bogus hinstance error=%lu", GetLastError());
+    /* A bogus (unmapped) HINSTANCE is not validated by Win10 22H2 LoadStringW: it faults in the resource
+     * lookup (0xc0000005), so that probe is not part of the corpus. */
     /* a module with no string table of that id */
     RI_EQ(U(LoadStringW)(t_user32(), 0x7FFF, buf, 16), 0);
     EXPECT_ERR(0, ERROR_RESOURCE_NAME_NOT_FOUND);
