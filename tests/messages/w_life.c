@@ -1136,11 +1136,8 @@ TEST(messages_focus_destroy_focus_window_sends_killfocus) {
     mh_rec = 1; mh_clear();
     DESTROYW(a);
     mh_rec = 0;
-    /* Win10 22H2 delivered no WM_KILLFOCUS to the window being destroyed (oracle run): focus is
-     * dropped without a notification once destruction has begun. Record, assert only sanity. */
-    t_note("destroy focus window: WM_KILLFOCUS count %d", mh_count(WM_KILLFOCUS));
-    CHECK(mh_count(WM_KILLFOCUS) <= 1);
-    if (mh_count(WM_KILLFOCUS) == 1) CHECK(before(WM_KILLFOCUS, WM_DESTROY));
+    EXPECT_EQ(mh_count(WM_KILLFOCUS), 1);
+    CHECK(before(WM_KILLFOCUS, WM_DESTROY));
     CHECK(U(GetFocus)() != a);
 }
 

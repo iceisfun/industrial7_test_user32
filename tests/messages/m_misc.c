@@ -447,14 +447,18 @@ TEST(messages_filter_ex_window_allow_disallow_reset) {
     { BOOL rn; SETE(); rn = U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_RESET, NULL);
       t_note("RESET with NULL struct -> %d err %lu", rn, GetLastError()); }
     /* Win10 22H2: MSGFLT_RESET fails with ERROR_INVALID_PARAMETER (87) for a per-window filter, with or
-     * without a struct; probed in both states below, recorded rather than required. */
+     * without a struct; probed in both states below (oracle: FALSE/87 each time). */
     { BOOL rs; cfs.ExtStatus = 0xFFFF; SETE();
       rs = U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_RESET, &cfs);
-      t_note("RESET with struct after DISALLOW -> %d err %lu", rs, GetLastError()); }
+      DWORD e = GetLastError();
+      t_note("RESET with struct after DISALLOW -> %d err %lu", rs, e);
+      CHECK(!rs); EXPECT_EQ(e, ERROR_INVALID_PARAMETER); }
     CHECK(U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_ALLOW, NULL) == TRUE);
     { BOOL rs; cfs.ExtStatus = 0xFFFF; SETE();
       rs = U(ChangeWindowMessageFilterEx)(h, m, MSGFLT_RESET, &cfs);
-      t_note("RESET with struct after ALLOW -> %d err %lu", rs, GetLastError()); }
+      DWORD e = GetLastError();
+      t_note("RESET with struct after ALLOW -> %d err %lu", rs, e);
+      CHECK(!rs); EXPECT_EQ(e, ERROR_INVALID_PARAMETER); }
     mh_kill(h);
 }
 
