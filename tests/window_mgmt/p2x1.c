@@ -218,7 +218,7 @@ TEST(wm_x1_redraw_rect_and_region_precedence) {
     CHECKF(rect_eq(&r, 10, 12, 40, 44), "rect update got %ld,%ld,%ld,%ld", r.left, r.top, r.right, r.bottom);
     px_settle(h);
     /* the region wins over the rectangle when both are given */
-    HRGN rg = U(CreateRectRgn)(0, 0, 5, 6);
+    HRGN rg = CreateRectRgn(0, 0, 5, 6);
     CHECK(rg != NULL);
     CHECK(U(RedrawWindow)(h, &prc, rg, RDW_INVALIDATE));
     CHECK(U(GetUpdateRect)(h, &r, FALSE));
@@ -241,7 +241,8 @@ TEST(wm_x1_redraw_updatenow_synchronous) {
     CHECK(U(RedrawWindow)(h, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW));
     EQ(px_paint, 1);
     EQ(px_erase, 1);
-    CHECK(px_ferase_last != 0);
+    /* the class has a background brush: DefWindowProc erases inside BeginPaint, so fErase is already FALSE */
+    CHECK(px_ferase_last == 0);
     wm_destroy(h);
 }
 
@@ -305,7 +306,7 @@ TEST(wm_x1_scrollex_invalidate_region) {
     NEED(GetUpdateRect);
     HWND h = px_mk(0, WS_POPUP, 300, 200, 150, 100, NULL);
     px_settle(h);
-    HRGN rg = U(CreateRectRgn)(0, 0, 0, 0);
+    HRGN rg = CreateRectRgn(0, 0, 0, 0);
     RECT up, r;
     memset(&up, 0xCC, sizeof up);
     int rc = U(ScrollWindowEx)(h, 20, 0, NULL, NULL, rg, &up, SW_INVALIDATE);
@@ -458,8 +459,12 @@ TEST(wm_x1_modfname_invalid_windows) {
 TEST(wm_x1_modfname_instance_override_note) {
     NEED(GetWindowModuleFileNameA);
     HMODULE k = GetModuleHandleA("kernel32.dll");
-    HWND h = U(CreateWindowExA)(0, wm_cls(), "m", WS_OVERLAPPEDWINDOW, 50, 50, 100, 80, NULL, NULL, k, NULL);
-    CHECK(h != NULL);
+    /* a class registered for the exe is not found with another hInstance unless it is CS_GLOBALCLASS */
+    WNDCLASSA gc; memset(&gc, 0, sizeof gc);
+    gc.style = CS_GLOBALCLASS; gc.lpfnWndProc = DefWindowProcA; gc.hInstance = GetModuleHandleA(NULL); gc.lpszClassName = "WmX1GlobalMod";
+    U(RegisterClassA)(&gc);
+    HWND h = U(CreateWindowExA)(0, "WmX1GlobalMod", "m", WS_OVERLAPPEDWINDOW, 50, 50, 100, 80, NULL, NULL, k, NULL);
+    CHECKF(h != NULL, "err %lu", GetLastError());
     if (h) {
         char a[MAX_PATH], b[MAX_PATH];
         UINT n = U(GetWindowModuleFileNameA)(h, a, sizeof a);
