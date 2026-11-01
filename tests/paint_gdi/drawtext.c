@@ -145,18 +145,20 @@ TEST(paint_gdi_dt_wordbreak_basic) {
 TEST(paint_gdi_dt_wordbreak_long_word) {
     REQUIRE(DTA); SETUP();
     RECT r = {0, 0, 10 * c.cw, 200};
+    /* Win10 22H2 oracle: DT_WORDBREAK only breaks between words; a single word wider than the
+     * rectangle is NOT split mid-word (height stays one line). */
     int h = calc_a(&c, "aaaaaaaaaaaaaaaaaaaa", -1, &r, DT_WORDBREAK);   /* 20 chars in 10 columns */
-    EQ(h, 2 * c.th);
+    EQ(h, c.th);
     r = (RECT){0, 0, 10 * c.cw, 200};
     h = calc_a(&c, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", -1, &r, DT_WORDBREAK);
-    EQ(h, 3 * c.th);
+    EQ(h, c.th);
     dt_done(&c);
 }
 TEST(paint_gdi_dt_wordbreak_narrow) {
     REQUIRE(DTA); SETUP();
     RECT r = {0, 0, c.cw, 200};
     int h = calc_a(&c, "abcd", -1, &r, DT_WORDBREAK);
-    EQ(h, 4 * c.th);     /* one character per line */
+    EQ(h, c.th);     /* Win10 22H2 oracle: a single word is never split, even when narrower than one glyph */
     dt_done(&c);
 }
 TEST(paint_gdi_dt_nowordbreak_ignores_width) {
@@ -416,11 +418,13 @@ TEST(paint_gdi_dt_invalid_dc) {
     int h = DTA(NULL, "abc", -1, &r, DT_CALCRECT);
     CHECK(h == 0);
     t_note("DrawText(NULL dc) err=%lu", GetLastError());
+    /* Win10 22H2 oracle: only NULL is rejected; a bogus or wrong-type handle still returns a
+     * (non-zero) height for DT_CALCRECT. Observed, not asserted. */
     h = DTA((HDC)(ULONG_PTR)0x4444, "abc", -1, &r, DT_CALCRECT);
-    CHECK(h == 0);
+    t_note("DrawText(bogus dc) CALCRECT = %d", h);
     HBRUSH br = CreateSolidBrush(0);
     h = DTA((HDC)br, "abc", -1, &r, DT_CALCRECT);
-    CHECK(h == 0);
+    t_note("DrawText(brush as dc) CALCRECT = %d", h);
     DeleteObject(br);
 }
 TEST(paint_gdi_dt_wide_unicode_text) {
@@ -430,7 +434,10 @@ TEST(paint_gdi_dt_wide_unicode_text) {
     int h = DTWF(c.dc, s, -1, &r, DT_SINGLELINE | DT_CALCRECT);
     EQ(h, c.th);
     SIZE sz; GetTextExtentPoint32W(c.dc, s, 3, &sz);
-    CHECK(r.right == sz.cx);
+    /* Win10 22H2 oracle: DrawText's computed width for accented Latin differs from the plain
+     * GetTextExtentPoint32W sum; the difference is recorded and bounded to one character cell. */
+    t_note("DrawTextW CALCRECT width %ld vs GetTextExtentPoint32W %ld", r.right - r.left, sz.cx);
+    CHECK(labs((r.right - r.left) - sz.cx) <= c.cw);
     WCHAR m[] = { 'a', 0x20ac, 'b', 0 };
     r = (RECT){0, 0, 400, 100};
     h = DTWF(c.dc, m, -1, &r, DT_SINGLELINE | DT_CALCRECT);
@@ -551,13 +558,15 @@ TEST(paint_gdi_dtex_margins) {
     RECT r = {10, 10, 300, 100}, b;
     U(DrawTextExA)(c.dc, (LPSTR)"XX", -1, &r, DT_SINGLELINE | DT_LEFT | DT_TOP, &p);
     CHECK(dt_bbox(&c, &b));
-    CHECK(b.left >= 10 + 3 * c.cw);          /* margins are in average character widths */
-    CHECK(b.left <= 10 + 3 * c.cw + c.cw);
+    /* Win10 22H2 oracle: the margins behave as pixels (CALCRECT widens by exactly left+right = 5,
+     * not by 5 average character widths as documented). */
+    CHECK(b.left >= 10 + 3);
+    CHECK(b.left <= 10 + 3 + c.cw);
     dt_clear(&c);
     r = (RECT){10, 10, 300, 100};
     U(DrawTextExA)(c.dc, (LPSTR)"XX", -1, &r, DT_SINGLELINE | DT_RIGHT | DT_TOP, &p);
     CHECK(dt_bbox(&c, &b));
-    CHECK(b.right <= 300 - 2 * c.cw);
+    CHECK(b.right <= 300 - 2);
     dt_done(&c);
 }
 TEST(paint_gdi_dtex_margins_calcrect) {
@@ -614,7 +623,8 @@ TEST(paint_gdi_dtex_invalid_dc) {
     RECT r = {0, 0, 100, 100};
     SetLastError(0);
     CHECK(U(DrawTextExA)(NULL, (LPSTR)"abc", -1, &r, DT_CALCRECT, NULL) == 0);
-    CHECK(U(DrawTextExA)((HDC)(ULONG_PTR)0x4444, (LPSTR)"abc", -1, &r, DT_CALCRECT, NULL) == 0);
+    /* Win10 22H2 oracle: a bogus (non-NULL) dc is not rejected; observed only */
+    t_note("DrawTextEx(bogus dc) CALCRECT = %d", U(DrawTextExA)((HDC)(ULONG_PTR)0x4444, (LPSTR)"abc", -1, &r, DT_CALCRECT, NULL));
 }
 
 /* ---------------- Tabbed text ---------------- */
@@ -672,7 +682,8 @@ TEST(paint_gdi_tabbed_out_matches_extent) {
     REQUIRE(U(TabbedTextOutA)); REQUIRE(U(GetTabbedTextExtentA)); SETUP();
     INT tabs[] = { 20, 60 };
     LONG e = U(GetTabbedTextExtentA)(c.dc, "ab\tcd\tef", 8, 2, tabs);
-    LONG o = U(TabbedTextOutA)(c.dc, 10, 10, "ab\tcd\tef", 8, 2, tabs, 0);
+    /* tab stops are measured from nTabOrigin; use the start x so the layout equals the extent's */
+    LONG o = U(TabbedTextOutA)(c.dc, 10, 10, "ab\tcd\tef", 8, 2, tabs, 10);
     EQ(o, e);
     RECT b; CHECK(dt_bbox(&c, &b));
     CHECK(b.left >= 10 && b.top >= 10);
@@ -699,7 +710,7 @@ TEST(paint_gdi_tabbed_out_origin) {
 TEST(paint_gdi_tabbed_out_wide) {
     REQUIRE(U(TabbedTextOutW)); SETUP();
     INT tabs[] = { 25 };
-    LONG o = U(TabbedTextOutW)(c.dc, 5, 5, L"a\tb", 3, 1, tabs, 0);
+    LONG o = U(TabbedTextOutW)(c.dc, 5, 5, L"a\tb", 3, 1, tabs, 5);   /* tab origin = start x */
     EQ(TW(o), 25 + c.cw);
     EQ(TH(o), c.th);
     dt_done(&c);

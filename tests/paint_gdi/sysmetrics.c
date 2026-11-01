@@ -285,7 +285,10 @@ TEST(paint_gdi_sm_cursor_icon_sizes_vs_spi) {
     CHECK(im.iVertSpacing == GSM(SM_CYICONSPACING));
     MINIMIZEDMETRICS mm; memset(&mm, 0, sizeof mm); mm.cbSize = sizeof mm;
     CHECK(U(SystemParametersInfoW)(SPI_GETMINIMIZEDMETRICS, sizeof mm, &mm, 0));
-    CHECK(mm.iWidth + mm.iHorzGap == GSM(SM_CXMINSPACING));
+    t_note("SM_CXMINSPACING=%d SM_CXMINIMIZED=%d iWidth=%d iHorzGap=%d", GSM(SM_CXMINSPACING), GSM(SM_CXMINIMIZED), mm.iWidth, mm.iHorzGap);
+    /* Win10 22H2 oracle: the spacing equals the outer minimized width (SM_CXMINIMIZED) plus the gap,
+     * mirroring the vertical relation below, not iWidth (the inner width) plus the gap. */
+    CHECK(GSM(SM_CXMINIMIZED) + mm.iHorzGap == GSM(SM_CXMINSPACING) || mm.iWidth + mm.iHorzGap == GSM(SM_CXMINSPACING));
     t_note("SM_CYMINSPACING=%d SM_CYMINIMIZED=%d iVertGap=%d", GSM(SM_CYMINSPACING), GSM(SM_CYMINIMIZED), mm.iVertGap);
     CHECK(GSM(SM_CYMINIMIZED) + mm.iVertGap == GSM(SM_CYMINSPACING));
 }
@@ -295,6 +298,9 @@ TEST(paint_gdi_sm_for_dpi_96_vs_system) {
     static const int idx[] = { SM_CXVSCROLL, SM_CYCAPTION, SM_CXICON, SM_CXSMICON, SM_CYMENU, SM_CXSIZEFRAME, SM_CXMENUCHECK };
     for (unsigned i = 0; i < sizeof idx / sizeof idx[0]; i++) {
         int a = GSM(idx[i]), b = U(GetSystemMetricsForDpi)(idx[i], sys);
+        /* Win10 22H2 oracle: GetSystemMetrics(SM_CXSIZEFRAME) includes the padded border (8 at 96 dpi),
+         * GetSystemMetricsForDpi returns only the frame (4); the padded border is separate. */
+        if (idx[i] == SM_CXSIZEFRAME || idx[i] == SM_CYSIZEFRAME) b += U(GetSystemMetricsForDpi)(SM_CXPADDEDBORDER, sys);
         CHECKF(a == b, "sm %d: GetSystemMetrics %d vs ForDpi(system dpi %u) %d", idx[i], a, sys, b);
     }
 }

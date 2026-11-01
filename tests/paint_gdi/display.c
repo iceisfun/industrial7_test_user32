@@ -396,7 +396,9 @@ TEST(paint_gdi_dev_enum_end_of_list) {
 }
 TEST(paint_gdi_dev_enum_bad_cb) {
     NEED_DEV();
-    static const DWORD bad[] = { 0, 1, 4, sizeof(DISPLAY_DEVICEA) - 1, sizeof(DISPLAY_DEVICEA) + 1, 0xffff };
+    /* cb = 0xffff is probed in a child process (paint_gdi_dev_enum_bad_cb_child): on Win10 22H2 it
+     * raises an access violation inside user32, which would take down the whole run. */
+    static const DWORD bad[] = { 0, 1, 4, sizeof(DISPLAY_DEVICEA) - 1, sizeof(DISPLAY_DEVICEA) + 1 };
     for (unsigned i = 0; i < sizeof bad / sizeof bad[0]; i++) {
         DISPLAY_DEVICEA dd; memset(&dd, 0, sizeof dd); dd.cb = bad[i];
         SetLastError(0);
@@ -405,6 +407,37 @@ TEST(paint_gdi_dev_enum_bad_cb) {
     }
     DISPLAY_DEVICEW w; memset(&w, 0, sizeof w); w.cb = sizeof(DISPLAY_DEVICEA);
     t_note("EnumDisplayDevicesW with A-sized cb -> %d", U(EnumDisplayDevicesW)(NULL, 0, &w, 0));
+    /* run the oversized-cb probe out of process, output silenced, with a timeout */
+    {
+        WCHAR exe[MAX_PATH], cmd[MAX_PATH + 64]; STARTUPINFOW si; PROCESS_INFORMATION pi; DWORD code = 0, wr;
+        HANDLE nul = CreateFileW(L"NUL", GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+        SECURITY_ATTRIBUTES sa = { sizeof sa, NULL, TRUE };
+        GetModuleFileNameW(NULL, exe, MAX_PATH);
+        wsprintfW(cmd, L"\"%ls\" paint_gdi_dev_enum_bad_cb_child", exe);
+        SetEnvironmentVariableA("PG_ENUM_CB_CHILD", "1");
+        memset(&si, 0, sizeof si); si.cb = sizeof si;
+        if (nul != INVALID_HANDLE_VALUE) {
+            SetHandleInformation(nul, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+            si.dwFlags = STARTF_USESTDHANDLES; si.hStdOutput = nul; si.hStdError = nul; si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+        }
+        (void)sa;
+        if (CreateProcessW(NULL, cmd, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+            wr = WaitForSingleObject(pi.hProcess, 30000);
+            if (wr != WAIT_OBJECT_0) TerminateProcess(pi.hProcess, 99);
+            GetExitCodeProcess(pi.hProcess, &code);
+            t_note("EnumDisplayDevicesA cb=0xffff in child: wait=%lu exit=0x%lx", wr, code);
+            CloseHandle(pi.hProcess); CloseHandle(pi.hThread);
+        } else t_note("child process unavailable, err=%lu", GetLastError());
+        SetEnvironmentVariableA("PG_ENUM_CB_CHILD", NULL);
+        if (nul != INVALID_HANDLE_VALUE) CloseHandle(nul);
+    }
+}
+/* Child-process half of the test above; does nothing unless launched by it. */
+TEST(paint_gdi_dev_enum_bad_cb_child) {
+    NEED_DEV();
+    if (!GetEnvironmentVariableA("PG_ENUM_CB_CHILD", NULL, 0)) return;
+    DISPLAY_DEVICEA dd; memset(&dd, 0, sizeof dd); dd.cb = 0xffff;
+    U(EnumDisplayDevicesA)(NULL, 0, &dd, 0);
 }
 TEST(paint_gdi_dev_enum_monitors_of_adapter) {
     NEED_DEV();
@@ -506,7 +539,12 @@ TEST(paint_gdi_set_device_name_matches_primary) {
     DEVMODEW dm; memset(&dm, 0, sizeof dm); dm.dmSize = sizeof dm;
     CHECK(U(EnumDisplaySettingsW)(NULL, ENUM_CURRENT_SETTINGS, &dm));
     DEVMODEW dm2; memset(&dm2, 0, sizeof dm2); dm2.dmSize = sizeof dm2;
-    CHECK(U(EnumDisplaySettingsW)(dm.dmDeviceName, ENUM_CURRENT_SETTINGS, &dm2));
+    /* dmDeviceName of EnumDisplaySettings is the display driver name, not a device name usable as
+     * lpszDeviceName (Win10 22H2 rejects it); the adapter name comes from EnumDisplayDevices. */
+    DISPLAY_DEVICEW ad; memset(&ad, 0, sizeof ad); ad.cb = sizeof ad;
+    CHECK(U(EnumDisplayDevicesW)(NULL, 0, &ad, 0));
+    t_note("dmDeviceName [%ls] vs adapter name [%ls]", dm.dmDeviceName, ad.DeviceName);
+    CHECK(U(EnumDisplaySettingsW)(ad.DeviceName, ENUM_CURRENT_SETTINGS, &dm2));
     CHECK(dm2.dmPelsWidth == dm.dmPelsWidth && dm2.dmPelsHeight == dm.dmPelsHeight);
     CHECK(!wcscmp(dm2.dmDeviceName, dm.dmDeviceName));
 }
@@ -610,7 +648,11 @@ TEST(paint_gdi_cds_test_current_mode_ansi) {
     CHECK(U(EnumDisplaySettingsA)(NULL, ENUM_CURRENT_SETTINGS, &dm));
     EQ(U(ChangeDisplaySettingsExA)(NULL, &dm, NULL, CDS_TEST, NULL), DISP_CHANGE_SUCCESSFUL);
     EQ(U(ChangeDisplaySettingsA)(&dm, CDS_TEST), DISP_CHANGE_SUCCESSFUL);
-    EQ(U(ChangeDisplaySettingsExA)((const char *)dm.dmDeviceName, &dm, NULL, CDS_TEST, NULL), DISP_CHANGE_SUCCESSFUL);
+    /* dmDeviceName is the driver name, not an adapter device name (Win10 22H2: DISP_CHANGE_BADPARAM);
+     * use the primary adapter's name from EnumDisplayDevices. */
+    DISPLAY_DEVICEA ad; memset(&ad, 0, sizeof ad); ad.cb = sizeof ad;
+    CHECK(U(EnumDisplayDevicesA)(NULL, 0, &ad, 0));
+    EQ(U(ChangeDisplaySettingsExA)(ad.DeviceName, &dm, NULL, CDS_TEST, NULL), DISP_CHANGE_SUCCESSFUL);
 }
 TEST(paint_gdi_cds_test_every_enumerated_mode) {
     NEED_CDS(); NEED_SET();
@@ -786,11 +828,16 @@ TEST(paint_gdi_dcfg_query_insufficient_buffer) {
     NEED_DC();
     UINT32 np, nm;
     EQ(U(GetDisplayConfigBufferSizes)(QDC_ONLY_ACTIVE_PATHS, &np, &nm), ERROR_SUCCESS);
-    DISPLAYCONFIG_PATH_INFO p[1]; DISPLAYCONFIG_MODE_INFO m[1];
-    UINT32 np0 = 0, nm0 = 0;
+    /* Win10 22H2 oracle: zero element counts are ERROR_INVALID_PARAMETER (87); a non-zero count that is
+     * too small gives ERROR_INSUFFICIENT_BUFFER. Offer one element fewer than needed. */
+    if (np < 1 || nm < 2) { t_skip("active topology too small to under-size the mode array (paths %u modes %u)", np, nm); return; }
+    DISPLAYCONFIG_PATH_INFO *p = (DISPLAYCONFIG_PATH_INFO *)calloc(np, sizeof *p);
+    DISPLAYCONFIG_MODE_INFO *m = (DISPLAYCONFIG_MODE_INFO *)calloc(nm, sizeof *m);
+    UINT32 np0 = np, nm0 = nm - 1;
     LONG r = U(QueryDisplayConfig)(QDC_ONLY_ACTIVE_PATHS, &np0, p, &nm0, m, NULL);
     EQ(r, ERROR_INSUFFICIENT_BUFFER);
     t_note("insufficient: needed paths %u modes %u (real %u/%u)", np0, nm0, np, nm);
+    free(p); free(m);
 }
 TEST(paint_gdi_dcfg_query_invalid) {
     NEED_DC();
