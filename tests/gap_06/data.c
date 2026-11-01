@@ -16,7 +16,15 @@ static int in_user32(const void *p) {
 }
 
 typedef struct { void *phead; void *pOwner; BYTE bType; BYTE bFlags; WORD wUniq; } HE64;
-typedef struct { void *psi; HE64 *aheList; ULONG_PTR heapBase; ULONG_PTR delta; } SHAREDINFO_HEAD;
+/* SHAREDINFO header: psi, aheList, HeEntrySize (ULONG), pDispInfo, ulSharedDelta, then
+ * awmControl[31]. Win10 22H2 reports HeEntrySize 0x20 (entries are wider than HE64),
+ * so the handle table must be indexed by HeEntrySize, never sizeof(HE64). */
+typedef struct { void *psi; HE64 *aheList; ULONG HeEntrySize; ULONG pad; ULONG_PTR pDispInfo; ULONG_PTR delta; } SHAREDINFO_HEAD;
+static HE64 *he_at(const SHAREDINFO_HEAD *s, UINT idx) {
+    ULONG sz = s->HeEntrySize;
+    if (sz < sizeof(HE64) || sz > 256 || (sz & 7)) sz = sizeof(HE64);
+    return (HE64 *)((char *)s->aheList + (size_t)idx * sz);
+}
 
 TEST(gap6_sharedinfo_resolve) {
     void *p = (void *)t_proc("gSharedInfo");
@@ -35,7 +43,8 @@ TEST(gap6_sharedinfo_pointers) {
     CHECK(((ULONG_PTR)s->aheList & 7) == 0);
     CHECK(readable(s->psi, 16));
     CHECK(readable(s->aheList, sizeof(HE64)));
-    t_note("psi=%p ahe=%p heapBase=%p delta=%p", s->psi, s->aheList, (void *)s->heapBase, (void *)s->delta);
+    t_note("psi=%p ahe=%p HeEntrySize=0x%lx pDispInfo=%p delta=%p", s->psi, s->aheList, s->HeEntrySize, (void *)s->pDispInfo, (void *)s->delta);
+    CHECK(s->HeEntrySize >= sizeof(HE64) && s->HeEntrySize <= 256 && !(s->HeEntrySize & 7));
 }
 TEST(gap6_sharedinfo_stable) {
     SHAREDINFO_HEAD *s = (void *)t_proc("gSharedInfo");
@@ -55,7 +64,7 @@ TEST(gap6_sharedinfo_handle_entry_window) {
     HWND w = t_make_window(NULL, WS_OVERLAPPED, 0, 0, 0, 10, 10, NULL);
     if (!w) { t_skip("no window"); return; }
     UINT idx = (UINT)((ULONG_PTR)w & 0xffff);
-    HE64 *e = &s->aheList[idx];
+    HE64 *e = he_at(s, idx);
     if (!readable(e, sizeof *e)) { t_note("entry %u unreadable", idx); DestroyWindow(w); return; }
     t_note("window entry type=%u flags=%02x uniq=%04x hwnd=%p", e->bType, e->bFlags, e->wUniq, w);
     /* TYPE_WINDOW == 1; uniqueness counter is the high word of the handle. */
@@ -65,7 +74,7 @@ TEST(gap6_sharedinfo_handle_entry_window) {
     if (e->phead && readable(e->phead, sizeof(void *) + 4))
         CHECK(*(HWND *)e->phead == w);
     DestroyWindow(w);
-    e = &s->aheList[idx];
+    e = he_at(s, idx);
     if (readable(e, sizeof *e)) t_note("after destroy type=%u", e->bType);
 }
 TEST(gap6_sharedinfo_handle_entry_multiple) {
@@ -77,7 +86,7 @@ TEST(gap6_sharedinfo_handle_entry_multiple) {
     for (int i = 0; i < 8; i++) { w[i] = t_make_window(NULL, WS_OVERLAPPED, 0, 0, 0, 10, 10, NULL); if (w[i]) n++; }
     for (int i = 0; i < 8; i++) {
         if (!w[i]) continue;
-        HE64 *e = &s->aheList[(UINT)((ULONG_PTR)w[i] & 0xffff)];
+        HE64 *e = he_at(s, (UINT)((ULONG_PTR)w[i] & 0xffff));
         if (!readable(e, sizeof *e)) continue;
         CHECKF(e->bType == 1, "win %d type %u", i, e->bType);
         CHECK(e->wUniq == (WORD)(((ULONG_PTR)w[i] >> 16) & 0xffff));
@@ -93,7 +102,7 @@ TEST(gap6_sharedinfo_handle_entry_menu) {
     if (!readable(s, sizeof *s) || !readable(s->aheList, sizeof(HE64))) { t_skip("no table"); return; }
     HMENU m = cm();
     if (!m) { t_skip("no menu"); return; }
-    HE64 *e = &s->aheList[(UINT)((ULONG_PTR)m & 0xffff)];
+    HE64 *e = he_at(s, (UINT)((ULONG_PTR)m & 0xffff));
     if (readable(e, sizeof *e)) {
         t_note("menu entry type=%u", e->bType);
         CHECK(e->bType == 2); /* TYPE_MENU */
@@ -107,7 +116,7 @@ TEST(gap6_sharedinfo_handle_entry_cursor) {
     if (!readable(s, sizeof *s) || !readable(s->aheList, sizeof(HE64))) { t_skip("no table"); return; }
     HICON c = lc(NULL, (LPCSTR)IDC_ARROW);
     if (!c) { t_skip("no cursor"); return; }
-    HE64 *e = &s->aheList[(UINT)((ULONG_PTR)c & 0xffff)];
+    HE64 *e = he_at(s, (UINT)((ULONG_PTR)c & 0xffff));
     if (readable(e, sizeof *e)) {
         t_note("cursor entry type=%u", e->bType);
         CHECK(e->bType == 3); /* TYPE_CURSOR */
@@ -118,15 +127,15 @@ TEST(gap6_sharedinfo_entry_zero) {
     REQUIRE(s);
     if (!readable(s, sizeof *s) || !readable(s->aheList, sizeof(HE64))) { t_skip("no table"); return; }
     /* Slot 0 is never a live object handle. */
-    t_note("entry0 type=%u", s->aheList[0].bType);
+    t_note("entry0 type=%u", he_at(s, 0)->bType);
     CHECK(1);
 }
 TEST(gap6_sharedinfo_message_tables) {
-    /* awmControl[31] follows the first four pointers; each WNDMSG is
+    /* awmControl[31] follows ulSharedDelta (offset 0x28); each WNDMSG is
      * {maxMsgs, abMsgs*}. */
     SHAREDINFO_HEAD *s = (void *)t_proc("gSharedInfo");
     REQUIRE(s);
-    struct WNDMSG { DWORD max; DWORD pad; const BYTE *bits; } *tab = (void *)(s + 1);
+    struct WNDMSG { DWORD max; DWORD pad; const BYTE *bits; } *tab = (void *)((char *)s + 0x28); /* after ulSharedDelta */
     if (!readable(tab, 31 * sizeof *tab)) { t_skip("no table"); return; }
     int nz = 0;
     for (int i = 0; i < 31; i++) {
