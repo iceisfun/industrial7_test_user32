@@ -428,6 +428,12 @@ TEST(gap3_tsfeventaware_invalid_noop) {
     CHECK(GetLastError() == 0x77);
 }
 static DWORD WINAPI tsf_thread(LPVOID p) {
+    /* MakeThreadTSFEventAware dereferences the calling thread's win32k thread
+     * info unconditionally; on a thread that never called into win32k that
+     * pointer is NULL and the call faults (observed on Win10 22H2, AV in the
+     * export). Convert the worker to a GUI thread first. */
+    BOOL (WINAPI *igt)(BOOL) = (void *)t_proc("IsGUIThread");
+    if (igt) igt(TRUE);
     UN(MakeThreadTSFEventAware)(0x1);
     UN(MakeThreadTSFEventAware)(0x1);   /* second time: flag already set -> early return */
     UN(MakeThreadTSFEventAware)(0x2);

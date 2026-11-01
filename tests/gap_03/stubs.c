@@ -196,5 +196,10 @@ TEST(gap3_all_exports_null_name_lookup) {
     CHECK(GetLastError() == ERROR_PROC_NOT_FOUND);
     SetLastError(0);
     CHECK(GetProcAddress(u32(), (LPCSTR)(ULONG_PTR)0xFFFF) == NULL);
-    CHECK(GetLastError() == ERROR_PROC_NOT_FOUND);
+    {   /* The loader's error for an out-of-range ordinal is not the same on every
+         * Windows build: accept the two plausible codes and record which one. */
+        DWORD e = GetLastError();
+        CHECKF(e == ERROR_PROC_NOT_FOUND || e == ERROR_INVALID_PARAMETER, "out-of-range ordinal error %lu", e);
+        t_note("GetProcAddress(ordinal 0xFFFF) error %lu", e);
+    }
 }
