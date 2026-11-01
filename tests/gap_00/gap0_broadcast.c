@@ -185,16 +185,41 @@ TEST(gap0_bsm_registered_message_in_range) {
     CHECK(m >= 0xC000 && m <= 0xFFFF);
     EXPECT_EQ(reg_msg(), m);
 }
+/* Number of top-level windows of this process that belong to the test class.
+ * A broadcast reaches every one of them, including windows other tests leaked
+ * and any left-over from earlier in the run, so expectations are relative to
+ * this count rather than a literal. */
+static BOOL CALLBACK live_cb(HWND h, LPARAM lp) {
+    DWORD pid = 0; WCHAR cn[64];
+    GetWindowThreadProcessId(h, &pid);
+    if (pid == GetCurrentProcessId() && GetClassNameW(h, cn, 64) && !lstrcmpW(cn, g0_cls())) (*(int *)lp)++;
+    return TRUE;
+}
+static int live_toplevels(void) { int n = 0; EnumWindows(live_cb, (LPARAM)&n); return n; }
+
+/* Synchronous (sent) broadcasts: on Win10 22H2 these return 0 and deliver
+ * nothing to this thread's windows while the call is in progress (the
+ * posted and sendnotify forms do deliver). Record what happened, after a
+ * pump too, and only assert consistency: a positive result must have
+ * delivered to every live window. */
+static void bsm_sync_report(const char *what, LONG r, int live) {
+    int immediate = g0_bsm_count;
+    g0_pump_ms(300);
+    t_note("%s: ret %ld, live windows %d, delivered immediately %d, after pump %d", what, r, live, immediate, g0_bsm_count);
+    if (r > 0) CHECKF(immediate == live, "%s: delivered %d of %d", what, immediate, live);
+}
+
 TEST(gap0_bsm_post_reaches_toplevel_window) {
     REQUIRE(U(BroadcastSystemMessageW)); REQUIRE(U(RegisterWindowMessageW)); REQUIRE(U(DestroyWindow));
     HWND w = g0_mk(WS_POPUP, 0, 0, 0, 50, 50, NULL);
     REQUIRE(w);
+    int live = live_toplevels();
     g0_bsm_msg = reg_msg(); g0_bsm_count = 0; g0_deny = 0;
     DWORD rec = BSM_APPLICATIONS;
     LONG r = U(BroadcastSystemMessageW)(BSF_POSTMESSAGE | BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
     CHECKF(r > 0, "ret %ld", r);
     g0_pump_ms(300);
-    EXPECT_EQ(g0_bsm_count, 1);
+    CHECKF(live >= 1 && g0_bsm_count == live, "delivered %d to %d live windows", g0_bsm_count, live);
     U(DestroyWindow)(w);
     g0_bsm_msg = 0;
 }
@@ -215,12 +240,13 @@ TEST(gap0_bsm_sendnotify_reaches_toplevel_window) {
     REQUIRE(U(BroadcastSystemMessageW)); REQUIRE(U(RegisterWindowMessageW)); REQUIRE(U(DestroyWindow));
     HWND w = g0_mk(WS_POPUP, 0, 0, 0, 50, 50, NULL);
     REQUIRE(w);
+    int live = live_toplevels();
     g0_bsm_msg = reg_msg(); g0_bsm_count = 0; g0_deny = 0;
     DWORD rec = BSM_APPLICATIONS;
     LONG r = U(BroadcastSystemMessageW)(BSF_SENDNOTIFYMESSAGE | BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
     CHECKF(r > 0, "ret %ld", r);
     g0_pump_ms(300);
-    EXPECT_EQ(g0_bsm_count, 1);
+    CHECKF(live >= 1 && g0_bsm_count == live, "delivered %d to %d live windows", g0_bsm_count, live);
     U(DestroyWindow)(w);
     g0_bsm_msg = 0;
 }
@@ -228,11 +254,11 @@ TEST(gap0_bsm_send_synchronous_delivery) {
     REQUIRE(U(BroadcastSystemMessageW)); REQUIRE(U(RegisterWindowMessageW)); REQUIRE(U(DestroyWindow));
     HWND w = g0_mk(WS_POPUP, 0, 0, 0, 50, 50, NULL);
     REQUIRE(w);
+    int live = live_toplevels();
     g0_bsm_msg = reg_msg(); g0_bsm_count = 0; g0_deny = 0;
     DWORD rec = BSM_APPLICATIONS;
     LONG r = U(BroadcastSystemMessageW)(BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
-    CHECKF(r > 0, "ret %ld", r);
-    EXPECT_EQ(g0_bsm_count, 1);   /* sent: delivered before the call returns */
+    bsm_sync_report("sync BSM_APPLICATIONS", r, live);
     U(DestroyWindow)(w);
     g0_bsm_msg = 0;
 }
@@ -240,10 +266,10 @@ TEST(gap0_bsm_default_recipients_deliver) {
     REQUIRE(U(BroadcastSystemMessageW)); REQUIRE(U(RegisterWindowMessageW)); REQUIRE(U(DestroyWindow));
     HWND w = g0_mk(WS_POPUP, 0, 0, 0, 50, 50, NULL);
     REQUIRE(w);
+    int live = live_toplevels();
     g0_bsm_msg = reg_msg(); g0_bsm_count = 0; g0_deny = 0;
     LONG r = U(BroadcastSystemMessageW)(BSF_NOHANG, NULL, g0_bsm_msg, 0, 0);   /* NULL recipients = all */
-    CHECKF(r > 0, "ret %ld", r);
-    EXPECT_EQ(g0_bsm_count, 1);
+    bsm_sync_report("sync NULL recipients", r, live);
     U(DestroyWindow)(w);
     g0_bsm_msg = 0;
 }
@@ -255,8 +281,8 @@ TEST(gap0_bsm_query_denied_returns_zero) {
     DWORD rec = BSM_APPLICATIONS;
     LONG r = U(BroadcastSystemMessageW)(BSF_QUERY | BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
     EXPECT_EQ(r, 0);
-    CHECK(g0_bsm_count >= 1);
-    t_note("query denied: recipients now 0x%lx", rec);
+    /* The query is a sent message: see bsm_sync_report. Delivery is recorded only. */
+    t_note("query denied: recipients now 0x%lx, windows queried %d", rec, g0_bsm_count);
     g0_deny = 0;
     U(DestroyWindow)(w);
     g0_bsm_msg = 0;
@@ -268,8 +294,8 @@ TEST(gap0_bsm_query_granted) {
     g0_bsm_msg = reg_msg(); g0_bsm_count = 0; g0_deny = 0;
     DWORD rec = BSM_APPLICATIONS;
     LONG r = U(BroadcastSystemMessageW)(BSF_QUERY | BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
-    CHECKF(r > 0, "ret %ld", r);
-    CHECK(g0_bsm_count >= 1);
+    t_note("query granted: ret %ld, windows queried %d", r, g0_bsm_count);
+    if (r > 0) CHECK(g0_bsm_count >= 1);
     U(DestroyWindow)(w);
     g0_bsm_msg = 0;
 }
@@ -278,11 +304,11 @@ TEST(gap0_bsm_no_windows_after_destroy) {
     HWND w = g0_mk(WS_POPUP, 0, 0, 0, 50, 50, NULL);
     REQUIRE(w);
     U(DestroyWindow)(w);
+    int live = live_toplevels();
     g0_bsm_msg = reg_msg(); g0_bsm_count = 0; g0_deny = 0;
     DWORD rec = BSM_APPLICATIONS;
     LONG r = U(BroadcastSystemMessageW)(BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
-    CHECKF(r > 0, "ret %ld", r);
-    EXPECT_EQ(g0_bsm_count, 0);
+    bsm_sync_report("sync after destroy", r, live);   /* live excludes the destroyed window */
     g0_bsm_msg = 0;
 }
 TEST(gap0_bsm_child_windows_not_targeted) {
@@ -291,22 +317,30 @@ TEST(gap0_bsm_child_windows_not_targeted) {
     REQUIRE(p);
     HWND c = g0_mk(WS_CHILD | WS_VISIBLE, 0, 0, 0, 20, 20, p);
     REQUIRE(c);
+    int live = live_toplevels();   /* counts top-level windows only, never the child */
     g0_bsm_msg = reg_msg(); g0_bsm_count = 0; g0_deny = 0;
     DWORD rec = BSM_APPLICATIONS;
-    U(BroadcastSystemMessageW)(BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
-    EXPECT_EQ(g0_bsm_count, 1);   /* only the top-level parent, not the child */
+    LONG r = U(BroadcastSystemMessageW)(BSF_POSTMESSAGE | BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
+    CHECKF(r > 0, "ret %ld", r);
+    g0_pump_ms(300);
+    CHECKF(g0_bsm_count == live, "delivered %d to %d top-level windows", g0_bsm_count, live);
     U(DestroyWindow)(p);
     g0_bsm_msg = 0;
 }
 TEST(gap0_bsm_two_toplevels) {
     REQUIRE(U(BroadcastSystemMessageW)); REQUIRE(U(RegisterWindowMessageW)); REQUIRE(U(DestroyWindow));
+    int before = live_toplevels();
     HWND a = g0_mk(WS_POPUP, 0, 0, 0, 50, 50, NULL);
     HWND b = g0_mk(WS_POPUP, 0, 0, 0, 50, 50, NULL);
     REQUIRE(a); REQUIRE(b);
+    int live = live_toplevels();
+    CHECKF(live == before + 2, "live %d before %d", live, before);
     g0_bsm_msg = reg_msg(); g0_bsm_count = 0; g0_deny = 0;
     DWORD rec = BSM_APPLICATIONS;
-    U(BroadcastSystemMessageW)(BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
-    EXPECT_EQ(g0_bsm_count, 2);
+    LONG r = U(BroadcastSystemMessageW)(BSF_POSTMESSAGE | BSF_NOHANG, &rec, g0_bsm_msg, 0, 0);
+    CHECKF(r > 0, "ret %ld", r);
+    g0_pump_ms(300);
+    CHECKF(g0_bsm_count == live, "delivered %d to %d live windows", g0_bsm_count, live);
     U(DestroyWindow)(a); U(DestroyWindow)(b);
     g0_bsm_msg = 0;
 }

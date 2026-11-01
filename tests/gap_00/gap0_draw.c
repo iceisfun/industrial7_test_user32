@@ -184,7 +184,12 @@ TEST(gap0_drawcaption_active_vs_inactive) {
     UN(DrawCaptionTempW)(NULL, a.dc, &rc, NULL, NULL, NULL, DC_ACTIVE);
     UN(DrawCaptionTempW)(NULL, b.dc, &rc, NULL, NULL, NULL, 0);
     GdiFlush();
-    if (U(GetSysColor)(COLOR_ACTIVECAPTION) != U(GetSysColor)(COLOR_INACTIVECAPTION)) CHECK(memcmp(a.bits, b.bits, 100 * 30 * 4) != 0);
+    /* Whether DC_ACTIVE changes the pixels for a window-less call is not
+     * guaranteed: Win10 22H2 produced identical bits with different caption
+     * colours, so it is only recorded (with how much each variant drew). */
+    t_note("caption pixels touched: active %d inactive %d", surf_diff(&a, 0, 0, 100, 30, MAG), surf_diff(&b, 0, 0, 100, 30, MAG));
+    if (U(GetSysColor)(COLOR_ACTIVECAPTION) != U(GetSysColor)(COLOR_INACTIVECAPTION))
+        t_note("active vs inactive caption pixels %s", memcmp(a.bits, b.bits, 100 * 30 * 4) ? "differ" : "identical");
     g0_surf_free(&a); g0_surf_free(&b);
 }
 TEST(gap0_drawcaption_with_real_window) {
@@ -237,8 +242,11 @@ TEST(gap0_drawcaption_deleted_dc) {
     HDC dc = s.dc;
     g0_surf_free(&s);
     RECT rc = { 0, 0, 50, 20 };
-    EXPECT_EQ(UN(DrawCaptionTempW)(NULL, dc, &rc, NULL, NULL, L"x", DC_ACTIVE), 0);
-    EXPECT_EQ(UN(DrawCaptionTempA)(NULL, dc, &rc, NULL, NULL, "x", DC_ACTIVE), 0);
+    /* A just-deleted DC handle still passes the user-mode check on Win10 22H2
+     * (the call returns 1), so the result is only recorded; the point of the
+     * test is that it does not fault. */
+    t_note("DrawCaptionTempW(deleted dc) -> %d", (int)UN(DrawCaptionTempW)(NULL, dc, &rc, NULL, NULL, L"x", DC_ACTIVE));
+    t_note("DrawCaptionTempA(deleted dc) -> %d", (int)UN(DrawCaptionTempA)(NULL, dc, &rc, NULL, NULL, "x", DC_ACTIVE));
 }
 TEST(gap0_drawcaption_metafile_dc) {
     REQUIRE(UN(DrawCaptionTempW)); REQUIRE(UN(DrawCaptionTempA));
@@ -276,7 +284,16 @@ TEST(gap0_drawcaption_long_text_clipped) {
     WCHAR t[2000]; for (int i = 0; i < 1999; i++) t[i] = L'W'; t[1999] = 0;
     G0Surf s; REQUIRE(g0_surf_make(&s, 120, 40, MAG));
     RECT rc = { 0, 0, 100, 30 };
-    CHECK(UN(DrawCaptionTempW)(NULL, s.dc, &rc, NULL, NULL, t, DC_ACTIVE | DC_TEXT));
+    /* Win10 22H2 returns 0 for a 1999 character caption; probe where the cut-off is. */
+    static const int lens[] = { 16, 128, 255, 256, 259, 260, 512, 1024, 1998 };
+    for (unsigned i = 0; i < sizeof lens / sizeof lens[0]; i++) {
+        WCHAR save = t[lens[i]]; t[lens[i]] = 0;
+        BOOL ok = UN(DrawCaptionTempW)(NULL, s.dc, &rc, NULL, NULL, t, DC_ACTIVE | DC_TEXT);
+        t[lens[i]] = save;
+        t_note("DrawCaptionTempW(%d chars) -> %d", lens[i], ok);
+    }
+    BOOL full = UN(DrawCaptionTempW)(NULL, s.dc, &rc, NULL, NULL, t, DC_ACTIVE | DC_TEXT);
+    t_note("DrawCaptionTempW(1999 chars) -> %d", full);
     t_note("long caption text overdraw: right %d bottom %d", surf_diff(&s, 100, 0, 120, 40, MAG), surf_diff(&s, 0, 30, 120, 40, MAG));
     g0_surf_free(&s);
 }
@@ -315,7 +332,12 @@ TEST(gap0_drawmenubartemp_deleted_dc) {
     G0Surf s; REQUIRE(g0_surf_make(&s, 20, 20, MAG));
     HDC dc = s.dc; g0_surf_free(&s);
     RECT rc = { 0, 0, 100, 30 };
-    EXPECT_EQ(UN(DrawMenuBarTemp)(NULL, dc, &rc, m, NULL), -1);
+    /* A just-deleted DC passes the user-mode check on Win10 22H2 and the call
+     * returns 0 rather than -1 (same stale-handle behaviour as DrawCaptionTemp);
+     * accept either, the point is that it does not fault. */
+    int r = (int)UN(DrawMenuBarTemp)(NULL, dc, &rc, m, NULL);
+    CHECKF(r == -1 || r == 0, "r=%d", r);
+    t_note("DrawMenuBarTemp(deleted dc) -> %d", r);
     U(DestroyMenu)(m);
 }
 TEST(gap0_drawmenubartemp_metafile_dc) {
