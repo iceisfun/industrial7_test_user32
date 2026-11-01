@@ -116,10 +116,11 @@ TEST(ddelparam_unpack_invalid_handle) {
 TEST(ddelparam_unpack_after_free) {
     REQUIRE(U(PackDDElParam)); REQUIRE(U(UnpackDDElParam)); REQUIRE(U(FreeDDElParam));
     LPARAM lp = U(PackDDElParam)(WM_DDE_POKE, 5, 6);
-    CHECK(U(FreeDDElParam)(WM_DDE_POKE, lp));
     UINT_PTR lo = 9, hi = 9;
     BOOL ok = U(UnpackDDElParam)(WM_DDE_POKE, lp, &lo, &hi);
-    t_note("Unpack after free -> %d lo=%llu hi=%llu", ok, (unsigned long long)lo, (unsigned long long)hi);
+    CHECK(ok); EQ(lo, 5); EQ(hi, 6);
+    CHECK(U(FreeDDElParam)(WM_DDE_POKE, lp));
+    /* the freed block is not unpacked: on Win10 22H2 that touches a freed heap block and raises 0xc0000374 */
 }
 TEST(ddelparam_free_is_lenient) {
     REQUIRE(U(PackDDElParam)); REQUIRE(U(FreeDDElParam));
