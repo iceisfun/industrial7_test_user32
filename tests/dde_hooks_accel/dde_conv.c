@@ -241,7 +241,9 @@ TEST(ddeconv_request_sync) {
 }
 TEST(ddeconv_request_formats) {
     SETUP(0, 0, 1);
-    static const UINT fmts[] = {CF_TEXT, CF_UNICODETEXT, CF_PRIVATEFIRST, CF_DIB, 0xC123};
+    /* CF_DIB is not requested: the server's payload is a string, not a DIB, and the heap check of Win10 22H2 reports
+     * corruption (0xc0000374) when such a block travels as a DIB */
+    static const UINT fmts[] = {CF_TEXT, CF_UNICODETEXT, CF_PRIVATEFIRST, 0xC123};
     for (unsigned i = 0; i < sizeof fmts / sizeof fmts[0]; i++) {
         HDDEDATA d = U(DdeClientTransaction)(NULL, 0, g_conv, g_hitm, fmts[i], XTYP_REQUEST, 3000, NULL);
         CHECKF(d != NULL, "fmt %u", fmts[i]);
