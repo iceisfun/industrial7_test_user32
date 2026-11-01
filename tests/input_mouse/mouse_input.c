@@ -127,6 +127,8 @@ TEST(input_mouse_setcursorpos_generates_mousemove) {
     im_setpos(WX + 100, WY + 80);
     im_setpos(WX + 120, WY + 90);
     imrec r;
+    /* the move is delivered asynchronously: wait until the last logged move is the final position */
+    for (int k = 0; k < 20 && !(im_find(WM_MOUSEMOVE, &r) && LX(r.l) == 120 && LY(r.l) == 90); k++) im_pump_ms(50);
     CHECK(im_find(WM_MOUSEMOVE, &r));
     if (im_find(WM_MOUSEMOVE, &r)) {
         CHECKF(r.h == w, "target %p want %p", r.h, w);
