@@ -935,7 +935,8 @@ TEST(ddeconv_uninitialize_with_open_conv) {
     /* Win10 22H2: DdeUninitialize of one instance while another instance of the same thread still has the
      * conversation open does not return (reproducible, 40 s hard timeout in the child). That is the
      * observed behaviour; a completed run must still exit 0. */
-    if (!done) t_note("DdeUninitialize with an open conversation did not return within 40 s (Win10 22H2 behaviour)");
+    /* the parent now pumps while it waits, so the child's broadcasts are answered */
+    CHECKF(done, "DdeUninitialize with an open conversation did not finish within 40 s");
     if (done) CHECKF(rc == 0, "child exit 0x%lx", rc);
 }
 TEST(ddeconv_childonly_uninit_open_conv) {

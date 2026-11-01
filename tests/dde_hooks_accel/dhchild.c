@@ -16,7 +16,16 @@ int dh_run_child(const char *test, DWORD timeout_ms, DWORD *exit_code) {
     snprintf(cmd, sizeof cmd, "\"%s\" %s", exe, test);
     SetEnvironmentVariableA("U32_DH_CHILD", "1");
     if (CreateProcessA(NULL, cmd, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
-        if (WaitForSingleObject(pi.hProcess, timeout_ms) == WAIT_OBJECT_0) {
+        /* Keep the message loop running while the child works: the child's DDE broadcasts (WM_DDE_INITIATE,
+         * TERMINATE) are sent to every top-level window of the desktop, including this process's, and a
+         * blocked thread here would stall the child until its own timeout. */
+        DWORD w = WAIT_TIMEOUT, t0 = GetTickCount();
+        while (GetTickCount() - t0 < timeout_ms) {
+            w = MsgWaitForMultipleObjects(1, &pi.hProcess, FALSE, 50, QS_ALLINPUT);
+            if (w == WAIT_OBJECT_0) break;
+            MSG m; while (PeekMessageA(&m, NULL, 0, 0, PM_REMOVE)) { TranslateMessage(&m); DispatchMessageA(&m); }
+        }
+        if (w == WAIT_OBJECT_0) {
             ok = 1;
             if (exit_code) GetExitCodeProcess(pi.hProcess, exit_code);
         } else TerminateProcess(pi.hProcess, 0xDEAD);
