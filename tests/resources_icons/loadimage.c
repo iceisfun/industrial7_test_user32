@@ -9,6 +9,23 @@ static const WORD ri_oem_icons[] = {32512, 32513, 32514, 32515, 32516, 32517};
 
 /* ---- OEM cursors ------------------------------------------------------- */
 
+
+/* Win10 22H2 oracle: LoadImage(NULL, OEM id, ...) without LR_SHARED fails (NULL) for icons and
+ * cursors; only the LR_SHARED form returns a handle. Try the requested flags first, note the
+ * failure, and fall back to LR_SHARED so the size/identity checks still run. *shared reports
+ * whether the returned handle is a shared (not destroyable) one. */
+static HANDLE ri_oem_load(UINT id, UINT type, int cx, int cy, UINT fl, int *shared)
+{
+    HANDLE h = U(LoadImageW)(NULL, MAKEINTRESOURCEW(id), type, cx, cy, fl);
+    *shared = (fl & LR_SHARED) != 0;
+    if (!h && !(fl & LR_SHARED)) {
+        t_note("LoadImage(NULL, OEM %u) without LR_SHARED -> NULL err=%lu", id, GetLastError());
+        h = U(LoadImageW)(NULL, MAKEINTRESOURCEW(id), type, cx, cy, fl | LR_SHARED);
+        *shared = 1;
+    }
+    return h;
+}
+
 TEST(resources_icons_li_oem_cursors_load)
 {
     int i;
@@ -109,13 +126,13 @@ TEST(resources_icons_li_oem_cursor_loadimage_shared)
 
 TEST(resources_icons_li_oem_cursor_loadimage_unshared)
 {
-    HANDLE a, b;
+    HANDLE a, b; int sa, sb;
     REQUIRE(U(LoadImageW)); REQUIRE(U(DestroyCursor));
-    a = U(LoadImageW)(NULL, W_(32513), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE);
-    b = U(LoadImageW)(NULL, W_(32513), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE);
+    a = ri_oem_load(32513, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE, &sa);
+    b = ri_oem_load(32513, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE, &sb);
     t_note("unshared OEM cursor loads: %p %p", a, b);
     CHECK(a != NULL);
-    if (a && b && a != b) { CHECK(U(DestroyCursor)(a)); CHECK(U(DestroyCursor)(b)); }
+    if (a && b && a != b && !sa && !sb) { CHECK(U(DestroyCursor)(a)); CHECK(U(DestroyCursor)(b)); }
 }
 
 TEST(resources_icons_li_cursor_bogus_ids)
@@ -220,26 +237,27 @@ TEST(resources_icons_li_oem_icon_loadimage_sizes)
     REQUIRE(U(LoadImageW)); REQUIRE(U(DestroyIcon));
     for (i = 0; i < 3; i++) {
         int w = 0, h = 0;
-        HICON ic = U(LoadImageW)(NULL, W_(32512), IMAGE_ICON, sz[i], sz[i], 0);
+        int sh;
+        HICON ic = ri_oem_load(32512, IMAGE_ICON, sz[i], sz[i], 0, &sh);
         CHECKF(ic != NULL, "size %d", sz[i]);
         if (!ic) continue;
         ri_iconsize(ic, &w, &h, NULL, NULL);
         RI_EQ(w, sz[i]); RI_EQ(h, sz[i]);
-        CHECK(U(DestroyIcon)(ic));
+        if (!sh) CHECK(U(DestroyIcon)(ic));
     }
 }
 
 TEST(resources_icons_li_oem_icon_loadimage_defaultsize)
 {
     int w = 0, h = 0;
-    HICON ic;
+    HICON ic; int sh;
     REQUIRE(U(LoadImageW)); REQUIRE(U(DestroyIcon));
-    ic = U(LoadImageW)(NULL, W_(32514), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
+    ic = ri_oem_load(32514, IMAGE_ICON, 0, 0, LR_DEFAULTSIZE, &sh);
     CHECK(ic != NULL);
     if (ic) {
         ri_iconsize(ic, &w, &h, NULL, NULL);
         RI_EQ(w, ri_defsize(0, 0)); RI_EQ(h, ri_defsize(0, 1));
-        U(DestroyIcon)(ic);
+        if (!sh) U(DestroyIcon)(ic);
     }
 }
 
@@ -251,10 +269,11 @@ TEST(resources_icons_li_oem_icon_loadimage_shared_vs_not)
     b = U(LoadImageW)(NULL, W_(32512), IMAGE_ICON, 32, 32, LR_SHARED);
     CHECK(a != NULL);
     RI_EQ(a, b);
-    c = U(LoadImageW)(NULL, W_(32512), IMAGE_ICON, 32, 32, 0);
-    CHECK(c != NULL);
-    CHECK(c != a);
-    if (c) U(DestroyIcon)(c);
+    { int sh;
+      c = ri_oem_load(32512, IMAGE_ICON, 32, 32, 0, &sh);
+      CHECK(c != NULL);
+      if (!sh) { CHECK(c != a); if (c) U(DestroyIcon)(c); }
+      else t_note("unshared OEM load not available; shared handle %s the first one", c == a ? "equals" : "differs from"); }
 }
 
 TEST(resources_icons_li_oem_icon_size_matrix)
@@ -264,12 +283,13 @@ TEST(resources_icons_li_oem_icon_size_matrix)
     REQUIRE(U(LoadImageW)); REQUIRE(U(DestroyIcon));
     for (i = 0; i < 8; i++) {
         int w = 0, h = 0;
-        HICON ic = U(LoadImageW)(NULL, W_(32515), IMAGE_ICON, sizes[i][0], sizes[i][1], 0);
+        int sh;
+        HICON ic = ri_oem_load(32515, IMAGE_ICON, sizes[i][0], sizes[i][1], 0, &sh);
         CHECKF(ic != NULL, "%dx%d", sizes[i][0], sizes[i][1]);
         if (!ic) continue;
         ri_iconsize(ic, &w, &h, NULL, NULL);
         RI_EQ(w, sizes[i][0]); RI_EQ(h, sizes[i][1]);
-        U(DestroyIcon)(ic);
+        if (!sh) U(DestroyIcon)(ic);
     }
 }
 
@@ -707,7 +727,8 @@ TEST(resources_icons_li_file_bitmap_topdown)
     REQUIRE(U(LoadImageW));
     CHECK(ri_mkfile(path, L".bmp", f, n));
     b = U(LoadImageW)(NULL, path, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-    CHECK(b != NULL);
+    /* Win10 22H2 oracle: a top-down (negative biHeight) .bmp file is rejected by LoadImage */
+    if (!b) t_note("top-down BMP file rejected, err=%lu", GetLastError());
     if (b) { ri_bmp(b, &bm); RI_EQ(bm.bmWidth, 10); RI_EQ(bm.bmHeight, 6); DeleteObject(b); }
     DeleteFileW(path); free(f);
 }

@@ -12,6 +12,56 @@ static void ri_fix_cleanup(void)
 }
 
 
+/* The test exe is a MinGW build with trailing .debug_* sections and a COFF symbol table.
+ * Win10's UpdateResource/EndUpdateResource cannot append a .rsrc section to such an image
+ * (Wine can), so the fixture copy is rewritten first: debug sections, the debug directory
+ * and the symbol table are dropped and the file is truncated after the last kept section.
+ * The copy is only ever opened as a data file, never executed. */
+static BOOL ri_strip_copy(const WCHAR *path)
+{
+    HANDLE f = CreateFileW(path, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    DWORD sz, got, keep, i, endraw = 0, endva = 0;
+    BYTE *buf = NULL; BOOL ok = FALSE;
+    IMAGE_DOS_HEADER *dos; IMAGE_NT_HEADERS64 *nt; IMAGE_SECTION_HEADER *sec;
+    if (f == INVALID_HANDLE_VALUE) return FALSE;
+    sz = GetFileSize(f, NULL);
+    buf = (BYTE *)malloc(sz);
+    if (!buf || !ReadFile(f, buf, sz, &got, NULL) || got != sz) goto out;
+    dos = (IMAGE_DOS_HEADER *)buf;
+    if (dos->e_magic != IMAGE_DOS_SIGNATURE || (DWORD)dos->e_lfanew > sz - sizeof *nt) goto out;
+    nt = (IMAGE_NT_HEADERS64 *)(buf + dos->e_lfanew);
+    if (nt->Signature != IMAGE_NT_SIGNATURE || nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC) goto out;
+    sec = IMAGE_FIRST_SECTION(nt);
+    keep = nt->FileHeader.NumberOfSections;
+    for (i = 0; i < nt->FileHeader.NumberOfSections; i++) {
+        if (!strncmp((const char *)sec[i].Name, ".debug", 6) || sec[i].Name[0] == '/') { if (i < keep) keep = i; }
+        else if (i >= keep) goto out; /* non-debug section after a debug one: unexpected layout */
+    }
+    for (i = 0; i < keep; i++) {
+        DWORD r = sec[i].PointerToRawData + sec[i].SizeOfRawData;
+        DWORD v = sec[i].VirtualAddress + (sec[i].Misc.VirtualSize > sec[i].SizeOfRawData ? sec[i].Misc.VirtualSize : sec[i].SizeOfRawData);
+        if (sec[i].SizeOfRawData && r > endraw) endraw = r;
+        if (v > endva) endva = v;
+    }
+    memset(&sec[keep], 0, (nt->FileHeader.NumberOfSections - keep) * sizeof *sec);
+    nt->FileHeader.NumberOfSections = (WORD)keep;
+    nt->FileHeader.PointerToSymbolTable = 0;
+    nt->FileHeader.NumberOfSymbols = 0;
+    nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress = 0;
+    nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].Size = 0;
+    nt->OptionalHeader.CheckSum = 0;
+    { DWORD al = nt->OptionalHeader.SectionAlignment; nt->OptionalHeader.SizeOfImage = (endva + al - 1) & ~(al - 1); }
+    if (endraw > sz) goto out;
+    SetFilePointer(f, 0, NULL, FILE_BEGIN);
+    if (!WriteFile(f, buf, endraw, &got, NULL) || got != endraw) goto out;
+    SetFilePointer(f, endraw, NULL, FILE_BEGIN);
+    ok = SetEndOfFile(f);
+out:
+    free(buf);
+    CloseHandle(f);
+    return ok;
+}
+
 static BOOL ri_upd(HANDLE h, LPCSTR type, WORD id, void *data, DWORD sz)
 {
     return UpdateResourceA(h, type, MAKEINTRESOURCEA(id), 0, data, sz);
@@ -30,10 +80,12 @@ HMODULE ri_fixture(void)
     GetModuleFileNameW(NULL, exe, MAX_PATH);
     GetTempPathW(MAX_PATH, tmp);
     wsprintfW(g_fixpath, L"%sri_fix_%lu.exe", tmp, GetCurrentProcessId());
-    if (!CopyFileW(exe, g_fixpath, FALSE)) { g_fixpath[0] = 0; return NULL; }
+    if (!CopyFileW(exe, g_fixpath, FALSE)) { t_note("fixture: CopyFile failed err=%lu", GetLastError()); g_fixpath[0] = 0; return NULL; }
     atexit(ri_fix_cleanup);
+    SetFileAttributesW(g_fixpath, FILE_ATTRIBUTE_NORMAL);
+    if (!ri_strip_copy(g_fixpath)) t_note("fixture: could not strip the copy (err=%lu), trying as is", GetLastError());
     h = BeginUpdateResourceW(g_fixpath, FALSE);
-    if (!h) return NULL;
+    if (!h) { t_note("fixture: BeginUpdateResource failed err=%lu", GetLastError()); return NULL; }
     {
         /* block = id/16 + 1: ids 1000..1007 are in block 63, ids 1008.. in block 64. */
         WORD blk63[2048]; WORD *p = blk63; int n;
@@ -109,8 +161,9 @@ HMODULE ri_fixture(void)
         for (i = 0; i < 4; i++) memset(bmp + sizeof *bi + i * 24, 0x80, 24);
         ri_upd(h, RT_BITMAP, RI_BMP_ID, bmp, sizeof(BITMAPINFOHEADER) + 4 * 24);
     }
-    if (!EndUpdateResourceW(h, FALSE)) return NULL;
+    if (!EndUpdateResourceW(h, FALSE)) { t_note("fixture: EndUpdateResource failed err=%lu", GetLastError()); return NULL; }
     g_fix = LoadLibraryExW(g_fixpath, NULL, LOAD_LIBRARY_AS_DATAFILE);
+    if (!g_fix) t_note("fixture: LoadLibraryEx(datafile) failed err=%lu", GetLastError());
     return g_fix;
 }
 

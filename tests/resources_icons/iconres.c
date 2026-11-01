@@ -674,8 +674,11 @@ TEST(resources_icons_lookup_default_size)
     r = U(LookupIconIdFromDirectoryEx)(g, TRUE, 0, 0, 0);
     t_note("lookup 0x0 no flags -> %d", r);
     if (U(LookupIconIdFromDirectory)) {
+        /* Win10 22H2 oracle: LookupIconIdFromDirectory behaves like LookupIconIdFromDirectoryEx
+         * with cx=cy=0 and no flags (id 10, the 16x16 entry), not like LR_DEFAULTSIZE. */
+        int plain = U(LookupIconIdFromDirectoryEx)(g, TRUE, 0, 0, 0);
         r = U(LookupIconIdFromDirectory)(g, TRUE);
-        if (want) RI_EQ(r, want);
+        RI_EQ(r, plain);
     }
     free(g);
 }
