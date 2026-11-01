@@ -675,6 +675,7 @@ TEST(wm_flash_ex_invalid) {
 
 TEST(wm_hung_responsive) {
     NEED(IsHungAppWindow);
+    t_pump();   /* a thread that has not run its message loop for 5 s counts as hung: refresh it first (the area runs without pumping for long stretches) */
     HWND h = wm_hidden();
     CHECK(!U(IsHungAppWindow)(h));
     CHECK(!U(IsHungAppWindow)(U(GetDesktopWindow)()));
@@ -692,6 +693,7 @@ TEST(wm_hung_worker_window) {
 }
 
 TEST(wm_hung_child_window) {
+    t_pump();   /* see wm_hung_responsive */
     HWND p = wm_hidden();
     HWND c = wm_mk(WS_CHILD, 0, 0, 0, 5, 5, p);
     CHECK(!U(IsHungAppWindow)(c));
