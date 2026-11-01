@@ -837,8 +837,8 @@ TEST(dialogs_dialogbox_owner_already_disabled_stays_disabled) {
     ds.end_in_init = 1; ds.endval = 3;
     INT_PTR r = DialogBoxIndirectParamW(INST, (LPCDLGTEMPLATEW)d.b, own, gdp, 0);
     EQ(r, 3);
-    /* Win10 22H2 re-enables the owner when the dialog ends, even if the owner was disabled beforehand; recorded */
-    t_note("owner enabled after DialogBox returned: %d", IsWindowEnabled(own));
+    /* Win10 22H2 re-enables the owner when the dialog ends, even if the owner was disabled beforehand (oracle) */
+    CHECK(IsWindowEnabled(own));
     DestroyWindow(own);
 }
 TEST(dialogs_dialogbox_invalid_owner_returns_zero) {
