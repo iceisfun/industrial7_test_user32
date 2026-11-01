@@ -13,6 +13,12 @@ static HDESK mkdesk(char *n, const char *tag) {
     wsp_name(n, 96, tag);
     return U(CreateDesktopA)(n, NULL, NULL, 0, WSP_DESKTOP_ALL, NULL);
 }
+/* security tests need READ_CONTROL | WRITE_DAC | WRITE_OWNER on the handle; the
+ * desktop-specific rights alone (0x1FF) make Get/SetUserObjectSecurity fail with 5 */
+static HDESK mkdesk_sec(char *n, const char *tag) {
+    wsp_name(n, 96, tag);
+    return U(CreateDesktopA)(n, NULL, NULL, 0, WSP_DESKTOP_ALL | READ_CONTROL | WRITE_DAC | WRITE_OWNER, NULL);
+}
 static HDESK curdesk(void) { return U(GetThreadDesktop)(GetCurrentThreadId()); }
 #define NEED_UOI() do { REQUIRE(U(GetUserObjectInformationA)); REQUIRE(U(GetUserObjectInformationW)); REQUIRE(U(GetThreadDesktop)); REQUIRE(U(GetProcessWindowStation)); } while (0)
 
@@ -21,17 +27,19 @@ static void sizing_a(HANDLE h, DWORD idx, const char *expect) {
     DWORD need = 0, len = (DWORD)strlen(expect) + 1;
     char buf[512]; memset(buf, 0x55, sizeof buf);
     SetLastError(0);
+    /* Win10: when the buffer is too small the A entry point reports the size of the wide
+     * string in bytes (2 * len), but on success it reports len (observed 0x34 vs 0x1a) */
     CHECK(!U(GetUserObjectInformationA)(h, idx, buf, len - 1, &need));
     EXPECT_ERR(0, ERROR_INSUFFICIENT_BUFFER);
-    EXPECT_EQ(need, len);
+    EXPECT_EQ(need, 2 * len);
     need = 0; SetLastError(0);
     CHECK(!U(GetUserObjectInformationA)(h, idx, buf, 0, &need));
     EXPECT_ERR(0, ERROR_INSUFFICIENT_BUFFER);
-    EXPECT_EQ(need, len);
+    EXPECT_EQ(need, 2 * len);
     need = 0; SetLastError(0);
     CHECK(!U(GetUserObjectInformationA)(h, idx, NULL, 0, &need));
     EXPECT_ERR(0, ERROR_INSUFFICIENT_BUFFER);
-    EXPECT_EQ(need, len);
+    EXPECT_EQ(need, 2 * len);
     need = 0;
     CHECK(U(GetUserObjectInformationA)(h, idx, buf, len, &need));
     EXPECT_EQ(need, len); EXPECT_STR(buf, expect);
@@ -132,14 +140,16 @@ TEST(winsta_process_uoi_invalid_handle_all_indexes) {
     char buf[256]; DWORD need;
     for (unsigned i = 0; i < 6; i++) {
         SetLastError(0);
+        /* Win10: a nonexistent handle fails without setting the last error (0); a valid
+         * handle of the wrong kind (here the -1 process pseudo handle) gives 1 */
         CHECKF(!U(GetUserObjectInformationA)(NULL, idx[i], buf, sizeof buf, &need), "idx %lu", idx[i]);
-        EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+        EXPECT_ERR(0, 0);
         SetLastError(0);
         CHECK(!U(GetUserObjectInformationW)((HANDLE)(ULONG_PTR)0x7ffc, idx[i], buf, sizeof buf, &need));
-        EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+        EXPECT_ERR(0, 0);
         SetLastError(0);
         CHECK(!U(GetUserObjectInformationA)(INVALID_HANDLE_VALUE, idx[i], buf, sizeof buf, &need));
-        EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+        EXPECT_ERR(0, ERROR_INVALID_FUNCTION);
     }
 }
 TEST(winsta_process_uoi_wrong_object_type) {
@@ -148,11 +158,12 @@ TEST(winsta_process_uoi_wrong_object_type) {
     HANDLE th = GetCurrentProcess();
     char buf[256]; DWORD need;
     SetLastError(0);
+    /* Win10: a valid handle that is not a window station / desktop gives ERROR_INVALID_FUNCTION */
     CHECK(!U(GetUserObjectInformationA)(ev, UOI_NAME_, buf, sizeof buf, &need));
-    EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+    EXPECT_ERR(0, ERROR_INVALID_FUNCTION);
     SetLastError(0);
     CHECK(!U(GetUserObjectInformationW)(th, UOI_TYPE_, buf, sizeof buf, &need));
-    EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+    EXPECT_ERR(0, ERROR_INVALID_FUNCTION);
     CloseHandle(ev);
 }
 TEST(winsta_process_uoi_closed_handle) {
@@ -162,7 +173,7 @@ TEST(winsta_process_uoi_closed_handle) {
     U(CloseDesktop)(d);
     char buf[64]; DWORD need; SetLastError(0);
     CHECK(!U(GetUserObjectInformationA)(d, UOI_NAME_, buf, sizeof buf, &need));
-    EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+    EXPECT_ERR(0, 0);   /* Win10: a closed (nonexistent) handle leaves the last error 0 */
 }
 TEST(winsta_process_uoi_invalid_index) {
     NEED_UOI();
@@ -261,15 +272,16 @@ TEST(winsta_process_setuoi_invalid_handle) {
     NEED_UOI(); REQUIRE(U(SetUserObjectInformationA)); REQUIRE(U(SetUserObjectInformationW));
     WSP_UOF f = { 0, 0, 0 };
     SetLastError(0);
+    /* Win10: nonexistent handles leave the last error 0; a valid non-user object gives 1 */
     CHECK(!U(SetUserObjectInformationA)(NULL, UOI_FLAGS_, &f, sizeof f));
-    EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+    EXPECT_ERR(0, 0);
     SetLastError(0);
     CHECK(!U(SetUserObjectInformationW)((HANDLE)(ULONG_PTR)0x7ffc, UOI_FLAGS_, &f, sizeof f));
-    EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+    EXPECT_ERR(0, 0);
     HANDLE ev = CreateEventA(NULL, TRUE, FALSE, NULL);
     SetLastError(0);
     CHECK(!U(SetUserObjectInformationA)(ev, UOI_FLAGS_, &f, sizeof f));
-    EXPECT_ERR(0, ERROR_INVALID_HANDLE);
+    EXPECT_ERR(0, ERROR_INVALID_FUNCTION);
     CloseHandle(ev);
 }
 TEST(winsta_process_setuoi_invalid_index) {
@@ -307,7 +319,7 @@ static void need_sec(void) {}
 
 TEST(winsta_process_secd_get_dacl_sizing) {
     NEED_SEC();
-    char n[96]; HDESK d = mkdesk(n, "sec1");
+    char n[96]; HDESK d = mkdesk_sec(n, "sec1");
     if (!d) { t_skip("cannot create desktop"); return; }
     SECURITY_INFORMATION si = DACL_SECURITY_INFORMATION;
     DWORD need = 0; SetLastError(0);
@@ -335,7 +347,7 @@ TEST(winsta_process_secd_get_dacl_sizing) {
 }
 TEST(winsta_process_secd_get_owner_group) {
     NEED_SEC();
-    char n[96]; HDESK d = mkdesk(n, "sec2");
+    char n[96]; HDESK d = mkdesk_sec(n, "sec2");
     if (!d) { t_skip("cannot create desktop"); return; }
     SECURITY_INFORMATION si = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION;
     DWORD need = 0;
@@ -405,7 +417,7 @@ TEST(winsta_process_secd_get_empty_info_mask) {
 }
 TEST(winsta_process_secd_set_roundtrip_dacl) {
     NEED_SEC();
-    char n[96]; HDESK d = mkdesk(n, "sec5");
+    char n[96]; HDESK d = mkdesk_sec(n, "sec5");
     if (!d) { t_skip("cannot create desktop"); return; }
     SECURITY_INFORMATION si = DACL_SECURITY_INFORMATION;
     DWORD need = 0;
@@ -428,7 +440,7 @@ TEST(winsta_process_secd_set_roundtrip_dacl) {
 }
 TEST(winsta_process_secd_set_empty_dacl_denies_open) {
     NEED_SEC(); REQUIRE(U(OpenDesktopA));
-    char n[96]; HDESK d = mkdesk(n, "sec6");
+    char n[96]; HDESK d = mkdesk_sec(n, "sec6");
     if (!d) { t_skip("cannot create desktop"); return; }
     SECURITY_DESCRIPTOR sd; BYTE aclbuf[64];
     CHECK(InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION));

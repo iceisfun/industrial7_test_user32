@@ -325,7 +325,13 @@ TEST(winsta_process_closedesktop_closehandle_equiv) {
     NEED_DESK();
     char n[96]; HDESK d = mk("dCH", n);
     if (!d) { t_skip("CreateDesktopA failed"); return; }
-    CHECK(CloseHandle(d));
+    /* Win10: desktop handles are protected from CloseHandle (it fails); only CloseDesktop
+     * releases them */
+    SetLastError(0);
+    BOOL ch = CloseHandle(d);
+    t_note("CloseHandle(desktop) = %d err %lu", ch, GetLastError());
+    CHECK(!ch);
+    CHECK(U(CloseDesktop)(d));
     CHECK(U(OpenDesktopA)(n, 0, FALSE, DESKTOP_READOBJECTS) == NULL);
 }
 TEST(winsta_process_closedesktop_non_user_handle) {
