@@ -182,6 +182,8 @@ static void check_type_all_apis(int ti) {
         CHECKF(r == t->ids[0], "%s/%s: click %d returned %d", t->name, api_name[api], t->ids[0], r);
         int want[16] = { 0 };
         for (int i = 0; t->ids[i]; i++) want[t->ids[i]] = 1;
+        /* Win10 22H2: the single button of an MB_OK box carries the id IDCANCEL (so Escape/close work); the click is still answered with IDOK */
+        if (t->type == MB_OK) { want[IDOK] = 0; want[IDCANCEL] = 1; }
         for (int i = 1; i < 12; i++) CHECKF(mb.exist[i] == want[i], "%s/%s: button id %d exist=%d want=%d", t->name, api_name[api], i, mb.exist[i], want[i]);
         EQ(mb.nbuttons, nids(t->ids));
         CHECK(!strcmp(mb.cls, "#32770"));
@@ -221,6 +223,7 @@ TEST(dialogs_mb_default_button_all_types) {
             int r = MessageBoxW(NULL, L"def", L"Def", t->type | defs[d]);
             mb_disarm();
             int wantid = d < n ? t->ids[d] : t->ids[0];      /* out-of-range falls back to the first button */
+            if (t->type == MB_OK) wantid = IDCANCEL;           /* the only button of an MB_OK box has id IDCANCEL on Win10 22H2 */
             CHECKF(r == t->ids[0], "%s def%d: ret %d", t->name, d + 1, r);
             CHECKF(mb.defpush_id == wantid, "%s def%d: BS_DEFPUSHBUTTON on id %d want %d", t->name, d + 1, mb.defpush_id, wantid);
             if (mb.focus) CHECKF(mb.focus_id == wantid, "%s def%d: focus on id %d want %d", t->name, d + 1, mb.focus_id, wantid);

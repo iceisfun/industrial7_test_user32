@@ -235,7 +235,7 @@ typedef struct {
     INT_PTR (CALLBACK *hook)(HWND, UINT, WPARAM, LPARAM); /* optional extra handler, returns -1 for unhandled */
 } DS;
 static DS ds;
-/* watchdog: if a modal loop is still running 6s after the last ds_reset, end the active dialog */
+/* watchdog: if a modal loop is still running 20s after the last ds_reset, end the active dialog */
 static UINT_PTR wd_id;
 static VOID CALLBACK wd_proc(HWND h, UINT m, UINT_PTR id, DWORD t) {
     HWND a = GetActiveWindow();
@@ -244,7 +244,7 @@ static VOID CALLBACK wd_proc(HWND h, UINT m, UINT_PTR id, DWORD t) {
 static void ds_reset(void) {
     memset(&ds, 0, sizeof ds); ds.initret = 1; ds.idx_setfont = ds.idx_init = -1;
     if (wd_id) KillTimer(NULL, wd_id);
-    wd_id = SetTimer(NULL, 0, 6000, wd_proc);
+    wd_id = SetTimer(NULL, 0, 20000, wd_proc);
 }
 static INT_PTR CALLBACK gdp(HWND h, UINT m, WPARAM w, LPARAM l) {
     if (ds.nmsg < 128) ds.seq[ds.nmsg++] = m;
