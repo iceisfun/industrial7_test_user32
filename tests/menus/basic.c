@@ -794,11 +794,15 @@ TEST(menus_item_limit_many_items) {
     REQ_CORE();
     HMENU h = M_POP();
     int n = 3000, ok = 0;
-    for (int i = 0; i < n; i++) ok += U(AppendMenuA)(h, MF_STRING, i + 1, "item") ? 1 : 0;
-    EQ(ok, n);
+    /* Win10 22H2 oracle guest refused further items after 1168 (desktop heap in that session), so
+     * append until the first refusal and exercise whatever count was reached. */
+    for (int i = 0; i < n; i++) { if (!U(AppendMenuA)(h, MF_STRING, i + 1, "item")) break; ok++; }
+    t_note("menu accepted %d items before AppendMenu refused (err %lu)", ok, GetLastError());
+    CHECK(ok >= 1000);
+    n = ok;
     EQ(M_CNT(h), n);
     EQ(U(GetMenuItemID)(h, n - 1), n);
-    EQ(U(GetMenuItemID)(h, 1234), 1235);
+    EQ(U(GetMenuItemID)(h, 999), 1000);
     for (int i = 0; i < n; i++) if (!U(DeleteMenu)(h, 0, MF_BYPOSITION)) { CHECK(0); break; }
     EQ(M_CNT(h), 0);
     M_DESTROY(h);

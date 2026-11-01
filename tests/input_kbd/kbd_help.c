@@ -4,7 +4,7 @@
 struct klog g_klog[KLOG_MAX];
 int g_nklog;
 static unsigned char g_held[256];
-static const char *g_kcls = "T32KbdWnd";
+static const WCHAR *g_kcls = L"T32KbdWnd";
 static int g_cls_done;
 static int g_probe_state; /* 0 unknown, 1 ok, -1 failed */
 static HWND g_guard;
@@ -30,16 +30,16 @@ static LRESULT CALLBACK kproc(HWND h, UINT m, WPARAM w, LPARAM l)
          * system-key side effects. */
         if (m != WM_SYSCOMMAND) return 0;
     }
-    return U(DefWindowProcA)(h, m, w, l);
+    return U(DefWindowProcW)(h, m, w, l);
 }
 
 static void ensure_cls(void)
 {
-    WNDCLASSA wc;
+    WNDCLASSW wc;
     if (g_cls_done) return;
     memset(&wc, 0, sizeof wc);
     wc.lpfnWndProc = kproc; wc.hInstance = GetModuleHandleA(NULL); wc.lpszClassName = g_kcls;
-    U(RegisterClassA)(&wc);
+    U(RegisterClassW)(&wc);
     g_cls_done = 1;
 }
 
@@ -62,7 +62,7 @@ void kw_clear(void) { g_nklog = 0; }
 HWND kw_plain(void)
 {
     ensure_cls();
-    return U(CreateWindowExA)(0, g_kcls, "kbdtest", WS_POPUP, 100, 100, 120, 80, NULL, NULL, GetModuleHandleA(NULL), NULL);
+    return U(CreateWindowExW)(0, g_kcls, L"kbdtest", WS_POPUP, 100, 100, 120, 80, NULL, NULL, GetModuleHandleA(NULL), NULL);
 }
 
 int kw_focus_ok(HWND w)
@@ -151,12 +151,12 @@ HWND kw_begin(void)
 {
     HWND w;
     DWORD end;
-    if (!U(SendInput) || !U(SetForegroundWindow) || !U(CreateWindowExA) || !U(RegisterClassA) || !U(PeekMessageA)) {
+    if (!U(SendInput) || !U(SetForegroundWindow) || !U(CreateWindowExW) || !U(RegisterClassW) || !U(PeekMessageA)) {
         t_skip("missing exports for injection"); return NULL;
     }
     if (g_probe_state < 0) { t_skip("key injection unavailable on this desktop"); return NULL; }
     ensure_cls();
-    w = U(CreateWindowExA)(0, g_kcls, "kbdtest", WS_POPUP | WS_VISIBLE, 100, 100, 160, 100, NULL, NULL, GetModuleHandleA(NULL), NULL);
+    w = U(CreateWindowExW)(0, g_kcls, L"kbdtest", WS_POPUP | WS_VISIBLE, 100, 100, 160, 100, NULL, NULL, GetModuleHandleA(NULL), NULL);
     if (!w) { t_skip("cannot create window"); return NULL; }
     U(SetForegroundWindow)(w);
     U(SetFocus)(w);

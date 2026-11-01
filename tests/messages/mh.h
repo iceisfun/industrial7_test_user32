@@ -156,11 +156,22 @@ static int mh_init(void) {
     t_check(a_ != b_, __FILE__, __LINE__, #a " != " #b, "got 0x%llx", (unsigned long long)a_); } while (0)
 #define REQUIRE_MH() do { if (!mh_init()) { t_skip("cannot register test classes"); return; } } while (0)
 
+/* Win10 posts WM_DWMNCRENDERINGCHANGED (0x31F) to every new top-level window; it
+ * would otherwise be the first thing a NULL-hwnd Peek/Get sees. Not part of the
+ * tested contract, so swallow it (and its sibling 0x31E) right after creation. */
+static void mh_eat_dwm(HWND h) {
+    MSG m;
+    if (h && PKA) while (PKA(&m, h, 0x31E, 0x31F, PM_REMOVE | PM_NOYIELD)) {}
+}
 static HWND mh_mk(DWORD st, DWORD ex, HWND parent) {
-    return CWEA(ex, MH_CLSA, "mh", st, 10, 10, 120, 80, parent, NULL, GetModuleHandleA(NULL), NULL);
+    HWND h = CWEA(ex, MH_CLSA, "mh", st, 10, 10, 120, 80, parent, NULL, GetModuleHandleA(NULL), NULL);
+    mh_eat_dwm(h);
+    return h;
 }
 static HWND mh_mkw(DWORD st, DWORD ex, HWND parent) {
-    return CWEW(ex, MH_CLSW, L"mh", st, 10, 10, 120, 80, parent, NULL, GetModuleHandleA(NULL), NULL);
+    HWND h = CWEW(ex, MH_CLSW, L"mh", st, 10, 10, 120, 80, parent, NULL, GetModuleHandleA(NULL), NULL);
+    mh_eat_dwm(h);
+    return h;
 }
 static void mh_kill(HWND h) { if (h && ISWND && ISWND(h)) DESTROYW(h); }
 /* drain every message of this thread (including WM_QUIT) */

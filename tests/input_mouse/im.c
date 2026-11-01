@@ -129,8 +129,15 @@ int im_swapped(void) { int (WINAPI *gsm)(int) = (void *)t_proc("GetSystemMetrics
 
 void im_setpos(int x, int y) {
     BOOL (WINAPI *scp)(int, int) = (void *)t_proc("SetCursorPos");
+    int n0 = im_nlog;
+    DWORD end = GetTickCount() + 250;
     if (scp) scp(x, y);
     im_pump_ms(15);
+    /* Win10 hands the cursor change to the mouse input thread asynchronously, so the resulting
+     * mouse messages (and the system's idea of which window is under the cursor) can lag the
+     * SetCursorPos return by tens of milliseconds, more in a VM. Wait (bounded) until at least
+     * one message of ours was logged; when the cursor is not over our windows this just times out. */
+    while (im_nlog == n0 && (int)(end - GetTickCount()) > 0) im_pump_ms(10);
 }
 void im_abs_move(int px, int py) {
     UINT (WINAPI *si)(UINT, LPINPUT, int) = (void *)t_proc("SendInput");

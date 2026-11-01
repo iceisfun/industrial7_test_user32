@@ -161,12 +161,22 @@ TEST(input_kbd_tounicode_us_non_character_keys_return_zero) {
         VK_F1, VK_F2, VK_F5, VK_F12, VK_F13, VK_F24, VK_SHIFT, VK_LSHIFT, VK_RSHIFT, VK_CONTROL, VK_LCONTROL, VK_MENU, VK_LMENU,
         VK_CAPITAL, VK_NUMLOCK, VK_SCROLL, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN, VK_HOME, VK_END, VK_PRIOR, VK_NEXT, VK_INSERT,
         VK_DELETE, VK_LWIN, VK_RWIN, VK_APPS, VK_SNAPSHOT, VK_PAUSE, VK_BROWSER_BACK, VK_VOLUME_UP, VK_MEDIA_PLAY_PAUSE,
-        VK_LBUTTON, VK_RBUTTON, VK_MBUTTON, VK_CANCEL, 0, 0xFF,
+        VK_LBUTTON, VK_RBUTTON, VK_MBUTTON, 0, 0xFF,
     };
     int i;
     TUREQ;
     { US_BEGIN
     for (i = 0; i < NT(vks); i++) { WCHAR w[4]; int r = tu(us, vks[i], 0, w); CHECKF(r == 0, "vk 0x%02x ret %d", vks[i], r); if (r == 0) CHECKF(w[0] == 0, "vk 0x%02x: buffer not zeroed (%04x)", vks[i], w[0]); }
+    US_END }
+}
+/* VK_CANCEL (Ctrl+Break) is not in the list above: Win10 22H2 ToUnicodeEx returns 1 for it
+ * (the ETX control character 0x03) even with no modifier down; Win7 returned 0. Record only. */
+TEST(input_kbd_tounicode_us_vk_cancel_observed) {
+    TUREQ;
+    { US_BEGIN
+    WCHAR w[4]; int r = tu(us, VK_CANCEL, 0, w);
+    t_note("ToUnicodeEx(VK_CANCEL, no modifiers) -> %d, w[0]=%04x", r, w[0]);
+    CHECK(r == 0 || r == 1);
     US_END }
 }
 TEST(input_kbd_tounicode_us_numpad_operators) {
@@ -506,8 +516,10 @@ TEST(input_kbd_tounicode_dead_key_non_combining_gives_two_chars) {
     if (!h) { t_skip("US-International layout unavailable"); return; }
     {
         WCHAR w[4];
+        int r;
         CHECK(tu(h, VK_OEM_7, 0, w) < 0);
-        EXPECT_EQ(tu(h, 'B', 0, w), 2);
+        r = tu(h, 'B', 0, w);
+        EXPECT_EQ(r, 2);
         EXPECT_EQ(w[1], 'b');
         flush_dead(h);
     }

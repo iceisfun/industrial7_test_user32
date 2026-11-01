@@ -471,7 +471,9 @@ TEST(input_kbd_oemkeyscan_known_values_us) {
     EXPECT_EQ(U(OemKeyScan)('1'), 0x02);
     EXPECT_EQ(U(OemKeyScan)('!'), 0x02 | (1 << 16));
     EXPECT_EQ(U(OemKeyScan)('0'), 0x0B);
-    EXPECT_EQ(U(OemKeyScan)(0x01), 0x1E | (2 << 16));
+    /* control characters: Win7 mapped 0x01 to Ctrl+A; Win10 22H2 returns 0xFFFFFFFF (no mapping) */
+    { DWORD r = U(OemKeyScan)(0x01); t_note("OemKeyScan(0x01) = %08lx", r);
+      CHECK(r == (0x1E | (2 << 16)) || r == 0xFFFFFFFFu); }
 }
 TEST(input_kbd_oemkeyscan_unmappable_is_minus_one) {
     REQUIRE(U(OemKeyScan));

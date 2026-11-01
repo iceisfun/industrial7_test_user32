@@ -837,7 +837,8 @@ TEST(messages_post_queue_limit) {
     if (ok != 10000) t_note("post limit observed: %d (default USERPostMessageLimit is 10000)", ok);
     {
         MSG m; int n = 0;
-        while (PKA(&m, NULL, 0, 0, PM_REMOVE)) n++;
+        /* count only our posts: the system may queue a stray notification of its own */
+        while (PKA(&m, NULL, 0, 0, PM_REMOVE)) if (m.message == MU(105)) n++;
         CHECKF(n == ok, "drained %d accepted %d", n, ok);
     }
     CHECK(PMA(h, MU(106), 0, 0));

@@ -213,18 +213,23 @@ TEST(menus_mii_state_invalid_bits) {
         CHECKF(U(SetMenuItemInfoA)(h, 0, TRUE, &mi), "set w/o MIIM_STATE with state 0x%x", bad[i]);
     }
     EQ(M_CNT(h), 1);
+    M_DESTROY(h);
+    /* a menu accepts MFS_DEFAULT through SetMenuItemInfo only once (Win10 22H2): fresh menu per value */
     for (unsigned i = 0; i < sizeof good / sizeof *good; i++) {
         MENUITEMINFOA mi; mh_zero_a(&mi, MIIM_STATE); mi.fState = good[i];
+        h = mh_make(1);
         CHECKF(U(SetMenuItemInfoA)(h, 0, TRUE, &mi), "good state 0x%x", good[i]);
+        M_DESTROY(h);
     }
-    M_DESTROY(h);
 }
 
 TEST(menus_mii_state_roundtrip) {
     REQ_INFO();
     static const UINT st[] = { 0, MFS_GRAYED, MFS_DISABLED, MFS_CHECKED, MFS_HILITE, MFS_DEFAULT, MFS_CHECKED | MFS_GRAYED, MFS_CHECKED | MFS_DEFAULT };
-    HMENU h = mh_make(1);
+    /* SetMenuItemInfo only replaces the 0xB bits of the state; MFS_HILITE and MFS_DEFAULT are sticky
+     * and a second MFS_DEFAULT on the same menu is refused (Win10 22H2), so use a fresh menu per case. */
     for (unsigned i = 0; i < sizeof st / sizeof *st; i++) {
+        HMENU h = mh_make(1);
         MENUITEMINFOA mi; mh_zero_a(&mi, MIIM_STATE); mi.fState = st[i];
         CHECK(U(SetMenuItemInfoA)(h, 0, TRUE, &mi));
         mh_init_a(&mi, MIIM_STATE);
@@ -232,8 +237,8 @@ TEST(menus_mii_state_roundtrip) {
         CHECKF((mi.fState & 0x108B) == st[i] || ((mi.fState & MFS_GRAYED) && (st[i] & MFS_GRAYED)), "state in 0x%x out 0x%x", st[i], mi.fState);
         EQ(mi.fState & ~0x108Bu, 0);
         EQ(mi.fMask, MIIM_STATE);
+        M_DESTROY(h);
     }
-    M_DESTROY(h);
 }
 
 TEST(menus_mii_ftype_invalid_bits) {
@@ -275,7 +280,10 @@ TEST(menus_mii_ftype_valid_roundtrip) {
         CHECKF(U(InsertMenuItemA)(h, 0xFFFFFFFF, TRUE, &mi), "insert ftype 0x%x", ft[i]);
         mh_init_a(&mi, MIIM_FTYPE);
         CHECK(U(GetMenuItemInfoA)(h, i, TRUE, &mi));
-        EQ(mi.fType & ft[i], ft[i]);
+        /* Win10 22H2 returned 0 for MENUBREAK, MENUBARBREAK, RADIOCHECK and RIGHTJUSTIFY here (the item
+         * has no text); STRING and OWNERDRAW read back exactly. Record the others. */
+        if (ft[i] == MFT_STRING || ft[i] == MFT_OWNERDRAW) EQ(mi.fType & ft[i], ft[i]);
+        else t_note("fType 0x%x read back as 0x%x", ft[i], mi.fType);
         EQ(mi.fMask, MIIM_FTYPE);
     }
     M_DESTROY(h);
@@ -557,8 +565,10 @@ TEST(menus_mii_bitmap_wrong_gdi_type) {
     DeleteObject(bm);
     mh_zero_w(&mw, MIIM_BITMAP); mw.hbmpItem = bm;
     SetLastError(0);
-    CHECK(!U(SetMenuItemInfoW)(h, 0, TRUE, &mw));    /* deleted bitmap handle */
-    EQ(GetLastError(), ERROR_INVALID_PARAMETER);
+    /* deleted bitmap handle: Win10 22H2 stores it without validating (Win7 refused) */
+    { BOOL r1 = U(SetMenuItemInfoW)(h, 0, TRUE, &mw);
+      t_note("MIIM_BITMAP with a deleted bitmap accepted: %d err %lu", r1, GetLastError());
+      if (!r1) EQ(GetLastError(), ERROR_INVALID_PARAMETER); }
     M_DESTROY(h);
 }
 
@@ -585,12 +595,18 @@ TEST(menus_mii_checkmarks_invalid) {
     for (unsigned i = 0; i < sizeof bad / sizeof *bad; i++) {
         MENUITEMINFOA mi; mh_zero_a(&mi, MIIM_CHECKMARKS); mi.hbmpChecked = (HBITMAP)bad[i]; mi.hbmpUnchecked = a;
         SetLastError(0);
-        CHECKF(!U(SetMenuItemInfoA)(h, 0, TRUE, &mi), "bad checked %llx", (unsigned long long)bad[i]);
-        EQ(GetLastError(), ERROR_INVALID_PARAMETER);
+        /* Win10 22H2 does not validate the check-mark handles (the bad value is stored); Win7 refused
+         * them. If a failure is reported it must still be ERROR_INVALID_PARAMETER. */
+        { BOOL r1 = U(SetMenuItemInfoA)(h, 0, TRUE, &mi);
+          t_note("hbmpChecked %llx accepted: %d", (unsigned long long)bad[i], r1);
+          if (!r1) EQ(GetLastError(), ERROR_INVALID_PARAMETER); }
         mh_zero_a(&mi, MIIM_CHECKMARKS); mi.hbmpChecked = a; mi.hbmpUnchecked = (HBITMAP)bad[i];
         SetLastError(0);
-        CHECKF(!U(SetMenuItemInfoA)(h, 0, TRUE, &mi), "bad unchecked %llx", (unsigned long long)bad[i]);
-        EQ(GetLastError(), ERROR_INVALID_PARAMETER);
+        { BOOL r1 = U(SetMenuItemInfoA)(h, 0, TRUE, &mi);
+          t_note("hbmpUnchecked %llx accepted: %d", (unsigned long long)bad[i], r1);
+          if (!r1) EQ(GetLastError(), ERROR_INVALID_PARAMETER); }
+        mh_zero_a(&mi, MIIM_CHECKMARKS);   /* drop whatever was stored */
+        U(SetMenuItemInfoA)(h, 0, TRUE, &mi);
         mh_zero_a(&mi, MIIM_ID); mi.hbmpChecked = (HBITMAP)bad[i]; mi.wID = 100;
         CHECK(U(SetMenuItemInfoA)(h, 0, TRUE, &mi));
     }
@@ -712,8 +728,16 @@ TEST(menus_mii_default_item_via_state) {
     EQ(U(GetMenuDefaultItem)(h, FALSE, 0), 101);
     CHECK(mh_state(h, 1, MF_BYPOSITION) & MF_DEFAULT);
     mh_zero_a(&mi, MIIM_STATE); mi.fState = MFS_DEFAULT;
-    CHECK(U(SetMenuItemInfoA)(h, 2, TRUE, &mi));      /* moves the default */
-    t_note("default after setting MFS_DEFAULT on a second item: pos %u (state of first 0x%x)", U(GetMenuDefaultItem)(h, TRUE, 0), mh_state(h, 1, MF_BYPOSITION));
+    /* Win10 22H2 (win32kfull SetLPITEMInfoNoRedraw): once a default was set through SetMenuItemInfo the
+     * menu carries a flag, and a further MFS_DEFAULT is refused with ERROR_INVALID_PARAMETER; the
+     * default can only be moved with SetMenuDefaultItem. */
+    SetLastError(0);
+    { BOOL r2 = U(SetMenuItemInfoA)(h, 2, TRUE, &mi);
+      DWORD e2 = GetLastError();
+      CHECK(!r2); CHECK(e2 == ERROR_INVALID_PARAMETER);
+      t_note("second MFS_DEFAULT via SetMenuItemInfo: r=%d err %lu", r2, e2); }
+    EQ(U(GetMenuDefaultItem)(h, TRUE, 0), 1);
+    if (U(SetMenuDefaultItem)) { CHECK(U(SetMenuDefaultItem)(h, 2, TRUE)); EQ(U(GetMenuDefaultItem)(h, TRUE, 0), 2); }
     M_DESTROY(h);
 }
 

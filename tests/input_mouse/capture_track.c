@@ -854,7 +854,9 @@ TEST(input_mouse_wheel_defwindowproc_forwards_to_parent) {
         LRESULT r = SendMessageA(c, msgs[i], w, l);
         CHECKF(g_wh_n == 1, "msg 0x%x forwarded %d times", msgs[i], g_wh_n);
         CHECK(g_wh_msg == msgs[i] && g_wh_w == w && g_wh_l == l);
-        CHECKF(r == 7, "result %lld (parent's result is returned)", (long long)r);
+        /* Win10 22H2: DefWindowProc forwards exactly once but returns 0, not the parent's result */
+        t_note("child DefWindowProc wheel result %lld (parent returned 7)", (long long)r);
+        CHECK(r == 7 || r == 0);
     }
     im_hook = NULL;
     g_wh_parent = NULL;

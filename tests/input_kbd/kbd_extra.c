@@ -173,7 +173,7 @@ static HWND xw(void)
 #define XAREQ REQUIRE(U(CreateAcceleratorTableW)); REQUIRE(U(DestroyAcceleratorTable)); REQUIRE(U(TranslateAcceleratorW)); REQUIRE(U(ShowWindow))
 
 TEST(input_kbd_x_ta_ascii_entry_ignores_keydown) {
-    ACCEL in = mka(0, 'x', 301);
+    ACCEL in AL8 = mka(0, 'x', 301);
     HACCEL h;
     HWND w;
     MSG m;
@@ -192,7 +192,7 @@ TEST(input_kbd_x_ta_ascii_entry_ignores_keydown) {
     kw_clear();
 }
 TEST(input_kbd_x_ta_virtkey_entry_ignores_wm_char) {
-    ACCEL in = mka(FVIRTKEY, 'A', 302);
+    ACCEL in AL8 = mka(FVIRTKEY, 'A', 302);
     HACCEL h;
     HWND w;
     MSG m;
@@ -213,7 +213,7 @@ TEST(input_kbd_x_ta_virtkey_entry_ignores_wm_char) {
     kw_clear();
 }
 TEST(input_kbd_x_ta_null_window_even_with_match) {
-    ACCEL in = mka(FVIRTKEY, VK_F9, 303);
+    ACCEL in AL8 = mka(FVIRTKEY, VK_F9, 303);
     HACCEL h;
     MSG m;
     XAREQ;
@@ -230,7 +230,7 @@ TEST(input_kbd_x_ta_null_window_even_with_match) {
     }
 }
 TEST(input_kbd_x_ta_mouse_and_paint_messages_never_match) {
-    ACCEL in = mka(0, 0, 304);
+    ACCEL in AL8 = mka(0, 0, 304);
     HACCEL h;
     HWND w;
     MSG m;
@@ -251,7 +251,7 @@ TEST(input_kbd_x_ta_mouse_and_paint_messages_never_match) {
     kw_clear();
 }
 TEST(input_kbd_x_accel_copy_after_destroy_of_other_table) {
-    ACCEL a = mka(FVIRTKEY, VK_F7, 11), b = mka(FVIRTKEY | FCONTROL, 'Q', 12), out[2];
+    ACCEL a AL8 = mka(FVIRTKEY, VK_F7, 11), b AL8 = mka(FVIRTKEY | FCONTROL, 'Q', 12), out[2] AL8;
     HACCEL ha, hb;
     XAREQ; REQUIRE(U(CopyAcceleratorTableW));
     ha = U(CreateAcceleratorTableW)(&a, 1);
@@ -272,7 +272,7 @@ TEST(input_kbd_x_accel_copy_after_destroy_of_other_table) {
 }
 TEST(input_kbd_x_accel_command_ids_full_range) {
     static const WORD cmds[] = { 0, 1, 0x7FFF, 0x8000, 0xFFFE, 0xFFFF };
-    ACCEL in[6], out[6];
+    ACCEL in[6] AL8, out[6] AL8;
     HACCEL h;
     int i;
     XAREQ; REQUIRE(U(CopyAcceleratorTableW));

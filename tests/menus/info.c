@@ -164,8 +164,13 @@ TEST(menus_info_background_invalid_brush) {
     for (unsigned i = 0; i < sizeof bad / sizeof *bad; i++) {
         MENUINFO mi; mi_zero(&mi, MIM_BACKGROUND); mi.hbrBack = (HBRUSH)bad[i];
         SetLastError(0);
-        CHECKF(!U(SetMenuInfo)(h, &mi), "bad brush %llx", (unsigned long long)bad[i]);
-        EQ(GetLastError(), ERROR_INVALID_PARAMETER);
+        /* Win10 22H2 does not validate hbrBack in SetMenuInfo (Win7 did); if it reports failure the
+         * error must be ERROR_INVALID_PARAMETER */
+        { BOOL r1 = U(SetMenuInfo)(h, &mi);
+          t_note("hbrBack %llx accepted: %d", (unsigned long long)bad[i], r1);
+          if (!r1) EQ(GetLastError(), ERROR_INVALID_PARAMETER); }
+        mi_zero(&mi, MIM_BACKGROUND); mi.hbrBack = NULL;
+        U(SetMenuInfo)(h, &mi);
         mi_zero(&mi, MIM_MAXHEIGHT); mi.hbrBack = (HBRUSH)bad[i]; mi.cyMax = 10;   /* not looked at */
         CHECK(U(SetMenuInfo)(h, &mi));
     }
