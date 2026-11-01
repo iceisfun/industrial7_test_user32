@@ -710,7 +710,13 @@ TEST(gap2_tsf_other_thread) {
     CHECK(g2_run_thread(tsf_thread, NULL) == 0);
 }
 static DWORD WINAPI tsf_nogui(void *a) {
+    /* A thread that has not touched win32k has no thread info, and
+     * IsThreadTSFEventAware dereferences it without a check (Win10 22H2: AV in
+     * the export when called from a fresh worker thread). The "no window"
+     * case is therefore a thread converted to GUI but owning no window. */
+    BOOL (WINAPI *igt)(BOOL) = (void *)t_proc("IsGUIThread");
     DWORD (WINAPI *f)(DWORD) = (void *)t_proc("IsThreadTSFEventAware");
+    if (igt) igt(TRUE);
     return f(0x7fffff10);
 }
 TEST(gap2_tsf_non_gui_thread) {
