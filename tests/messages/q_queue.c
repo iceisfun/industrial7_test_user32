@@ -268,9 +268,9 @@ TEST(messages_post_destroy_flushes_queue) {
     a = qw(); b = qw(); REQUIRE(a && b);
     PMA(a, MU(62), 0, 0); PMA(b, MU(63), 0, 0); PMA(a, MU(64), 0, 0);
     DESTROYW(a);
-    CHECK(PKA(&m, NULL, 0, 0, PM_REMOVE));
+    do { CHECK(PKA(&m, NULL, 0, 0, PM_REMOVE)); } while (m.message == 0x31F); /* skip the DWM rendering notification posted to new windows */
     EXPECT_EQ(m.hwnd, b); EXPECT_EQ(m.message, MU(63));
-    CHECK(!PKA(&m, NULL, 0, 0, PM_REMOVE));
+    while (PKA(&m, NULL, 0, 0, PM_REMOVE)) CHECKF(m.message == 0x31F, "unexpected message 0x%x", m.message);
     mh_kill(b);
 }
 
