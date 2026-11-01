@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Aggregate results/<area>.txt (or a directory given as argv[1])."""
+"""Aggregate results/<area>.txt (or a directory given as argv[1]).
+If results/<area>.tsv exists (written by the harness) it is the source of truth for per-test status."""
 import sys, glob, os, re
 d = sys.argv[1] if len(sys.argv) > 1 else 'results'
 tot = [0]*5
